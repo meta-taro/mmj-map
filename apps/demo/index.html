@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>modern-map-japan — demo</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.9.0/dist/maplibre-gl.css">
+<style>
+  :root { color-scheme: light dark; }
+  html, body { margin: 0; height: 100%; }
+  body { font: 14px/1.7 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  #map { position: absolute; inset: 0; }
+  #notice {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    padding: 2rem; background: #14161a; color: #e7e9ee;
+  }
+  #notice .box { max-width: 34rem; }
+  #notice h1 { font-size: 1.25rem; margin: 0 0 .75rem; }
+  #notice p { margin: 0 0 .75rem; color: #aeb4c0; }
+  #notice code { background: #1e2128; padding: .15em .4em; border-radius: 3px; color: #e7e9ee; }
+  #notice a { color: #7fb2ff; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="notice" hidden>
+  <div class="box">
+    <h1>まだタイルの配信元がありません</h1>
+    <p>
+      このデモは、ベースタイル（PMTiles）とグリフの配信元が決まると地図を描きます。
+      配信元は <code>apps/demo/config.js</code> に設定します。
+    </p>
+    <p>
+      自分でタイルをビルドして配信する手順は、リポジトリの
+      <a href="https://github.com/meta-taro/modern-map-japan">README</a> を見てください。
+    </p>
+    <p>
+      空の地図を出す代わりに、この案内を出しています。
+      <strong>無いものを、あるように見せないためです。</strong>
+    </p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@6.9.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script>
+  const cfg = window.MMJ_CONFIG || {};
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    document.getElementById('notice').hidden = false;
+  } else {
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol('pmtiles', protocol.tile);
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: cfg.styleUrl,
+      center: [135.5023, 34.6937],   // 大阪
+      zoom: 12,
+      // 帰属表示は必須（LICENSES.md）。既定の control を消さないこと。
+      attributionControl: { compact: false },
+    });
+
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
+
+    map.on('error', (e) => {
+      // グリフが 1 範囲でも 404 になると地図全体が真っ白になる。
+      // 黙って白くせず、何が落ちたかを出す。
+      console.error('[modern-map-japan] map error:', e && e.error ? e.error : e);
+    });
+  }
+</script>
+</body>
+</html>

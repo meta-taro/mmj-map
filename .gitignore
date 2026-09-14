@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.local
+dist/
+build/
+coverage/
+*.log
+.DS_Store
+
+# ローカル秘密控え（🟡 識別子のみ・🔴 token/key は置かない）— commit 禁止
+SECRETS.local.md
+
+# 内部向けの完全版ベースルール（配布元にのみ存在する事例を含む）— 公開しない
+.claude/rules/product-baseline.full.md
+
+# --- ここから下は「除外してはいけないもの」の覚え書き ---
+# スタイル JSON（styles/*.json）はビルド生成物ではなく手書きの正本です。
+# dist/ や build/ のつもりで styles を除外すると、この製品の中身が消えます。

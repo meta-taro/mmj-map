@@ -1,0 +1,56 @@
+# 本番へ出す経路（baseline §43）。
+#
+# **push したら出る。これが既定で、例外は無い。**
+# `workflow_dispatch` だけにしないこと。ボタンを押した日しか出ないので、
+# 走らない workflow は CI 赤にもならず、古いまま止まっていても誰も気づけない。
+#
+# このリポの「本番」は **GitHub Pages 上のデモ** です。
+# 鍵も外部アカウントも要りません（secrets を人に入れてもらう工程が無い＝止まらない）。
+# 公開されるのは `apps/demo/` の中身だけで、タイルの配信元は `apps/demo/config.js`
+# で指します。**タイルそのものはここから配信しません。**
+name: Deploy demo to GitHub Pages
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false     # 出している途中で止めない
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # デモは素の HTML。ビルド工程はまだ無い。
+      # ビルドが要るようになったらここに足す（このステップごと消さない）。
+      - name: Check demo entrypoint
+        run: test -f apps/demo/index.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/demo
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      # 出したら実物を見る。デプロイ成功 = 中身が正しい、ではない。
+      - name: Verify published page
+        run: |
+          url="${{ steps.deployment.outputs.page_url }}"
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+          echo "GET $url -> $code"
+          test "$code" = "200"

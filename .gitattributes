@@ -1,0 +1,14 @@
+# 改行は LF で統一する。Windows で作業してもリポジトリの中身は LF のまま。
+# 混ざると差分が全行に出て、レビューできなくなる。
+* text=auto eol=lf
+
+# バイナリ（将来スタイル用のフォント・PMTiles を置くときに効かせる）
+*.pbf  binary
+*.ttf  binary
+*.otf  binary
+*.woff binary
+*.woff2 binary
+*.pmtiles binary
+*.png  binary
+*.jpg  binary
+*.webp binary
