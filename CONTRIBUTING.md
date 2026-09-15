@@ -2,6 +2,17 @@
 
 Issues and pull requests are welcome, in **Japanese or English**.
 
+## Everyone is welcome here
+
+**We do not distinguish contributors by who employs them.** There is no contributor
+licence agreement, no corporate approval step, and no list of organisations whose
+contributions are unwelcome.
+
+[`PRINCIPLES.md`](PRINCIPLES.md) §2 sets conditions on **data sources** — published,
+licensed in writing, reproducible. Those conditions say nothing about people. If you
+work for a company whose data this project cannot use, your patch is still judged as a
+patch.
+
 ## Before you open a pull request
 
 - Read [`PRD.md`](PRD.md), in particular **§2 What we do not build**. The fastest way

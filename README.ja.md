@@ -58,6 +58,8 @@
 
 ## 資料
 
+- [`PRINCIPLES.md`](PRINCIPLES.md) — このプロジェクトの指針。何を約束し、データを何で選び、誰を歓迎するか（英語）
+- [`CREDITS.md`](CREDITS.md) — この地図が立っている土台（英語）
 - [`PRD.md`](PRD.md) — スコープと、**あえて作らないもの**
 - [`.claude/roadmap.md`](.claude/roadmap.md) — フェーズ
 - [`.claude/decisions.md`](.claude/decisions.md) — 決定と、その理由

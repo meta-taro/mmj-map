@@ -59,6 +59,8 @@ Read [`LICENSES.md`](LICENSES.md) before you ship. Short version: keep
 
 ## Documentation
 
+- [`PRINCIPLES.md`](PRINCIPLES.md) — what this project is for, how it chooses data, who is welcome
+- [`CREDITS.md`](CREDITS.md) — the work this map stands on
 - [`PRD.md`](PRD.md) — scope, and what we deliberately do not build
 - [`.claude/roadmap.md`](.claude/roadmap.md) — phases
 - [`.claude/decisions.md`](.claude/decisions.md) — decisions and the reasoning behind them
