@@ -4,6 +4,9 @@ node_modules/
 dist/
 build/
 coverage/
+
+# 切り出した PMTiles（100GB 級の元から作る生成物）。リポジトリへ入れない（原案 §19）
+dist/tiles/
 *.log
 .DS_Store
 

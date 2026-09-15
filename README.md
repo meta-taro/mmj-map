@@ -59,6 +59,7 @@ Read [`LICENSES.md`](LICENSES.md) before you ship. Short version: keep
 
 ## Documentation
 
+- [`docs/tiles/README.md`](docs/tiles/README.md) — **build the base tiles yourself** (public data and public tools only; written in Japanese)
 - [`PRINCIPLES.md`](PRINCIPLES.md) — what this project is for, how it chooses data, who is welcome
 - [`CREDITS.md`](CREDITS.md) — the work this map stands on
 - [`PRD.md`](PRD.md) — scope, and what we deliberately do not build

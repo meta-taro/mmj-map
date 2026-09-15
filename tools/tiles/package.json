@@ -1,0 +1,20 @@
+{
+  "name": "@modern-map-japan/tiles-build",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "公開データ（Protomaps 日次ビルド）と公開ツール（go-pmtiles）だけで日本ぶんの PMTiles を作る",
+  "scripts": {
+    "resolve": "tsx src/cli.ts resolve",
+    "extract": "tsx src/cli.ts extract",
+    "check-range": "tsx src/cli.ts check-range",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

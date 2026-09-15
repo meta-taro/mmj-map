@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "tools/*"
+
+# ベースルール §1 の防御設定。**package.json の `pnpm` 欄にも同じものを書いてあります。**
+# pnpm 10 以降はこちら（workspace 側）を読むため、片方だけだと黙って効かなくなります。
+# 「設定してあるのに効いていない」は、無いより悪い。
+onlyBuiltDependencies: []
+minimumReleaseAge: 1440

@@ -1,0 +1,22 @@
+{
+  "name": "modern-map-japan",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "tiles:resolve": "pnpm --filter @modern-map-japan/tiles-build run resolve",
+    "tiles:extract": "pnpm --filter @modern-map-japan/tiles-build run extract",
+    "tiles:check-range": "pnpm --filter @modern-map-japan/tiles-build run check-range"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [],
+    "minimumReleaseAge": 1440
+  }
+}

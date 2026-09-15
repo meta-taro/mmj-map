@@ -1,0 +1,40 @@
+# 品質ゲート（product-baseline.md §5）。
+#
+# 手元のゲート（Git hooks）はまだ入っていません。開発機に Node が入っていないため
+# 設定しても動きを確認できず、動かないゲートを置くと「通った」と誤読されます。
+# **それまでの最終ゲートがここ**です。落ちたまま放置しない・無効化して通さない（§20）。
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # TODO(lockfile): pnpm-lock.yaml が commit されたら `--frozen-lockfile` に戻す。
+      # 開発機に Node が無く lockfile を生成できないため、いまは作らせている。
+      # lockfile が無いあいだ、依存は解決のたびに動きうる。
+      - run: pnpm install --no-frozen-lockfile
+
+      - run: pnpm -r typecheck
+
+      - run: pnpm -r test
+
+      # 参照だけ足してアップロードを忘れる事故を、ここで止める（§23）。
+      - name: Demo references an existing config
+        run: test -f apps/demo/config.js

@@ -1,0 +1,34 @@
+{
+  "_note": [
+    "再現可能ビルドの正本。**ここに書いた 1 ビルドだけが日本タイルの出どころ**です。",
+    "`pnpm tiles:resolve` が上流の索引と突き合わせ、差があれば理由つきで落ちます。",
+    "更新は `pnpm tiles:resolve -- --update=<key>`。**手で書き換えないこと**",
+    "（checksum を人が写すと、写し間違いが再現可能ビルドの根拠ごと壊します）。"
+  ],
+  "source": {
+    "provider": "protomaps-daily-planet",
+    "buildsIndexUrl": "https://build-metadata.protomaps.dev/builds.json",
+    "buildBaseUrl": "https://build.protomaps.com/",
+    "key": "20260915.pmtiles",
+    "basemapVersion": "4.15.2",
+    "size": 138031484053,
+    "md5sum": "gKc5TWbhCwYIeUrIcDReAQ==",
+    "b3sum": "ba618b3b5f301cc8b4142736932c798b0444860bb2caa67cc79a7b4bc5e35357",
+    "uploaded": "2026-09-15T09:02:55.277Z"
+  },
+  "regions": {
+    "japan": {
+      "bbox": [122.93, 20.42, 153.99, 45.56],
+      "maxzoom": 15,
+      "output": "japan.pmtiles",
+      "note": "日本の領域を四隅で囲む。西=与那国島 西崎 / 南=沖ノ鳥島 / 東=南鳥島 / 北=択捉島。遠方の島を落とすと『日本の地図』ではなくなるため、面積ではなく領域で切る。"
+    },
+    "kansai": {
+      "bbox": [134.2, 33.4, 136.6, 35.9],
+      "maxzoom": 15,
+      "output": "kansai.pmtiles",
+      "note": "疎通確認用の小さい範囲。全国ぶんを待たずに『地図が 1 枚出る』ところまで行くために置いている。"
+    }
+  },
+  "attribution": "© OpenStreetMap contributors"
+}
