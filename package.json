@@ -14,6 +14,7 @@
     "tiles:resolve": "pnpm --filter @modern-map-japan/tiles-build run resolve",
     "tiles:extract": "pnpm --filter @modern-map-japan/tiles-build run extract",
     "tiles:check-range": "pnpm --filter @modern-map-japan/tiles-build run check-range",
-    "serve": "pnpm --filter @modern-map-japan/serve run dev"
+    "serve": "pnpm --filter @modern-map-japan/serve run dev",
+    "style:check": "pnpm --filter @modern-map-japan/style-check run check"
   }
 }

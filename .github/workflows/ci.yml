@@ -40,7 +40,9 @@ jobs:
       - name: Demo references an existing config
         run: test -f apps/demo/config.js
 
-      # デモが読むスタイルが実在することを止める側で確かめる（§23）。
-      # 参照だけ足してファイルを忘れると、ビルドもテストも通ったまま実行時にだけ壊れる。
-      - name: Referenced style exists and is valid JSON
-        run: node -e "JSON.parse(require('fs').readFileSync('styles/modern-dark.json','utf8'))"
+      # デモが読むスタイルが、pin したビルドの中身と噛み合っているかを確かめる（§23）。
+      # JSON として読めることに加えて、**存在しない source-layer を指していないか**・
+      # **一度も描かれない zoom 指定になっていないか**まで見る。
+      # 参照だけ足して中身を忘れると、ビルドもテストも通ったまま実行時にだけ空になる。
+      - name: Style matches the pinned basemap build
+        run: pnpm style:check

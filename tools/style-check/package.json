@@ -1,0 +1,19 @@
+{
+  "name": "@modern-map-japan/style-check",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "手書きスタイルが、pin したビルドの中身と噛み合っているかを止める側で確かめる",
+  "scripts": {
+    "check": "tsx src/cli.ts",
+    "snapshot": "tsx src/snapshot.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}
