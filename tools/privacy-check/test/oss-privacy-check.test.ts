@@ -150,6 +150,18 @@ describe("公開ログへ中身を出さない（設計上の約束）", () => {
     expect(r.output).toContain("***@***.");
   });
 
+  it("awk の警告を出さない（出力が汚れると本物の NG が埋もれる）", () => {
+    const f = fresh();
+    const base = f.commit("init", { "README.md": "hello\n" });
+    const head = f.commit("ok", { "docs/a.md": "ふつうの文\n" });
+
+    const r = runCheck(f, [base, head]);
+    // `awk -v` は値のエスケープを展開するため、正規表現をそのまま渡すと
+    // `\.` が `.` に潰れ、警告が出たうえ **パターンが緩くなる**
+    expect(r.output).not.toContain("awk:");
+    expect(r.output).not.toContain("escape sequence");
+  });
+
   it("禁止語も原文を出さず、何番目に一致したかだけ出す", () => {
     const f = fresh();
     const base = f.commit("init", { "README.md": "hello\n" });
