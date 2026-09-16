@@ -1,7 +1,7 @@
 # プロジェクトステータス — modern-map-japan
 
 - **現在フェーズ**: S1（切り出し）着手中
-- **最終更新**: 2026-09-15
+- **最終更新**: 2026-09-16
 
 ## 完了した作業
 
@@ -16,6 +16,11 @@
   - 手順書 `docs/tiles/README.md`
   - 判断はすべて純粋関数側にあり、単体テストが付いている（`tools/tiles/test/`）
 - CI（`.github/workflows/ci.yml`）で typecheck / test を回す構成
+- **oss-privacy-check の赤を直した（2026-09-16）** — `OSS_ALLOWED_EMAILS`
+  （空白区切り・完全一致）を足し、生成ツールの no-reply だけを通す。
+  手元の git bash で修正前 exit 1 / 修正後 exit 0 を確認し、
+  使い捨てリポで「同じドメインの別アドレスは通らない」ことも確認済み。
+  **ただし CI 上ではまだ走っていない**（未 push のため）。
 
 ## 未完了の作業
 
@@ -27,25 +32,39 @@
 - lint（eslint）と Git hooks — Node が入ってから入れます
 - `pnpm-lock.yaml` — 生成できていないため、CI は `--no-frozen-lockfile` で走ります
 
+## CI の状況（2026-09-16 時点）
+
+`gh run list` で確認した実際の結果。
+
+| workflow | 最後に走った commit | 結果 |
+| --- | --- | --- |
+| oss-privacy-check | 02daccd | **failure**（`NG [message-email]`）→ ed0685e で修正済み・未検証 |
+| Deploy demo to GitHub Pages | 02daccd | success |
+| CI（typecheck / test） | — | **1 度も走っていません**（74fe70e が未 push のため） |
+
+未 push の commit は 2 本（74fe70e・ed0685e）。**push は人間の工程です**（baseline §6）。
+
 ## 止まっているもの（人にしかできない工程・baseline §29）
 
 1. **開発機に Node.js 22.12+ を入れる。** これが入るまで、手元では
    install も test も typecheck も 1 つも走りません。`corepack enable pnpm` まで。
-2. **GitHub CLI（`gh`）を入れる。** 入っていないため、**このセッションでは Issue を
-   1 件も確認できていません**（CLAUDE.md「セッションの進め方」が実行できていない）。
+   （2026-09-16 再確認: `node` / `pnpm` / `npm` / `corepack` いずれも PATH に無し）
+2. **未 push の 2 commit を確認して push する。** これが済むまで、
+   `ci.yml` の初回結果も、oss-privacy-check の修正が効いたかも分かりません。
 3. **先行実装のソースを渡す。** S1 の完了条件は「先行実装を一切参照せずに地図が 1 枚出ること」ですが、
    切り出し元がこのリポにもマシンにも無く、場所の記録もありません。
    最低限、**手書きダークスタイルの JSON** が要ります。
-4. **`pmtiles` コマンド（go-pmtiles）を入れる。** 切り出しの実行に要ります。
+4. **`pmtiles` コマンド（go-pmtiles）を入れる。** 切り出しの実行に要ります（2026-09-16 時点で未インストール）。
 5. **日本語グリフの方針**（`.claude/decisions.md` 未決）。S1 の間に止めるかどうか。
 
-> 補足: `git` は PATH に無く、GitHub Desktop 同梱のもの
-> （`%LOCALAPPDATA%\GitHubDesktop\app-3.6.5\resources\app\git\cmd`）を使っています。
+> 環境メモ（2026-09-16 更新）: `git` 2.55（Git for Windows）・`bash`・`gh` 2.100 は
+> PATH に入り、使えるようになりました。Issue は `gh` で確認済みで、
+> **open / closed とも 0 件**です。
 
 ## 次のタスク
 
-1. 上記「止まっているもの」1・2 の解消（Node / gh）
-2. CI の初回結果を読み、赤なら直す（§20）
+1. 上記「止まっているもの」1・2 の解消（Node の導入 / push）
+2. push 後の CI を読み、赤なら直す（§20）
 3. 先行実装のスタイル JSON を持ち込み、固有の語を外す
 4. `apps/demo/` を、ローカルの `dist/tiles/kansai.pmtiles` で 1 枚描くところまで繋ぐ
 
@@ -57,6 +76,8 @@
 
 - `tools/tiles` — 単体テスト 5 ファイル（bbox / builds / manifest / extract-plan / range）を**記述済み**。
   **未実行。** 実行結果は CI の初回で確認します。
+- `.github/scripts/oss-privacy-check.sh` — 自動テストはありません。
+  2026-09-16 に手元で手動実行して赤→緑を確認しました（上記「完了した作業」）。
 - それ以外 — 未整備
 
 ## 既知の問題
