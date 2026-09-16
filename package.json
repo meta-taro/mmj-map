@@ -14,9 +14,5 @@
     "tiles:resolve": "pnpm --filter @modern-map-japan/tiles-build run resolve",
     "tiles:extract": "pnpm --filter @modern-map-japan/tiles-build run extract",
     "tiles:check-range": "pnpm --filter @modern-map-japan/tiles-build run check-range"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [],
-    "minimumReleaseAge": 1440
   }
 }
