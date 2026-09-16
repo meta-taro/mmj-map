@@ -38,11 +38,15 @@
       "paint": { "fill-color": "#23282E" } },
 
     { "id": "water", "type": "fill", "source": "basemap", "source-layer": "water",
-      "filter": ["!=", ["get", "kind"], "swimming_pool"],
+      "filter": ["all",
+        ["==", ["geometry-type"], "Polygon"],
+        ["!=", ["get", "kind"], "swimming_pool"]],
       "paint": { "fill-color": "#14303D" } },
 
     { "id": "waterway", "type": "line", "source": "basemap", "source-layer": "water",
-      "filter": ["in", ["get", "kind"], ["literal", ["river", "stream"]]],
+      "filter": ["all",
+        ["==", ["geometry-type"], "LineString"],
+        ["in", ["get", "kind"], ["literal", ["river", "stream"]]]],
       "paint": {
         "line-color": "#14303D",
         "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.6, 14, 2.4, 16, 5]
@@ -127,7 +131,7 @@
       } },
 
     { "id": "label-place-city", "type": "symbol", "source": "basemap", "source-layer": "places",
-      "filter": ["in", ["get", "kind"], ["literal", ["locality", "region", "country"]]],
+      "filter": ["all", ["in", ["get", "kind"], ["literal", ["locality", "region", "country"]]], ["<=", ["get", "min_zoom"], ["zoom"]]],
       "layout": {
         "text-field": ["coalesce", ["get", "name:ja"], ["get", "name"]],
         "text-font": ["Noto Sans Regular"],
@@ -152,7 +156,7 @@
       "paint": { "text-color": "#C9D0D8", "text-halo-color": "#111418", "text-halo-width": 1.4 } },
 
     { "id": "label-place-neighbourhood", "type": "symbol", "source": "basemap", "source-layer": "places",
-      "filter": ["==", ["get", "kind"], "neighbourhood"],
+      "filter": ["all", ["==", ["get", "kind"], "neighbourhood"], ["<=", ["get", "min_zoom"], ["zoom"]]],
       "minzoom": 13,
       "layout": {
         "text-field": ["coalesce", ["get", "name:ja"], ["get", "name"]],
@@ -163,7 +167,7 @@
       "paint": { "text-color": "#AAB2BC", "text-halo-color": "#111418", "text-halo-width": 1.2 } },
 
     { "id": "label-water", "type": "symbol", "source": "basemap", "source-layer": "water",
-      "filter": ["has", "name"],
+      "filter": ["all", ["has", "name"], ["<=", ["get", "min_zoom"], ["zoom"]]],
       "minzoom": 12,
       "layout": {
         "text-field": ["coalesce", ["get", "name:ja"], ["get", "name"]],
