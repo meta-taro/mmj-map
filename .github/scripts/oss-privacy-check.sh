@@ -153,36 +153,70 @@ fi
 diff_out="$diff_out
 $(git diff --unified=0 HEAD)"
 
-added="$(printf '%s\n' "$diff_out" | awk '
-  /^\+\+\+ /   { f = substr($0, 7); next }
-  /^@@ /       { split($0, a, " "); split(substr(a[3], 2), b, ","); ln = b[1]; next }
-  /^\+/        { print f "\t" ln "\t" substr($0, 2); ln++; next }
+# 未追跡ファイルは `git diff` に出ない。**新規ファイルへ書いた連絡先が素通りする**ため、
+# 追加行として同じ検査へ流す。`--no-index` は差分があると 1 で終わるので握る
+# （握り潰しではなく、これは「差分あり」の合図・§8）。
+while IFS= read -r untracked; do
+  [ -z "$untracked" ] && continue
+  diff_out="$diff_out
+$(git diff --no-index --unified=0 -- /dev/null "$untracked" 2>/dev/null || true)"
+done < <(git ls-files --others --exclude-standard)
+
+# 走査は awk の **1 パス**で終わらせ、bash 側は「見つかったもの」だけを回す。
+#
+# 以前は追加行 1 行ごとに grep を 1〜2 個起動していた。4242 行の差分で 2 時間以上
+# 返らず、**commit 前のゲートとして使えなかった**（Linux の CI では 7 秒で終わるため
+# 気づきにくい。遅いのは手元＝人が待つ側だけ、という壊れ方をしていた）。
+#
+# awk の正規表現は POSIX ERE。`{2,}` は mawk 等で解釈が割れるため、
+# ここでは `[A-Za-z][A-Za-z]+`（＝2 文字以上）と書き下す。
+#
+# **バックスラッシュは 2 本書く。** `awk -v` は値のエスケープを展開するため、
+# `\.` と書くと awk へ渡る時点で `.`（任意の 1 文字）に潰れる。そうなると
+# `maplibre-gl@5.24.0/dist` や `mocker@5.0.0(vite` をメールとして拾い、
+# **誤検出だらけで検査が信用されなくなる**（実際にそうなった）。
+AWK_EMAIL_RE='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z][A-Za-z]+'
+
+hits="$(printf '%s\n' "$diff_out" | awk \
+  -v self_re="$SELF_RE" -v email_re="$AWK_EMAIL_RE" -v deny="$DENY_WORDS" '
+  BEGIN {
+    dn = split(deny, dw, "\n")
+    for (i = 1; i <= dn; i++) dwl[i] = tolower(dw[i])
+  }
+  /^\+\+\+ / { f = substr($0, 7); next }
+  /^@@ /     { split($0, a, " "); split(substr(a[3], 2), b, ","); ln = b[1]; next }
+  /^\+/ {
+    line = substr($0, 2)
+    if (f !~ self_re) {
+      rest = line
+      while (match(rest, email_re)) {
+        print "E\t" f "\t" ln "\t" substr(rest, RSTART, RLENGTH)
+        rest = substr(rest, RSTART + RLENGTH)
+      }
+      if (dn > 0) {
+        low = tolower(line)
+        for (i = 1; i <= dn; i++)
+          if (dwl[i] != "" && index(low, dwl[i]) > 0) print "D\t" f "\t" ln "\t" i
+      }
+    }
+    ln++
+    next
+  }
 ')"
 
-if [ -n "$added" ]; then
-  while IFS=$'\t' read -r f ln content; do
-    [ -z "${f:-}" ] && continue
-    printf '%s' "$f" | grep -Eq "$SELF_RE" && continue
-
-    while read -r found; do
-      [ -z "${found:-}" ] && continue
-      allowed_email "$found" && continue
-      note "NG [added-email] $f:$ln : $(printf '%s' "$found" | mask_email)"
+# 通常ここは空。空でない＝混入が見つかったときだけ、行ごとの処理が走る
+if [ -n "$hits" ]; then
+  while IFS=$'\t' read -r kind file lineno value; do
+    [ -z "${kind:-}" ] && continue
+    if [ "$kind" = "E" ]; then
+      allowed_email "$value" && continue
+      note "NG [added-email] $file:$lineno : $(printf '%s' "$value" | mask_email)"
       fail=1
-    done < <(printf '%s' "$content" | grep -Eo "$EMAIL_RE" | sort -u)
-
-    if [ -n "$DENY_WORDS" ]; then
-      i=0
-      while IFS= read -r w; do
-        i=$((i + 1))
-        [ -z "$w" ] && continue
-        if printf '%s' "$content" | grep -qiF -- "$w"; then
-          note "NG [added-denyword] $f:$ln : 禁止語 #$i に一致"
-          fail=1
-        fi
-      done <<< "$DENY_WORDS"
+    else
+      note "NG [added-denyword] $file:$lineno : 禁止語 #$value に一致"
+      fail=1
     fi
-  done <<< "$added"
+  done <<< "$hits"
 fi
 
 # --- 結果 -------------------------------------------------------------------

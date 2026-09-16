@@ -1,0 +1,17 @@
+{
+  "name": "@modern-map-japan/privacy-check",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "公開リポの個人情報混入チェック（.github/scripts/oss-privacy-check.sh）のテスト",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}
