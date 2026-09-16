@@ -19,3 +19,6 @@ SECRETS.local.md
 # --- ここから下は「除外してはいけないもの」の覚え書き ---
 # スタイル JSON（styles/*.json）はビルド生成物ではなく手書きの正本です。
 # dist/ や build/ のつもりで styles を除外すると、この製品の中身が消えます。
+
+# deploy 時に styles/ から成果物へコピーする先。正本は リポジトリ直下の styles/
+apps/demo/styles/

@@ -38,6 +38,15 @@ jobs:
       - name: Check demo entrypoint
         run: test -f apps/demo/index.html
 
+      # スタイル JSON はリポジトリ直下の styles/ が正本（D-002）。
+      # Pages に出るのは apps/demo だけなので、**参照だけ残してアップロードを忘れないよう**
+      # ここで同梱する（§23）。正本を 2 か所に置かないため、コピーは成果物の中だけ。
+      - name: Bundle the hand-written style into the artifact
+        run: |
+          test -f styles/modern-dark.json
+          mkdir -p apps/demo/styles
+          cp styles/*.json apps/demo/styles/
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3

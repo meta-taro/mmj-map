@@ -39,3 +39,8 @@ jobs:
       # 参照だけ足してアップロードを忘れる事故を、ここで止める（§23）。
       - name: Demo references an existing config
         run: test -f apps/demo/config.js
+
+      # デモが読むスタイルが実在することを止める側で確かめる（§23）。
+      # 参照だけ足してファイルを忘れると、ビルドもテストも通ったまま実行時にだけ壊れる。
+      - name: Referenced style exists and is valid JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('styles/modern-dark.json','utf8'))"

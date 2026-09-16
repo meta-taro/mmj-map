@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>modern-map-japan — demo</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.9.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
 <style>
   :root { color-scheme: light dark; }
   html, body { margin: 0; height: 100%; }
@@ -14,6 +14,10 @@
     position: absolute; inset: 0; display: grid; place-items: center;
     padding: 2rem; background: #14161a; color: #e7e9ee;
   }
+  /* `hidden` を CSS で殺さない。#notice の display:grid は ID セレクタなので
+     UA スタイルの [hidden]{display:none} に勝ってしまい、**地図が出ていても
+     案内が被り続ける**（実際にそうなっていた）。 */
+  #notice[hidden] { display: none; }
   #notice .box { max-width: 34rem; }
   #notice h1 { font-size: 1.25rem; margin: 0 0 .75rem; }
   #notice p { margin: 0 0 .75rem; color: #aeb4c0; }
@@ -42,7 +46,25 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@6.9.0/dist/maplibre-gl.js"></script>
+
+<!--
+  **maplibre-gl は 5 系（UMD）を使う。** 経緯（2026-09-16 の実測）:
+
+  確かめたこと:
+  - 6.9.0 は **ESM のみ**で `dist/maplibre-gl.js`（UMD）を配っていない（HTTP 404）。
+    `exports` は `./dist/maplibre-gl.mjs` だけ。したがって元の `<script src=...>` は
+    必ず失敗し、コンソールに `maplibregl is not defined` が出ていた
+  - 6.9.0 の束ね版は worker を `new Worker(url, {type:"module"})` で起動する
+
+  **確かめられていないこと:** 6 系が CDN 配信で実際に動くかどうか。
+  検証しようとした環境でブラウザのタブが不可視（`visibilityState: hidden`）で、
+  requestAnimationFrame が発火せず、MapLibre は描画ループの中で style.load を出すため
+  **5 系でも 6 系でも同じ「無反応」になった**。つまり 6 系を落とした根拠は無い。
+
+  ここで 5 系にしているのは、**UMD が配られていて素の HTML から読める**という
+  一点だけが理由。6 系へ上げるなら、可視な環境で描画を確認してから。
+-->
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
 <script src="./config.js"></script>
 <script>
@@ -54,22 +76,39 @@
     const protocol = new pmtiles.Protocol();
     maplibregl.addProtocol('pmtiles', protocol.tile);
 
-    const map = new maplibregl.Map({
-      container: 'map',
-      style: cfg.styleUrl,
-      center: [135.5023, 34.6937],   // 大阪
-      zoom: 12,
-      // 帰属表示は必須（LICENSES.md）。既定の control を消さないこと。
-      attributionControl: { compact: false },
-    });
+    // スタイル JSON は手書きの正本で、配信先の URL を焼き込んでいない（D-002 / D-003）。
+    // 読み込む側が __TILES_URL__ を差し替える。**組み立てているのは URL だけで、色ではない。**
+    const start = async () => {
+      const res = await fetch(cfg.styleUrl);
+      if (!res.ok) throw new Error(`スタイルを取得できません: ${cfg.styleUrl} -> HTTP ${res.status}`);
+      const style = JSON.parse((await res.text()).replaceAll('__TILES_URL__', cfg.tilesUrl));
 
-    map.addControl(new maplibregl.NavigationControl(), 'top-right');
-    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
+      const map = new maplibregl.Map({
+        container: 'map',
+        style,
+        center: [135.5023, 34.6937],   // 大阪
+        zoom: 12,
+        // 漢字・かなは閲覧側のフォントで描く（decisions.md 未決・S1 はこの道で通す）。
+        // グリフ PBF を配らずに済むが、**字形は閲覧環境ごとに変わる**（DESIGN.md §3 と衝突）。
+        localIdeographFontFamily: "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif",
+        // 帰属表示は必須（LICENSES.md）。既定の control を消さないこと。
+        attributionControl: { compact: false },
+      });
 
-    map.on('error', (e) => {
-      // グリフが 1 範囲でも 404 になると地図全体が真っ白になる。
-      // 黙って白くせず、何が落ちたかを出す。
-      console.error('[modern-map-japan] map error:', e && e.error ? e.error : e);
+      map.addControl(new maplibregl.NavigationControl(), 'top-right');
+      map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
+
+      map.on('error', (e) => {
+        // グリフが 1 範囲でも 404 になると地図全体が真っ白になる。
+        // 黙って白くせず、何が落ちたかを出す。
+        console.error('[modern-map-japan] map error:', e && e.error ? e.error : e);
+      });
+    };
+
+    start().catch((error) => {
+      // 取得に失敗したら、白い地図ではなく「無い」と言う画面に戻す。
+      console.error('[modern-map-japan]', error);
+      document.getElementById('notice').hidden = false;
     });
   }
 </script>
