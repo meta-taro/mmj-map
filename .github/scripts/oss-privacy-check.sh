@@ -9,6 +9,7 @@
 #   OSS_ALLOWED_AUTHOR_EMAIL_REGEX  commit author/committer に許可するメールの ERE
 #                                   既定: @users\.noreply\.github\.com$
 #   OSS_ALLOWED_EMAIL_DOMAINS       追加行・commit message で許可するメールドメイン（空白区切り）
+#   OSS_ALLOWED_EMAILS              同上を、ドメインではなくアドレス完全一致で許可（空白区切り）
 #   OSS_DENY_WORDS                  禁止語（実名等）を 1 行 1 語。CI では secrets から渡す
 #
 # 設計上の約束:
@@ -19,6 +20,10 @@ set -uo pipefail
 
 ALLOWED_AUTHOR_RE="${OSS_ALLOWED_AUTHOR_EMAIL_REGEX:-@users\.noreply\.github\.com$}"
 ALLOWED_DOMAINS="${OSS_ALLOWED_EMAIL_DOMAINS:-example.com example.org example.net users.noreply.github.com}"
+# 完全一致で許可するアドレス。commit message の Co-Authored-By トレーラに入る
+# 生成ツールの no-reply がここに該当する。ドメインごと許可すると、その組織の
+# 実在の個人アドレスまで通ってしまうため、値で許す。
+ALLOWED_EMAILS="${OSS_ALLOWED_EMAILS:-noreply@anthropic.com}"
 DENY_WORDS="${OSS_DENY_WORDS:-}"
 
 EMAIL_RE='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
@@ -33,11 +38,17 @@ mask_email() {
   sed -E 's/([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.([A-Za-z]{2,})/\1***@***.\2/g'
 }
 
+lower() { printf '%s' "$1" | tr 'A-Z' 'a-z'; }
+
 allowed_email() {
-  local e="$1" d
+  local e d
+  e="$(lower "$1")"
+  for a in $ALLOWED_EMAILS; do
+    [ "$e" = "$(lower "$a")" ] && return 0
+  done
   d="${e##*@}"
   for a in $ALLOWED_DOMAINS; do
-    [ "$(printf '%s' "$d" | tr 'A-Z' 'a-z')" = "$(printf '%s' "$a" | tr 'A-Z' 'a-z')" ] && return 0
+    [ "$d" = "$(lower "$a")" ] && return 0
   done
   return 1
 }

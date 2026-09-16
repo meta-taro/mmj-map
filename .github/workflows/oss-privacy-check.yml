@@ -31,6 +31,7 @@ jobs:
           OSS_DENY_WORDS: ${{ secrets.OSS_DENY_WORDS }}
           OSS_ALLOWED_AUTHOR_EMAIL_REGEX: ${{ vars.OSS_ALLOWED_AUTHOR_EMAIL_REGEX }}
           OSS_ALLOWED_EMAIL_DOMAINS: ${{ vars.OSS_ALLOWED_EMAIL_DOMAINS }}
+          OSS_ALLOWED_EMAILS: ${{ vars.OSS_ALLOWED_EMAILS }}
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: bash .github/scripts/oss-privacy-check.sh "$BASE_SHA" "$HEAD_SHA"
