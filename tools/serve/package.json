@@ -1,0 +1,18 @@
+{
+  "name": "@modern-map-japan/serve",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "手元の PMTiles とデモを HTTP Range 付きで配る開発用サーバー（本番の配信ではない）",
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}

@@ -13,6 +13,7 @@
     "typecheck": "pnpm -r typecheck",
     "tiles:resolve": "pnpm --filter @modern-map-japan/tiles-build run resolve",
     "tiles:extract": "pnpm --filter @modern-map-japan/tiles-build run extract",
-    "tiles:check-range": "pnpm --filter @modern-map-japan/tiles-build run check-range"
+    "tiles:check-range": "pnpm --filter @modern-map-japan/tiles-build run check-range",
+    "serve": "pnpm --filter @modern-map-japan/serve run dev"
   }
 }
