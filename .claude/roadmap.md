@@ -22,18 +22,33 @@
 **このスプリントの完了条件は 1 つ。「先行実装を一切参照せずに、地図が 1 枚出ること」。**
 
 - [x] pnpm workspace としてリポジトリの骨格を作る（2026-09-15）
-- [ ] 先行実装から次を取り出し、**そのサイト固有の語を外す**
-      — **切り出し元が渡っていないため着手できていません**（`.claude/project-status.md`）
-  - [ ] 手書きダークスタイル（JSON）
-  - [ ] タイル配信の経路（HTTP Range 206 を返す部分）
-        — 疎通確認だけ先に用意しました（`pnpm tiles:check-range`）
-  - [ ] グリフ取得 — **Protomaps 配布のフォントに CJK が無い**ことが判明（decisions.md 未決）
+- [x] ~~先行実装から取り出す~~ → **切り出し元が最後まで渡らなかったため、
+      取り出しではなく書き起こしになりました**（2026-09-16）。
+      結果として「先行実装を一切参照していない」ことは自動的に満たされています。
+  - [x] 手書きダークスタイル（JSON）— `styles/modern-dark.json`（22 レイヤ・自分で書いた）
+  - [x] タイル配信の経路（HTTP Range 206 を返す部分）
+        — 手元 `tools/serve` ／ 本番 `infra/pmtiles-worker`（R2）。
+        解釈は `packages/http-range` の 1 実装を共有。`pnpm tiles:check-range` で
+        **206 を実測済み**（kansai / japan とも）
+  - [x] グリフ取得 — **Protomaps 配布のフォントに CJK が無い**ため、
+        `localIdeographFontFamily` で閲覧側のフォントに逃がして通しました。
+        **これは決着ではありません**（decisions.md 未決・S3 で組版をどうするか決める）
 - [x] **タイル生成ワークフローは書き直す。** 先行実装のローカル生成スクリプトには
       特定の PC のパス前提が残っており、**再現可能ビルドの条件を満たしません**。
       公開データと公開ツールだけで完結する形に作り直します
-      → `tools/tiles` / `docs/tiles/README.md`（2026-09-15・**未実行**）
-- [ ] `apps/demo/` で**素の地図が 1 枚**出ることを確認する
-- [ ] 帰属表示（`© OpenStreetMap contributors`）が画面に出ていることを確認する
+      → `tools/tiles` / `docs/tiles/README.md`
+      （2026-09-16 に **kansai / japan とも実行済み**。`pmtiles verify` 通過）
+- [x] `apps/demo/` で**素の地図が 1 枚**出ることを確認する（2026-09-16）
+      — 実物は `docs/screenshots/`（大阪・梅田・関西・全国・東京・京都・那覇・札幌）
+- [x] 帰属表示（`© OpenStreetMap contributors`）が画面に出ていることを確認する
+      — 撮った 8 枚すべてに写っています
+
+### S1 の状態（2026-09-16）
+
+**完了条件「先行実装を一切参照せずに、地図が 1 枚出ること」は満たしました。**
+ただし **人が実物を見て良し悪しを言う工程が残っています**（ベースルール §29）。
+機械が撮れることと、地図として読めることは別です。
+見てほしい点は `docs/screenshots/README.md` の末尾にあります。
 
 ### 切り出さないもの
 
@@ -44,9 +59,14 @@
 
 ## S2 — UI 部品を Web Components にする
 
-- [ ] Marker / Popup / Cluster を Web Components として書く
+- [x] Map / Marker / Popup を Web Components として書く（2026-09-16・`packages/elements`）
+      — ビルド工程なし（素の ESM）。属性の解釈は純粋関数でテスト済み（14 件）。
+      実物は `docs/screenshots/2026-09-16-elements-*.jpg`
+- [ ] Cluster — MapLibre の GeoJSON source のクラスタリングを使う形を検討中
 - [ ] 永続レイアウト（地図の状態を保ったまま周りだけ差し替わる形）
-- [ ] **素の MapLibre を呼ぶのと変わらない厚さなら、そこで止める**（PRD §3）
+- [x] **素の MapLibre を呼ぶのと変わらない厚さなら、そこで止める**（PRD §3）
+      — **止めていません。**素の呼び出し 40 行に対し、部品を使うと 10 行。
+      差の中身と「ここから厚くしない」約束は `docs/elements/README.md` に書きました
 
 ## S3 — スタイルを作品として仕上げる
 

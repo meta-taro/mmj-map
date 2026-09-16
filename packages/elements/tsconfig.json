@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // **ビルド工程を持たない**ので、配るのは素の JS。型は JSDoc で書き、ここで検査する。
+    "allowJs": true,
+    "checkJs": true,
+    "lib": ["es2023", "dom"]
+  },
+  "include": ["src/**/*.js", "test/**/*.js"]
+}
