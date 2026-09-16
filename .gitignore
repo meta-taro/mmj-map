@@ -10,6 +10,10 @@ dist/tiles/
 *.log
 .DS_Store
 
+# キャプチャ用ブラウザの作業領域（pnpm shot が作る）。撮った画像は docs/screenshots/ へ
+.shot-profile/
+.tmp-shot/
+
 # ローカル秘密控え（🟡 識別子のみ・🔴 token/key は置かない）— commit 禁止
 SECRETS.local.md
 

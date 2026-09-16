@@ -88,6 +88,10 @@
         style,
         center: [135.5023, 34.6937],   // 大阪
         zoom: 12,
+        // URL の # で場所を持つ（例: #14/34.7055/135.4959）。
+        // **手元を見られない人へ「ここを見て」と渡せる形にするため**に入れている。
+        // 指定が無ければ上の center / zoom から始まる。
+        hash: true,
         // 漢字・かなは閲覧側のフォントで描く（decisions.md 未決・S1 はこの道で通す）。
         // グリフ PBF を配らずに済むが、**字形は閲覧環境ごとに変わる**（DESIGN.md §3 と衝突）。
         localIdeographFontFamily: "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif",
