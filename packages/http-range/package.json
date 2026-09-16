@@ -1,0 +1,19 @@
+{
+  "name": "@modern-map-japan/http-range",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "HTTP Range の解釈と応答の組み立て。手元の配信と本番の配信で同じものを使う",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}

@@ -166,6 +166,28 @@ importers:
 
   .: {}
 
+  infra/pmtiles-worker:
+    dependencies:
+      '@modern-map-japan/http-range':
+        specifier: workspace:*
+        version: link:../../packages/http-range
+    devDependencies:
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@types/node@26.5.1)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(tsx@4.23.13))
+
+  packages/http-range:
+    devDependencies:
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@types/node@26.5.1)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(tsx@4.23.13))
+
   tools/privacy-check:
     devDependencies:
       '@types/node':
@@ -182,6 +204,10 @@ importers:
         version: 5.0.0(@types/node@26.5.1)(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(tsx@4.23.13))
 
   tools/serve:
+    dependencies:
+      '@modern-map-japan/http-range':
+        specifier: workspace:*
+        version: link:../../packages/http-range
     devDependencies:
       '@types/node':
         specifier: ^26.5.1
