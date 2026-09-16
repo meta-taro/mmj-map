@@ -28,6 +28,8 @@ const port = readPort(process.argv.slice(2));
 const mounts: Mount[] = [
   { prefix: "/tiles", dir: resolve(repoRoot, "dist/tiles") },
   { prefix: "/styles", dir: resolve(repoRoot, "styles") },
+  // Web Components はビルドしない。**素の ESM をそのまま配る**（packages/elements/src）
+  { prefix: "/elements", dir: resolve(repoRoot, "packages/elements/src") },
   { prefix: "/", dir: resolve(repoRoot, "apps/demo") },
 ];
 
@@ -55,6 +57,7 @@ createStaticServer(mounts, { "/config.js": { type: "text/javascript; charset=utf
   console.log(`デモ:       http://localhost:${port}/`);
   console.log(`タイル:     http://localhost:${port}/tiles/${region}.pmtiles`);
   console.log(`スタイル:   http://localhost:${port}/styles/modern-dark.json`);
+  console.log(`部品の例:   http://localhost:${port}/elements.html`);
   console.log("");
   console.log("Range の疎通確認:");
   console.log(`  pnpm tiles:check-range -- http://localhost:${port}/tiles/${region}.pmtiles`);

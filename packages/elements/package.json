@@ -1,0 +1,20 @@
+{
+  "name": "@modern-map-japan/elements",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "HTML だけで地図を置ける Web Components（ビルド不要・素の ESM）",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./attrs": "./src/attrs.js"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}

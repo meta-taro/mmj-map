@@ -47,6 +47,14 @@ jobs:
           mkdir -p apps/demo/styles
           cp styles/*.json apps/demo/styles/
 
+      # 部品（Web Components）はビルドしない。素の ESM をそのまま同梱する。
+      # **参照だけ足してアップロードを忘れると、elements.html だけが実行時に壊れる**（§23）。
+      - name: Bundle the web components into the artifact
+        run: |
+          test -f packages/elements/src/index.js
+          mkdir -p apps/demo/elements
+          cp packages/elements/src/*.js apps/demo/elements/
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3

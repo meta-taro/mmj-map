@@ -26,3 +26,6 @@ SECRETS.local.md
 
 # deploy 時に styles/ から成果物へコピーする先。正本は リポジトリ直下の styles/
 apps/demo/styles/
+
+# deploy 時に packages/elements/src から成果物へコピーする先。正本は packages/elements/
+apps/demo/elements/

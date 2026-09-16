@@ -1,6 +1,6 @@
 # プロジェクトステータス — modern-map-japan
 
-- **現在フェーズ**: S1（切り出し）着手中
+- **現在フェーズ**: S1 は完了条件を満たした（**人の目視判定待ち**）。S2（UI 部品）に着手
 - **最終更新**: 2026-09-16
 
 ## 完了した作業
@@ -34,6 +34,10 @@
 - **本番の配信経路（`infra/pmtiles-worker`・2026-09-16）** — R2 の PMTiles を
   HTTP Range で配る Cloudflare Worker。**まだデプロイしていません**（鍵とドメインは人）。
   手順は `docs/serving/README.md`
+- **S2 の部品（`packages/elements`・2026-09-16）** — `<mmj-map>` / `<mmj-marker>` で
+  HTML だけで地図を置ける。**ビルド工程なし**（素の ESM）。実物は
+  `docs/screenshots/2026-09-16-elements-*.jpg`、使い方は `docs/elements/README.md`
+- **全国タイルを初めて地図として描いた（2026-09-16）** — 東京 / 京都 / 那覇 / 札幌 / 全国 z5
 - **Range の解釈を 1 か所へ寄せた（`packages/http-range`）** — 手元の配信と Worker が
   同じ実装を使う。別々に書くと、**手元では通って本番で 200 を返す**という壊れ方をする
 
@@ -85,12 +89,15 @@ Node は **管理者権限なし**で入れてある。公式 zip を SHA256 で
 
 privacy-check は 2 時間超かかっていたのを 1 パスへ書き直して 5 秒台になりました（`30e36e3`）。
 
-**未 push の commit はこの時点でありません**（`develop` は origin と一致）。
+**この時点で未 push の commit が 6 本あります。**上の結果は `fd6eaca` までのもので、
+以降の変更（スタイル修正・style-check・shot・Worker・部品）は **CI を通っていません**。
+push は人の確認後（baseline §6）。
 
 ## 止まっているもの（人にしかできない工程・baseline §29）
 
-1. **撮った地図を人が見て、良し悪しを言う。** 画像は `docs/screenshots/` にあります
-   （大阪 z12 / 梅田 z15 / 関西 z9・2026-09-16）。
+1. **撮った地図を人が見て、良し悪しを言う。** 画像は `docs/screenshots/` に 10 枚
+   あります（大阪 z12 / 梅田 z15 / 関西 z9 / 全国 z5 / 東京 / 京都 / 那覇 / 札幌 /
+   部品の例 2 枚・2026-09-16）。
    **撮れたことは、読めることの証明ではありません。**見てほしい点は
    `docs/screenshots/README.md` の末尾に 4 つ挙げてあります（ラベル密度・
    大阪市のラベルが衝突で消えている・z9 の緑の強さ・地名の扱い）。
@@ -173,9 +180,10 @@ privacy-check は 2 時間超かかっていたのを 1 パスへ書き直して
 | `tools/shot` | 1 | 13 |
 | `packages/http-range` | 2 | 18 |
 | `infra/pmtiles-worker` | 1 | 14 |
-| **合計** | **13** | **128 すべて通過** |
+| `packages/elements` | 1 | 14 |
+| **合計** | **14** | **142 すべて通過** |
 
-`pnpm -r typecheck` も 7 パッケージとも通過。
+`pnpm -r typecheck` も 8 パッケージとも通過。
 `tools/serve` の Range のテストは `packages/http-range` へ移りました（同じ実装を
 Worker も使うため）。**Worker のテストは Cloudflare へ繋がらない環境でも走ります**（§4）。
 
@@ -186,7 +194,7 @@ Worker も使うため）。**Worker のテストは Cloudflare へ繋がらな�
   **本番の配信先では未実行**。
 - `pnpm style:check` — 通過（`styles/modern-dark.json` 22 レイヤ・指摘なし）。
 - `apps/demo/` — 自動テストは無し。CI では config.js とスタイル検査で止めている。
-  **画面は誰も見ていない。**
+  描画は `pnpm shot` で撮って確かめている（10 枚）。**人はまだ見ていない。**
 
 ## Range の実測（2026-09-16・手元の `pnpm serve` に対して）
 
