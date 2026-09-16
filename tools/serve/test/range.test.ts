@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseRangeHeader } from "../src/range.js";
 import { resolveUnderMount } from "../src/server.js";
@@ -59,20 +60,25 @@ describe("parseRangeHeader", () => {
 });
 
 describe("resolveUnderMount", () => {
+  // **mount の dir を文字列で直書きしない。** "C:/repo/..." は Linux では絶対パスに
+  // ならず、resolve() が cwd を前置するため CI だけが落ちる（実際に落ちた）。
+  // 期待値も同じ resolve() で組み立て、OS に依存しない形にする。
+  const demoDir = resolve("apps/demo");
+  const tilesDir = resolve("dist/tiles");
+  const stylesDir = resolve("styles");
   const mounts = [
-    { prefix: "/", dir: "C:/repo/apps/demo" },
-    { prefix: "/tiles", dir: "C:/repo/dist/tiles" },
-    { prefix: "/styles", dir: "C:/repo/styles" },
+    { prefix: "/", dir: demoDir },
+    { prefix: "/tiles", dir: tilesDir },
+    { prefix: "/styles", dir: stylesDir },
   ];
-  const norm = (p: string | null) => (p === null ? null : p.replaceAll("\\", "/"));
 
   it("長い prefix を先に照合する", () => {
-    expect(norm(resolveUnderMount("/tiles/kansai.pmtiles", mounts))).toBe("C:/repo/dist/tiles/kansai.pmtiles");
-    expect(norm(resolveUnderMount("/styles/modern-dark.json", mounts))).toBe("C:/repo/styles/modern-dark.json");
+    expect(resolveUnderMount("/tiles/kansai.pmtiles", mounts)).toBe(resolve(tilesDir, "kansai.pmtiles"));
+    expect(resolveUnderMount("/styles/modern-dark.json", mounts)).toBe(resolve(stylesDir, "modern-dark.json"));
   });
 
   it("ルートは index.html に解く", () => {
-    expect(norm(resolveUnderMount("/", mounts))).toBe("C:/repo/apps/demo/index.html");
+    expect(resolveUnderMount("/", mounts)).toBe(resolve(demoDir, "index.html"));
   });
 
   it("mount の外へ出る要求を弾く（§21）", () => {
