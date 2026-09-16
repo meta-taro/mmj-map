@@ -85,6 +85,17 @@ pnpm tiles:check-range -- https://example.com/japan.pmtiles
 
 206 と `Content-Range: bytes ...` が返れば通ります。200 が返ったらその配信先は使えません。
 
+手元の配信（`pnpm serve`）に対しては **2026-09-16 に実際に通しました**。
+
+```
+GET http://localhost:8787/tiles/kansai.pmtiles  Range: bytes=0-15
+  status: 206
+  content-range: bytes 0-15/373534235
+  accept-ranges: bytes
+```
+
+**これは手元の配信が通っただけです。**本番の配信先は、決まってから同じ手順で通してください。
+
 ## 5. 帰属表示
 
 `© OpenStreetMap contributors` を画面から外さないでください（`LICENSES.md` / D-007）。
@@ -97,4 +108,7 @@ pnpm tiles:check-range -- https://example.com/japan.pmtiles
 - **グリフ（日本語）。** Protomaps が配っているフォントは Latin のみで、
   CJK のフォントスタックがありません。**1 範囲でも 404 になると地図全体が真っ白になります。**
 - **配信先。** 「すぐ試せる配信先」を用意するかどうかは未決です（`.claude/decisions.md` 未決）。
-- **スタイル JSON。** S1 で持ち込みます。
+- **画面を人が見ること。** 手元で `pnpm serve` すればデモは描けますが、
+  **まだ誰もブラウザで見ていません**（§29）。テストが通ることと、地図が読めることは別です。
+
+スタイル JSON は `styles/modern-dark.json` にあります。検査は `docs/styles/README.md`。

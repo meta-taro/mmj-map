@@ -19,6 +19,12 @@
 - oss-privacy-check の赤を直した（`OSS_ALLOWED_EMAILS` を追加）
 - **開発環境が動くようになった（2026-09-16）** — 下の「開発環境」を見ること
 - **`tools/tiles` のテストを初めて実行した（2026-09-16）** — 下の「テスト状況」
+- **手書きスタイルの 1 枚目（`styles/modern-dark.json`・22 レイヤ）**
+- **手元の配信（`tools/serve`）** — `pnpm serve` で `dist/tiles` / `styles` / `apps/demo` を
+  Range 付きで配る。**本番の配信ではない**
+- **`pnpm tiles:check-range` を初めて通した（2026-09-16）** — 下の「Range の実測」
+- **スタイルの検査（`tools/style-check`・2026-09-16）** — スタイルが pin したビルドの
+  中身と噛み合っているかを CI で止める（`pnpm style:check`・`docs/styles/README.md`）
 
 ## 開発環境（2026-09-16 時点・実測）
 
@@ -48,39 +54,60 @@ Node は **管理者権限なし**で入れてある。公式 zip を SHA256 で
 
 ## 未完了の作業
 
-- 先行実装からの切り出し（スタイル JSON / 配信経路 / グリフ）— 着手できていません
-- `apps/demo/` で素の地図を 1 枚出す
+- **人が画面を見ること。** 手元では `pnpm serve` で描ける状態ですが、
+  **まだ誰もブラウザで見ていません**（§29）。ここが S1 の実質的な残りです
+- 日本語グリフの方針（`localIdeographFontFamily` で逃げている・未決）
+- 公開の配信先（未決）。決まるまで GitHub Pages のデモは案内画面のまま
 - lint（eslint）と Git hooks — 未整備
 
 ## CI の状況（2026-09-16 時点）
 
-| workflow | 最後に走った commit | 結果 |
-| --- | --- | --- |
-| oss-privacy-check | 02daccd | failure → 修正済み・**CI 上では未検証** |
-| Deploy demo to GitHub Pages | 02daccd | success |
-| CI（typecheck / test） | — | **1 度も走っていません**（未 push のため） |
+最後に走ったのは `fd6eaca`。**3 つとも success**。
 
-**手元では typecheck / test / `--frozen-lockfile` install がすべて通っています。**
-CI で初めて走るときの結果は、push 後に確認します。
+| workflow | 結果 | 所要 |
+| --- | --- | --- |
+| CI（typecheck / test） | success | 16s |
+| Deploy demo to GitHub Pages | success | 16s |
+| oss-privacy-check | success | 8s |
+
+privacy-check は 2 時間超かかっていたのを 1 パスへ書き直して 5 秒台になりました（`30e36e3`）。
+
+**未 push の commit はこの時点でありません**（`develop` は origin と一致）。
 
 ## 止まっているもの（人にしかできない工程・baseline §29）
 
-1. **未 push の commit を確認して push する。** これが済むまで CI の初回結果が出ません。
-2. **先行実装のソースを渡す。** S1 の完了条件は「先行実装を一切参照せずに地図が 1 枚出ること」ですが、
-   切り出し元がこのリポにもマシンにも無く、場所の記録もありません。
-   最低限、**手書きダークスタイルの JSON** が要ります。
-3. **日本語グリフの方針**（`.claude/decisions.md` 未決）。S1 の間に止めるかどうか。
-4. **デザインの色を決める**（`DESIGN.md` の記入待ち欄）。提案は
+1. **ブラウザで地図を見る。** ここが最大の停滞です。手元の道具は揃っていて、
+   下の 2 コマンドで描けるところまで来ていますが、**実物を見た人がまだ 0 人**です。
+   テストが通ることと、地図が読めることは別です。
+
+   ```bash
+   pnpm serve                  # http://localhost:8787/
+   # 別のシェルで
+   pnpm tiles:check-range -- http://localhost:8787/tiles/kansai.pmtiles
+   ```
+
+   見てほしいのは、**字が出ているか**（グリフ）・**重なって読めなくないか**・
+   **暗さが強すぎないか**の 3 点です。検査では分かりません。
+2. **デザインの色を決める**（`DESIGN.md` の記入待ち欄）。提案は
    `.claude/proposals/2026-09-16-design-umeda-namba.md` に置いてあります。
    **AI は `DESIGN.md` に手を入れません**（baseline §11）。
+   いまスタイルに入っている色は**提案であって、承認された色ではありません**。
+3. **日本語グリフの方針**（`.claude/decisions.md` 未決）。
+   いまは `localIdeographFontFamily` で閲覧側のフォントに逃げています。
+   **字形が閲覧環境ごとに変わる**ため、`DESIGN.md` §3 と衝突したままです。
+4. **公開の配信先**（未決）。決まるまで Pages のデモは案内画面のままです。
+5. **提案 4 本の可否**（`.claude/proposals/`）。うち `release-plan` は
+   「2 媒体がタイルを自分で配信するか」の答え待ちで、そこで順序が変わります。
 
 ## 次のタスク
 
-1. push 後の CI を読み、赤なら直す（§20）
-2. 梅田〜難波の提案 3 本について、進めるかどうかの判断をもらう
-   （`.claude/proposals/`）
-3. `apps/demo/` を、手元の `dist/tiles/kansai.pmtiles` で 1 枚描くところまで繋ぐ
-4. 配信先が決まったら `pnpm tiles:check-range` を通す（**まだ 1 度も走っていない**）
+1. **人が `pnpm serve` で画面を見る**（上の「止まっているもの」1）
+2. 提案 4 本について、進めるかどうかの判断をもらう（`.claude/proposals/`）
+3. 配信先が決まったら、その URL で `pnpm tiles:check-range` を通す
+   （**手元では通ったが、本番の配信先では未実行**）
+4. `PRD.md` と `.claude/decisions.md` の食い違い（ダーク / ライトの 1 枚目）を解消する
+5. フィルタが実際に何件拾うかを数える道具（いまはタイルを開いて手で数えている）。
+   **やるなら提案を先に出す**
 
 ## 切り出しの実測値（2026-09-16・Node 24.19.0 / go-pmtiles 1.31.2）
 
@@ -107,24 +134,62 @@ CI で初めて走るときの結果は、push 後に確認します。
 - `2026-09-16-osm-3tile-probe.md` — z14 の 3 タイルで OSM 由来の属性を実測する
 - `2026-09-16-design-umeda-namba.md` — ダーク / ライト 2 枚のデザイン提案
 
-## テスト状況
+## テスト状況（2026-09-16・手元で実行）
 
-- `tools/tiles` — **2026-09-16 に初めて実行。5 ファイル / 45 テストすべて通過**
-  （vitest 5.0.0 / Node 24.21.0 / 所要 333ms）。
-  `pnpm -r typecheck` も通過。
-- `pnpm tiles:resolve` — **実行済み。**pin（`20260915.pmtiles` / basemap 4.15.2）が
+| パッケージ | ファイル | テスト |
+|---|---|---|
+| `tools/tiles` | 5 | 45 |
+| `tools/serve` | 1 | 16 |
+| `tools/privacy-check` | 1 | 16 |
+| `tools/style-check` | 2 | 18 |
+| **合計** | **9** | **95 すべて通過** |
+
+`pnpm -r typecheck` も 4 パッケージとも通過。
+
+- `pnpm tiles:resolve` — 実行済み。pin（`20260915.pmtiles` / basemap 4.15.2）が
   上流の索引と一致することを確認。
-- `pnpm tiles:extract` — **2026-09-16 に kansai / japan とも完走。`pmtiles verify` 通過。**
-  実測は下記「切り出しの実測値」。
-- `pnpm tiles:check-range` — **未実行**（配信先が未決のため試す URL が無い）。
-- `.github/scripts/oss-privacy-check.sh` — 自動テストは無し。手動実行で赤→緑を確認済み。
-- `apps/demo/` — 未整備。
+- `pnpm tiles:extract` — kansai / japan とも完走。`pmtiles verify` 通過。
+- `pnpm tiles:check-range` — **手元の配信に対して初通過**（下記「Range の実測」）。
+  **本番の配信先では未実行**。
+- `pnpm style:check` — 通過（`styles/modern-dark.json` 22 レイヤ・指摘なし）。
+- `apps/demo/` — 自動テストは無し。CI では config.js とスタイル検査で止めている。
+  **画面は誰も見ていない。**
+
+## Range の実測（2026-09-16・手元の `pnpm serve` に対して）
+
+```
+GET http://localhost:8787/tiles/kansai.pmtiles  Range: bytes=0-15
+  status: 206
+  content-range: bytes 0-15/373534235
+  accept-ranges: bytes
+```
+
+**手元の配信が 206 を返しただけです。**本番の配信先は、決まってから同じ手順で通すこと。
+
+## スタイルの実測（2026-09-16・`dist/tiles/kansai.pmtiles`）
+
+スタイルが参照する 9 つの `source-layer` は、pin したビルドに**全部あります**。
+グリフ（`Noto Sans Regular` の 0-255 / 256-511）も **HTTP 200** で引けました。
+
+タイルを開いて数えた結果、**バグが 1 件出ました**。
+駅ラベルは `min_zoom` を見ているのに、地名ラベルは見ていませんでした。
+
+- z12 の大阪（`12/3589/1626`）で `label-place-city` が 6 件 → うち 4 件が `min_zoom 13` の
+  **道頓堀 / 本坊庭園 / 中心伽藍 / でんでん**。寺の庭が「大阪市」と同じ重みで出ていた
+- 直した結果、z12 で出るのは **大阪市（mz3）/ 吹田市（mz8）の 2 件**
+- `label-water` にも同じ守りを足した（実測した 3 タイルでは差は出ない。
+  上流の判断を捨てないための揃え）
+- **同じ抜けが再発したら CI が落ちる**（`tools/style-check`）
 
 ## 既知の問題
 
-- **ベースタイルの配信先が未決。** デモは配信先が決まるまで地図を描けません。
+- **ベースタイルの配信先が未決。** 公開デモは配信先が決まるまで地図を描けません
+  （手元は `pnpm serve` で描けます）。
 - **日本語グリフが無い。** Protomaps が配るフォントは Latin のみで、CJK のスタックがありません。
-  1 範囲でも 404 になると地図全体が真っ白になります。
+  いまは `localIdeographFontFamily` で閲覧側のフォントに逃げているため真っ白にはなりませんが、
+  **字形は閲覧環境ごとに変わります**。ラテン側のグリフは 200 で引けることを確認済み
+  （`Noto Sans Regular` の 0-255 / 256-511）。**1 範囲でも 404 になれば地図全体が白くなる**
+  という性質自体は変わっていません。
 - **上流の索引 `build-metadata.protomaps.dev/builds.json` は文書化された API ではありません。**
   消えた場合は `pnpm tiles:resolve` が落ちて気づけるようにしてあります。
 - **go-pmtiles は checksums を公開していません。** リリース資産は各 OS の
