@@ -177,8 +177,13 @@ done < <(git ls-files --others --exclude-standard)
 # **誤検出だらけで検査が信用されなくなる**（実際にそうなった）。
 AWK_EMAIL_RE='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z][A-Za-z]+'
 
+# 同じ理由で、既存のパターンを awk へ渡すときもバックスラッシュを増やす。
+# SELF_RE をそのまま渡すと `\.` が `.` に潰れ、除外パターンが緩くなるうえ
+# 実行のたびに awk の警告が出る（**警告で出力が汚れると、本物の NG が埋もれる**）。
+AWK_SELF_RE="${SELF_RE//\\/\\\\}"
+
 hits="$(printf '%s\n' "$diff_out" | awk \
-  -v self_re="$SELF_RE" -v email_re="$AWK_EMAIL_RE" -v deny="$DENY_WORDS" '
+  -v self_re="$AWK_SELF_RE" -v email_re="$AWK_EMAIL_RE" -v deny="$DENY_WORDS" '
   BEGIN {
     dn = split(deny, dw, "\n")
     for (i = 1; i <= dn; i++) dwl[i] = tolower(dw[i])
