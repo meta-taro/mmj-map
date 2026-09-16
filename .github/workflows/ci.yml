@@ -21,15 +21,16 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
+      # **手元と同じ系列を使う。** 開発機は 24.21.0（LTS）。
+      # ここが手元とずれていると、CI を最終ゲートにする意味が薄れる（§5 / §20）。
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
-      # TODO(lockfile): pnpm-lock.yaml が commit されたら `--frozen-lockfile` に戻す。
-      # 開発機に Node が無く lockfile を生成できないため、いまは作らせている。
-      # lockfile が無いあいだ、依存は解決のたびに動きうる。
-      - run: pnpm install --no-frozen-lockfile
+      # lockfile を commit したので frozen に戻した（2026-09-16）。
+      # **落ちたら直すのは lockfile 側**で、ここを緩めて通さない。
+      - run: pnpm install --frozen-lockfile
 
       - run: pnpm -r typecheck
 

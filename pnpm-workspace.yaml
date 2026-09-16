@@ -3,8 +3,20 @@ packages:
   - "packages/*"
   - "tools/*"
 
-# ベースルール §1 の防御設定。**package.json の `pnpm` 欄にも同じものを書いてあります。**
-# pnpm 10 以降はこちら（workspace 側）を読むため、片方だけだと黙って効かなくなります。
-# 「設定してあるのに効いていない」は、無いより悪い。
+# ベースルール §1 の防御設定。**設定はここ 1 か所だけ**に置きます。
+# pnpm 12 は package.json の `pnpm` 欄を読まず、警告を出して無視します
+# （実測: `[WARN] The "pnpm" field in package.json is no longer read by pnpm`）。
+# 両方に書くと「設定してあるのに効いていない」側が残るため、package.json からは外しました。
+#
+# 効いていることの実測（2026-09-16）: `pnpm install` が
+# `ERR_PNPM_NO_MATURE_MATCHING_VERSION` で停止し、公開から 24 時間未満のパッケージを
+# 実際に弾きました。**この設定は飾りではありません。**
 onlyBuiltDependencies: []
 minimumReleaseAge: 1440
+# install script の実行可否を、依存ごとに明示する。**既定は false。**
+# esbuild は tsx / vitest の推移依存で入ってくる。postinstall を走らせなくても、
+# プラットフォーム別パッケージ（@esbuild/win32-x64 等）からバイナリが解決されるため
+# 動く。**動くなら走らせない**（ベースルール §1 の install script ホワイトリスト）。
+# ここを true にするのは、走らせないと動かないと分かったときだけ。
+allowBuilds:
+  esbuild: false
