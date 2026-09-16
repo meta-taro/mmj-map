@@ -1,0 +1,23 @@
+# Cloudflare Worker の設定。**秘密情報はここに書かない**（ベースルール §14）。
+# アカウント ID・API トークン・独自ドメインは、人が `wrangler login` か
+# 環境変数（CLOUDFLARE_API_TOKEN）で投入します。AI は値を作りません。
+
+name = "mmj-pmtiles"
+main = "src/worker.ts"
+compatibility_date = "2026-09-01"
+
+# 配信するバケツ。**bucket_name は作ったバケツの名前に合わせて人が直す。**
+# binding 名（TILES）はコードと対応しているので変えないこと。
+[[r2_buckets]]
+binding = "TILES"
+bucket_name = "modern-map-japan-tiles"
+
+[vars]
+# 読ませるオリジン。ベースデータは ODbL で隠す対象ではないため既定は "*"。
+# 絞るなら、デモの配信元（GitHub Pages のドメイン）を入れる。
+ALLOW_ORIGIN = "*"
+
+# 独自ドメインを当てるときに外す。**ドメインを取ってから。**
+# [[routes]]
+# pattern = "tiles.example.com"
+# custom_domain = true

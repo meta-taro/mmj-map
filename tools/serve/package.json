@@ -14,5 +14,8 @@
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0"
+  },
+  "dependencies": {
+    "@modern-map-japan/http-range": "workspace:*"
   }
 }

@@ -31,6 +31,11 @@
 - **キャプチャの道具（`tools/shot`）** — `pnpm shot -- <URL> <出力先>`。
   手元を見られない人へ実物を渡すため。依存は足していない（機械のブラウザを CDP で動かす）
 - **デモが URL で場所を持つようになった** — `#zoom/lat/lon`（例: `#15/34.7024/135.4959`）
+- **本番の配信経路（`infra/pmtiles-worker`・2026-09-16）** — R2 の PMTiles を
+  HTTP Range で配る Cloudflare Worker。**まだデプロイしていません**（鍵とドメインは人）。
+  手順は `docs/serving/README.md`
+- **Range の解釈を 1 か所へ寄せた（`packages/http-range`）** — 手元の配信と Worker が
+  同じ実装を使う。別々に書くと、**手元では通って本番で 200 を返す**という壊れ方をする
 
 ## 開発環境（2026-09-16 時点・実測）
 
@@ -60,10 +65,12 @@ Node は **管理者権限なし**で入れてある。公式 zip を SHA256 で
 
 ## 未完了の作業
 
-- **人が画面を見ること。** 手元では `pnpm serve` で描ける状態ですが、
-  **まだ誰もブラウザで見ていません**（§29）。ここが S1 の実質的な残りです
+- **人が実物を見て判断すること。** 地図は描けていて、キャプチャも
+  `docs/screenshots/` にありますが、**見て良し悪しを言った人がまだいません**（§29）。
+  ここが S1 の実質的な残りです
 - 日本語グリフの方針（`localIdeographFontFamily` で逃げている・未決）
-- 公開の配信先（未決）。決まるまで GitHub Pages のデモは案内画面のまま
+- **配信先を立てること**（R2 + Worker・コードは出来ている／デプロイが未）。
+  それまで GitHub Pages のデモは案内画面のまま
 - lint（eslint）と Git hooks — 未整備
 
 ## CI の状況（2026-09-16 時点）
@@ -101,7 +108,17 @@ privacy-check は 2 時間超かかっていたのを 1 パスへ書き直して
 3. **日本語グリフの方針**（`.claude/decisions.md` 未決）。
    いまは `localIdeographFontFamily` で閲覧側のフォントに逃げています。
    **字形が閲覧環境ごとに変わる**ため、`DESIGN.md` §3 と衝突したままです。
-4. **公開の配信先**（未決）。決まるまで Pages のデモは案内画面のままです。
+4. **配信先を実際に立てる（鍵は人・§14）。** 方針は **Cloudflare R2 + Worker** と
+   指示がありました（2026-09-16）。**GitHub Pages にはタイルを置けません**
+   （1 ファイル 100 MB 上限に対し kansai 373 MB / japan 3.6 GB）。
+   人がやる工程は 3 つです。
+
+   1. R2 にバケツを作り、`dist/tiles/*.pmtiles` を上げる（大きいので多部アップロード）
+   2. `infra/pmtiles-worker` を `wrangler deploy` で出す（ドメインを当てる）
+   3. `pnpm tiles:check-range -- https://<配信先>/kansai.pmtiles` で **206 を確認する**
+
+   そのあと `apps/demo/config.js` の `tilesUrl` を配信先へ向ければ、
+   公開デモが地図を描きます。手順は `docs/serving/README.md`。
 5. **提案 4 本の可否**（`.claude/proposals/`）。うち `release-plan` は
    「2 媒体がタイルを自分で配信するか」の答え待ちで、そこで順序が変わります。
 
@@ -140,20 +157,27 @@ privacy-check は 2 時間超かかっていたのを 1 パスへ書き直して
 
 - `2026-09-16-umeda-namba.md` — S1 の 1 枚目を梅田〜難波の bbox にする
 - `2026-09-16-osm-3tile-probe.md` — z14 の 3 タイルで OSM 由来の属性を実測する
+  （**この提案の中身は実施済み**。実測は下の「スタイルの実測」）
 - `2026-09-16-design-umeda-namba.md` — ダーク / ライト 2 枚のデザイン提案
+- `2026-09-16-label-mode.md` — ラベルを日本語のみ / インバウンドのモードで持つ
+- `2026-09-16-release-plan.md` — pnpm 配布を第一ゴールに置いたときのリリース計画
 
 ## テスト状況（2026-09-16・手元で実行）
 
 | パッケージ | ファイル | テスト |
 |---|---|---|
 | `tools/tiles` | 5 | 45 |
-| `tools/serve` | 1 | 16 |
+| `tools/serve` | 1 | 4 |
 | `tools/privacy-check` | 1 | 16 |
 | `tools/style-check` | 2 | 18 |
 | `tools/shot` | 1 | 13 |
-| **合計** | **10** | **108 すべて通過** |
+| `packages/http-range` | 2 | 18 |
+| `infra/pmtiles-worker` | 1 | 14 |
+| **合計** | **13** | **128 すべて通過** |
 
-`pnpm -r typecheck` も 5 パッケージとも通過。
+`pnpm -r typecheck` も 7 パッケージとも通過。
+`tools/serve` の Range のテストは `packages/http-range` へ移りました（同じ実装を
+Worker も使うため）。**Worker のテストは Cloudflare へ繋がらない環境でも走ります**（§4）。
 
 - `pnpm tiles:resolve` — 実行済み。pin（`20260915.pmtiles` / basemap 4.15.2）が
   上流の索引と一致することを確認。
@@ -192,7 +216,8 @@ GET http://localhost:8787/tiles/kansai.pmtiles  Range: bytes=0-15
 
 ## 既知の問題
 
-- **ベースタイルの配信先が未決。** 公開デモは配信先が決まるまで地図を描けません
+- **ベースタイルの配信先がまだ立っていません。** 方針は R2 + Worker（上記）ですが、
+  **バケツもドメインも未作成**です。公開デモはそれまで案内画面のままです
   （手元は `pnpm serve` で描けます）。
 - **日本語グリフが無い。** Protomaps が配るフォントは Latin のみで、CJK のスタックがありません。
   いまは `localIdeographFontFamily` で閲覧側のフォントに逃げているため真っ白にはなりませんが、
