@@ -24,12 +24,18 @@ const TYPES: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".geojson": "application/geo+json; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".pmtiles": "application/octet-stream",
   ".pbf": "application/x-protobuf",
   ".svg": "image/svg+xml",
   ".png": "image/png",
 };
+
+/** 拡張子から content-type を決める。**知らないものは octet-stream**（憶測で型を付けない） */
+export function contentTypeFor(file: string): string {
+  return TYPES[extname(file).toLowerCase()] ?? "application/octet-stream";
+}
 
 /** URL を、mount の外へ出られない実ファイルパスへ解く。解けなければ null */
 export function resolveUnderMount(urlPath: string, mounts: readonly Mount[]): string | null {
@@ -95,7 +101,7 @@ async function handle(
     return send(res, 404, "not found");
   }
 
-  const type = TYPES[extname(file).toLowerCase()] ?? "application/octet-stream";
+  const type = contentTypeFor(file);
   const range = parseRangeHeader(req.headers.range, size);
 
   if (range.kind === "unsatisfiable") {

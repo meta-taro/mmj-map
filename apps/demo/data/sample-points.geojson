@@ -1,0 +1,2806 @@
+{
+ "type": "FeatureCollection",
+ "note": "クラスタ表示の確認用に作った合成データ。実在の施設・店舗ではない。生成手順は apps/demo/data/README.md",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 1",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49663,
+     34.70793
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 2",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49507,
+     34.6969
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 3",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49364,
+     34.69498
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 4",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48899,
+     34.70022
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 5",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48669,
+     34.69985
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 6",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50177,
+     34.70993
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 7",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.4858,
+     34.69518
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 8",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50463,
+     34.69508
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 9",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50244,
+     34.70822
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 10",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49352,
+     34.69767
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 11",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50784,
+     34.70796
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 12",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50524,
+     34.69554
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 13",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49529,
+     34.70481
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 14",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48733,
+     34.70851
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 15",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50614,
+     34.69753
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 16",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50635,
+     34.70486
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 17",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50374,
+     34.70024
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 18",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48963,
+     34.70035
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 19",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48982,
+     34.69589
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 20",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49177,
+     34.69857
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 21",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50473,
+     34.70908
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 22",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50662,
+     34.70224
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 23",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49473,
+     34.70395
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 24",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50742,
+     34.70375
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 25",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50411,
+     34.69656
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 26",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50284,
+     34.7006
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 27",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49723,
+     34.70771
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 28",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50692,
+     34.69935
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 29",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49214,
+     34.69923
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 30",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50624,
+     34.70441
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 31",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50763,
+     34.69456
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 32",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50191,
+     34.70118
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 33",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48493,
+     34.69929
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 34",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50656,
+     34.70871
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 35",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50075,
+     34.70703
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 36",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49672,
+     34.70431
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 37",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50639,
+     34.70685
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 38",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48695,
+     34.70078
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 39",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49061,
+     34.70491
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 40",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5063,
+     34.69868
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 41",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48399,
+     34.69946
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 42",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48791,
+     34.69707
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 43",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49279,
+     34.6937
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 44",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48931,
+     34.71049
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 45",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50435,
+     34.70264
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 46",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49966,
+     34.6951
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 47",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48728,
+     34.70226
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 48",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50654,
+     34.71048
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 49",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49221,
+     34.70323
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 50",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49201,
+     34.71039
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 51",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50052,
+     34.6975
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 52",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49041,
+     34.69888
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 53",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48785,
+     34.70865
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 54",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49215,
+     34.69775
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 55",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49695,
+     34.69444
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 56",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49144,
+     34.71081
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 57",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48773,
+     34.69366
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 58",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48806,
+     34.71165
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 59",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49789,
+     34.69463
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 60",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49065,
+     34.70365
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 61",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49083,
+     34.70935
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 62",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49409,
+     34.69916
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 63",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49797,
+     34.70754
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 64",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49801,
+     34.70475
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 65",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48836,
+     34.69583
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 66",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49756,
+     34.70519
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 67",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49078,
+     34.70351
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 68",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50328,
+     34.69577
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 69",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49629,
+     34.70535
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 70",
+    "group": "梅田"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48945,
+     34.70976
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 71",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50871,
+     34.66935
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 72",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51008,
+     34.66541
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 73",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49728,
+     34.67115
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 74",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50545,
+     34.6617
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 75",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51046,
+     34.66541
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 76",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50263,
+     34.66133
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 77",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50054,
+     34.6686
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 78",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49884,
+     34.67103
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 79",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50696,
+     34.66818
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 80",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50199,
+     34.66699
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 81",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50523,
+     34.66471
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 82",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49804,
+     34.66543
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 83",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51002,
+     34.66852
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 84",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51207,
+     34.66118
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 85",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49454,
+     34.6611
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 86",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49449,
+     34.66924
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 87",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49252,
+     34.65844
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 88",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.4962,
+     34.66503
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 89",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50032,
+     34.66832
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 90",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50149,
+     34.66145
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 91",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50851,
+     34.66856
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 92",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5089,
+     34.66659
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 93",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49987,
+     34.65981
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 94",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50202,
+     34.66426
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 95",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50359,
+     34.67157
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 96",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49847,
+     34.6696
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 97",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51133,
+     34.67012
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 98",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49915,
+     34.66369
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 99",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51216,
+     34.67219
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 100",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50687,
+     34.66133
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 101",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50428,
+     34.66329
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 102",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50155,
+     34.67317
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 103",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49249,
+     34.66998
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 104",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5078,
+     34.6696
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 105",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49882,
+     34.66716
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 106",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49252,
+     34.6697
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 107",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51048,
+     34.66077
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 108",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5093,
+     34.67124
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 109",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51034,
+     34.66282
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 110",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50414,
+     34.66893
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 111",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49817,
+     34.66737
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 112",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50825,
+     34.67359
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 113",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49296,
+     34.66662
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 114",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51193,
+     34.66877
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 115",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49382,
+     34.65908
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 116",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49809,
+     34.66155
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 117",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49879,
+     34.66824
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 118",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51017,
+     34.6641
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 119",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51202,
+     34.65898
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 120",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50436,
+     34.67022
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 121",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49714,
+     34.67381
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 122",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50179,
+     34.66089
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 123",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50631,
+     34.67221
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 124",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50245,
+     34.66229
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 125",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49381,
+     34.66513
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 126",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50281,
+     34.67188
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 127",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5086,
+     34.6651
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 128",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50944,
+     34.65948
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 129",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50747,
+     34.65892
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 130",
+    "group": "難波"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50735,
+     34.66191
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 131",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52045,
+     34.68584
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 132",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52509,
+     34.69368
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 133",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53349,
+     34.68441
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 134",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5267,
+     34.68568
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 135",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52324,
+     34.68708
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 136",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51914,
+     34.68942
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 137",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53347,
+     34.68934
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 138",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52073,
+     34.68815
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 139",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53117,
+     34.68387
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 140",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52893,
+     34.68844
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 141",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52629,
+     34.68906
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 142",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52156,
+     34.69241
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 143",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52626,
+     34.68913
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 144",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52357,
+     34.69114
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 145",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52996,
+     34.68257
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 146",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53018,
+     34.69062
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 147",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53089,
+     34.68318
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 148",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51928,
+     34.68678
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 149",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52503,
+     34.68585
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 150",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52377,
+     34.68166
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 151",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52431,
+     34.69359
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 152",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52644,
+     34.68967
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 153",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53005,
+     34.68319
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 154",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53227,
+     34.69165
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 155",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53339,
+     34.68613
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 156",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51983,
+     34.68176
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 157",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52445,
+     34.68377
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 158",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52499,
+     34.69357
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 159",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52649,
+     34.68155
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 160",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52071,
+     34.68904
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 161",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53181,
+     34.6896
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 162",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52911,
+     34.68543
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 163",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52769,
+     34.68947
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 164",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5201,
+     34.68593
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 165",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5287,
+     34.69079
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 166",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52017,
+     34.6814
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 167",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.51992,
+     34.69222
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 168",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53002,
+     34.6813
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 169",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.52486,
+     34.68389
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 170",
+    "group": "大阪城"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.53028,
+     34.68116
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 171",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49362,
+     34.57794
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 172",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.47887,
+     34.5811
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 173",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48477,
+     34.57625
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 174",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.47236,
+     34.58728
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 175",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.46418,
+     34.55806
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 176",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49132,
+     34.58465
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 177",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50049,
+     34.56083
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 178",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.46431,
+     34.58542
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 179",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49796,
+     34.56828
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 180",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.47846,
+     34.58415
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 181",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49527,
+     34.57357
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 182",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.46814,
+     34.57512
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 183",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49685,
+     34.55969
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 184",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49622,
+     34.5658
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 185",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50257,
+     34.58325
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 186",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48137,
+     34.56936
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 187",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.47802,
+     34.56215
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 188",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49036,
+     34.58812
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 189",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49192,
+     34.58846
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 190",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.50225,
+     34.57623
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 191",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49158,
+     34.56466
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 192",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.46931,
+     34.57265
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 193",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48184,
+     34.57149
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 194",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.5002,
+     34.58919
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 195",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49059,
+     34.56924
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 196",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48718,
+     34.55784
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 197",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.46845,
+     34.56877
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 198",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49116,
+     34.56386
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 199",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.49205,
+     34.58885
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "name": "サンプル点 200",
+    "group": "堺"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.46551,
+     34.58861
+    ]
+   }
+  }
+ ]
+}
