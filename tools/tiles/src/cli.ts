@@ -104,6 +104,8 @@ async function commandExtract(argv: readonly string[]): Promise<number> {
   const commandFlag = getFlag(argv, "command");
 
   const plan = planExtract(manifest, regionName, outDir, {
+    // region の相対パスは manifest のある場所から解く（叩いた場所に依存させない）
+    manifestDir: packageRoot,
     ...(commandFlag === undefined ? {} : { command: commandFlag }),
     ...(bboxFlag === undefined ? {} : { bbox: parseBBoxString(bboxFlag) }),
   });

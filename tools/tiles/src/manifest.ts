@@ -16,7 +16,16 @@ export interface PinnedSource {
 }
 
 export interface Region {
+  /**
+   * 領域を囲む四隅。**region があっても消さない。**
+   * 「この region は何を囲っているつもりか」を 1 行で読めるようにしておくため。
+   */
   readonly bbox: BBox;
+  /**
+   * 切り出す形（GeoJSON MultiPolygon ファイル）。manifest からの相対パス。
+   * **bbox 1 個だと海まで抱える**ので、複数の四角で囲って落とす。
+   */
+  readonly region?: string;
   readonly output: string;
   readonly maxzoom?: number;
   readonly note?: string;
@@ -61,6 +70,15 @@ function parseRegion(raw: unknown, name: string): Region {
   const bbox = parseBBox(record["bbox"], `regions.${name}.bbox`);
   const output = requireString(record, "output", `regions.${name}`);
 
+  const regionRaw = record["region"];
+  if (regionRaw !== undefined && typeof regionRaw !== "string") {
+    throw new TypeError(`regions.${name}.region が文字列ではありません`);
+  }
+  if (typeof regionRaw === "string" && (regionRaw.startsWith("/") || regionRaw.includes(".."))) {
+    // manifest の外を指させない（§21: 入力を信用しない）
+    throw new TypeError(`regions.${name}.region は manifest からの相対パスで書いてください: ${regionRaw}`);
+  }
+
   if (output.includes("/") || output.includes("\\") || output.includes("..")) {
     // 出力名がパスを含むと、manifest を書き換えるだけで任意の場所へ書ける。
     throw new TypeError(`regions.${name}.output にパス区切りは書けません: ${output}`);
@@ -77,6 +95,7 @@ function parseRegion(raw: unknown, name: string): Region {
 
   return {
     bbox,
+    ...(typeof regionRaw === "string" ? { region: regionRaw } : {}),
     output,
     ...(typeof maxzoomRaw === "number" ? { maxzoom: maxzoomRaw } : {}),
     ...(note === undefined ? {} : { note }),
