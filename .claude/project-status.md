@@ -99,7 +99,8 @@ Node は **管理者権限なし**で入れてある。公式 zip を SHA256 で
 
 privacy-check は 2 時間超かかっていたのを 1 パスへ書き直して 5 秒台になりました（`30e36e3`）。
 
-**この時点で未 push の commit が 7 本あります。**上の結果は `fd6eaca` までのもので、
+**未 push の commit があります**（本数は `git rev-list --count origin/develop..HEAD`。
+数を本文へ書くと、その修正自体で 1 本増えて必ずずれる）。上の結果は `fd6eaca` までのもので、
 以降の変更（スタイル修正・style-check・shot・Worker・部品）は **CI を通っていません**。
 push は人の確認後（baseline §6）。
 
