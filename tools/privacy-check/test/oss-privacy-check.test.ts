@@ -202,3 +202,72 @@ describe("大きな差分でも終わる", () => {
     expect(r.output).toMatch(/docs\/big\.md:\d+/);
   });
 });
+
+// **この行に、検出されるべき文字列をそのまま書かない。**
+// 書くと、このテストファイル自身が検査に引っかかって CI が落ちる（追加行を見る検査のため）。
+const SEP = String.fromCharCode(92); // Windows の区切り
+const WIN_HOME = ["C:", SEP, "Users", SEP, "hanako"].join("");
+const MAC_HOME = ["/", "Users", "/", "hanako"].join("");
+const LINUX_HOME = ["/", "home", "/", "hanako"].join("");
+const CI_HOME = ["/", "home", "/", "runner"].join("");
+
+describe("個人のホームディレクトリのパス", () => {
+  it("Windows の個人パスを足したら落ちる（**利用者アカウント名が公開される**）", () => {
+    const f = fresh();
+    const base = f.commit("init", { "README.md": "hello\n" });
+    const head = f.commit("add note", { "docs/env.md": `Node: ${WIN_HOME}${SEP}.local${SEP}node\n` });
+
+    const r = runCheck(f, [base, head]);
+    expect(r.status).toBe(1);
+    expect(r.output).toContain("[added-homepath]");
+    expect(r.output).toContain("docs/env.md");
+  });
+
+  it("macOS / Linux の個人パスも落とす", () => {
+    const f = fresh();
+    const base = f.commit("init", { "README.md": "hello\n" });
+    const head = f.commit("add note", { "docs/env.md": `${MAC_HOME}/src\n${LINUX_HOME}/src\n` });
+
+    expect(runCheck(f, [base, head]).status).toBe(1);
+  });
+
+  it("**見つけた中身をそのままログへ出さない**（検査自体が漏洩経路にならない）", () => {
+    const f = fresh();
+    const base = f.commit("init", { "README.md": "hello\n" });
+    const head = f.commit("add note", { "docs/env.md": `${WIN_HOME}${SEP}x\n` });
+
+    const r = runCheck(f, [base, head]);
+    expect(r.output).not.toContain("hanako");
+  });
+
+  it("CI の実行者（runner）は通す。**誰の名前でもない**", () => {
+    const f = fresh();
+    const base = f.commit("init", { "README.md": "hello\n" });
+    const head = f.commit("add ci note", { "docs/ci.md": `${CI_HOME}/work/repo\n` });
+
+    expect(runCheck(f, [base, head]).status).toBe(0);
+  });
+
+  it("個人を指さないパスは通す", () => {
+    const f = fresh();
+    const base = f.commit("init", { "README.md": "hello\n" });
+    const head = f.commit("add note", {
+      "docs/env.md": [
+        `C:${SEP}Program Files${SEP}nodejs`,
+        "~/.local/bin/pmtiles",
+        `%USERPROFILE%${SEP}.local`,
+        "",
+      ].join("\n"),
+    });
+
+    expect(runCheck(f, [base, head]).status).toBe(0);
+  });
+
+  it("許可する名前は環境変数で足せる", () => {
+    const f = fresh();
+    const base = f.commit("init", { "README.md": "hello\n" });
+    const head = f.commit("add note", { "docs/env.md": `${LINUX_HOME}/src\n` });
+
+    expect(runCheck(f, [base, head], { OSS_ALLOWED_HOME_NAMES: "hanako" }).status).toBe(0);
+  });
+});
