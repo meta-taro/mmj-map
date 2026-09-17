@@ -72,6 +72,32 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
   既定の 2 色は**新しく作った色ではなく**、MapLibre の既定値と
   `styles/modern-dark.json` に既にある値です。**DESIGN.md が埋まるまでの仮置きです。**
 
+### `<mmj-poi>`
+
+**利用者が自分で持っている POI** を、ベース地図の上に重ねます。
+ベース地図（Protomaps / OSM）には触りません。**MMJ はデータを持ちません**（D-001）。
+
+```html
+<mmj-map tiles="..." style-url="...">
+  <mmj-poi src="/data/our-poi.geojson" label-key="shop_name" min-zoom="15"></mmj-poi>
+</mmj-map>
+```
+
+| 属性 | 意味 |
+| --- | --- |
+| `src` | 点の GeoJSON の URL（必須） |
+| `label-key` | 名前を取る属性名。既定 `name`（媒体ごとに `title` / `shop_name` と違うため） |
+| `min-zoom` | ここから出す。既定 13。**件数を知っているのは持ち込む側だけ**なので既定を当てにしない |
+| `color` / `text-color` | 点と名前の色。既定は `<mmj-cluster>` と同じ扱い（新しい色を作っていない） |
+| `layer-id` | source / layer の名前。既定は自動 |
+
+- **押すと `mmj-poi-click` が飛びます**（`detail.properties` / `detail.lngLat`）。
+  何を出すかは使う側が決めます。
+- **名前は衝突したら消えます**（`text-allow-overlap: false`）。重ねて出しても読めないためで、
+  **点は残るので場所は分かります**。実物（`2026-09-17-poi-z15.jpg`）でも 8 点中 1 つの名前が
+  衝突で消えています。
+- `<mmj-cluster>` との使い分け: **まとめたいときはクラスタ、1 点ずつ名前を出したいときはこちら。**
+
 ## この部品が引き受けていること
 
 1. `pmtiles` プロトコルの登録（1 回だけ）
@@ -110,6 +136,12 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 ![点をまとめたところ](../screenshots/2026-09-17-cluster-z11.jpg)
 
 ![寄るとばらける](../screenshots/2026-09-17-cluster-z15.jpg)
+
+自前の POI を `shop_name` から出したところ。**中央の丸い建物（京セラドーム）に名前が
+付いていないのは、ベースのスタイルに POI レイヤが無いから**です
+（`.claude/proposals/2026-09-17-poi.md`）。
+
+![自前の POI](../screenshots/2026-09-17-poi-z15.jpg)
 
 ## まだやっていないこと（S2 の残り）
 
