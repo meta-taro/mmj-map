@@ -162,6 +162,7 @@ push は人の確認後（baseline §6）。
 3. 配信先が決まったら、その URL で `pnpm tiles:check-range` を通す
    （**手元では通ったが、本番の配信先では未実行**）
 4. `PRD.md` と `.claude/decisions.md` の食い違い（ダーク / ライトの 1 枚目）を解消する
+   — **材料は並べました**（`decisions.md` 未決）。**あとは人が「ダーク」と言うだけで消えます**
 5. ~~フィルタが実際に何件拾うかを数える道具~~ — **`tools/tile-inspect` で入れた**（2026-09-17）
 6. **POI の提案の可否**（`.claude/proposals/2026-09-17-poi.md`）。
    群の分け方は設計判断なので、人が決めてから実装する
@@ -283,9 +284,12 @@ GET http://localhost:8787/tiles/kansai.pmtiles  Range: bytes=0-15
   照合できていない**ということです。手元に置いた 1.31.2 の sha256 は
   `a658baa4d7e55020aef6ca17bd9ff9faa1582671266b36f58c52db0ac8e785a1`
   （`go-pmtiles_1.31.2_Windows_x86_64.zip`）。次に入れ直すときはこの値と突き合わせる。
-- **`PRD.md` と `.claude/decisions.md` が食い違っています。** PRD §1 は
-  「ダークを 1 枚目に」と断定していますが、`decisions.md` の未決には
+- **`PRD.md` と `.claude/decisions.md` が食い違っています。** PRD は
+  「ダークを 1 枚目に」と断定していますが（69 行目）、`decisions.md` の未決には
   「1 枚目をダークにするかライトにするか」が残っています。どちらかが古い（baseline §10）。
+  **判断に要る材料は `decisions.md` の未決に並べました**（2026-09-17）。
+  ダークで確定なら手戻りゼロ、ライトなら手書き 22 レイヤぶんの作業です。
+  **AI は見た目を決めません**（§11）。
 - **個人のホームディレクトリのパスが、すでに公開履歴に入っています。**
   `.claude/project-status.md` に `C:\Users\<アカウント名>\...` と書いてあり、
   それが `fd6eaca` までの commit として **origin/develop に push 済み**です。
