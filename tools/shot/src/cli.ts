@@ -68,19 +68,19 @@ async function cdpEndpoint(): Promise<string> {
 
 const ws = new WebSocket(await cdpEndpoint());
 await new Promise<void>((ok, ng) => {
-  ws.onopen = () => ok();
-  ws.onerror = () => ng(new Error("CDP の WebSocket が開けません"));
+  ws.addEventListener("open", () => ok(), { once: true });
+  ws.addEventListener("error", () => ng(new Error("CDP の WebSocket が開けません")), { once: true });
 });
 
 let nextId = 0;
 const waiting = new Map<number, (msg: CdpMessage) => void>();
 const events: CdpMessage[] = [];
-ws.onmessage = (raw) => {
+ws.addEventListener("message", (raw) => {
   const msg = JSON.parse(String(raw.data)) as CdpMessage;
   if (msg.id === undefined) return void events.push(msg);
   waiting.get(msg.id)?.(msg);
   waiting.delete(msg.id);
-};
+});
 
 const send = (method: string, params: Record<string, unknown> = {}, sessionId?: string): Promise<CdpMessage> =>
   new Promise((ok) => {

@@ -88,15 +88,15 @@ describe("findUnreachableZoomWindows", () => {
   });
 });
 
-describe("findMissingMinZoomGuards", () => {
-  const labelOn = (sourceLayer: string, filter?: unknown) => ({
-    id: "label",
-    type: "symbol" as const,
-    source: "basemap",
-    "source-layer": sourceLayer,
-    ...(filter === undefined ? {} : { filter }),
-  });
+const labelOn = (sourceLayer: string, filter?: unknown) => ({
+  id: "label",
+  type: "symbol" as const,
+  source: "basemap",
+  "source-layer": sourceLayer,
+  ...(filter === undefined ? {} : { filter }),
+});
 
+describe("findMissingMinZoomGuards", () => {
   it("min_zoom を持つ source-layer のラベルが、それを見ていなければ報せる", () => {
     const found = findMissingMinZoomGuards(style([labelOn("places", ["==", ["get", "kind"], "locality"])]), LAYERS);
     expect(found.map((f) => f.layerId)).toEqual(["label"]);

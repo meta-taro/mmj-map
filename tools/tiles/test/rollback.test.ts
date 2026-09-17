@@ -41,7 +41,8 @@ describe("manifest が knownGood を読む", () => {
   });
 
   it("knownGood が無い manifest も読める（いままでの形を壊さない）", () => {
-    const { knownGood, ...source } = base.source;
+    // knownGood を「落とす」ためだけに取り出している（使わない）
+    const { knownGood: _dropped, ...source } = base.source;
     const without = parseManifest({ ...base, source });
     expect(without.source.knownGood).toBeUndefined();
   });

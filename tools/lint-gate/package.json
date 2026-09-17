@@ -1,0 +1,16 @@
+{
+  "name": "@modern-map-japan/lint-gate",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "lint のゲートが、違反で本当に止まることを確かめる（baseline §5 / D-015）",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}
