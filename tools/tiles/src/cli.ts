@@ -18,7 +18,7 @@ import {
   withPinnedBuild,
   type TilesManifest,
 } from "./manifest.js";
-import { planExtract, planExtractSteps, planVerify, formatCommandLine, type ExtractPlan } from "./extract-plan.js";
+import { planExtractSteps, planVerify, formatCommandLine, type ExtractPlan } from "./extract-plan.js";
 import { chooseBuild, outputNameFor, rememberBuild, type KnownBuild } from "./rollback.js";
 
 /** 戻り先として覚えておく本数。際限なく増やさない（D-014） */
