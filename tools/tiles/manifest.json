@@ -54,6 +54,19 @@
       "maxzoom": 15,
       "output": "kansai.pmtiles",
       "note": "疎通確認用の小さい範囲。全国ぶんを待たずに『地図が 1 枚出る』ところまで行くために置いている。"
+    },
+    "demo": {
+      "bbox": [
+        122.93,
+        20.42,
+        153.99,
+        45.56
+      ],
+      "region": "regions/demo-osaka.geojson",
+      "regionMinZoom": 10,
+      "maxzoom": 15,
+      "output": "demo.pmtiles",
+      "note": "公開デモ用。GitHub Pages は 1 ファイル 100 MB までなので、全国は z9 までの俯瞰だけ持ち、街路まで持つのは大阪中心部だけにする（合計 62.8 MB 実測）。z0-9 全国 35 MB ＋ z10-15 大阪 31 MB を merge する。**これを大きくするときは 100 MB を越えないこと。**"
     }
   },
   "attribution": "© OpenStreetMap contributors"
