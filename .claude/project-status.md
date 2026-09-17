@@ -52,6 +52,10 @@
   触らず別 source で重ねる。名前を取る属性は `label-key` で指定（媒体ごとに `name` /
   `title` / `shop_name` と違うため）。**MMJ はデータを持たない**（D-001）。
   実物は `docs/screenshots/2026-09-17-poi-z15.jpg`
+- **参照されているのに存在しないアセットを CI で止めるようにした（`tools/asset-check`・2026-09-17）**
+  — baseline §23 が未実装だった。`apps/demo` は素の HTML で**ビルド工程が無い**ため、
+  綴りを 1 文字間違えても typecheck も test も通ったまま**開いたときにだけ壊れる**。
+  `pnpm asset:check`。対応表は `tools/serve` の mounts と `deploy.yml` のコピー先に揃えてある
 - **配信の content-type に `.geojson` を足した（`tools/serve`）** — octet-stream のままでも
   MapLibre は描けるが、掴んだ側が何のファイルか分からない
 
@@ -89,7 +93,8 @@ Node は **管理者権限なし**で入れてある。公式 zip を SHA256 で
 - 日本語グリフの方針（`localIdeographFontFamily` で逃げている・未決）
 - **配信先を立てること**（R2 + Worker・コードは出来ている／デプロイが未）。
   それまで GitHub Pages のデモは案内画面のまま
-- lint（eslint）と Git hooks — 未整備
+- lint と Git hooks — 未整備。**別セッションが oxlint を入れている最中**で、
+  2026-09-17 時点では devDependency だけあって設定ファイルも CI 配線もありません
 
 ## CI の状況（2026-09-16 時点）
 
@@ -203,13 +208,14 @@ push は人の確認後（baseline §6）。
 |---|---|---|
 | `tools/tiles` | 5 | 45 |
 | `tools/serve` | 1 | 7 |
+| `tools/asset-check` | 1 | 13 |
 | `tools/privacy-check` | 1 | 22 |
 | `tools/style-check` | 2 | 18 |
 | `tools/shot` | 1 | 13 |
 | `packages/http-range` | 2 | 18 |
 | `infra/pmtiles-worker` | 1 | 14 |
 | `packages/elements` | 3 | 39 |
-| **合計** | **16** | **176 すべて通過**（2026-09-17 実行） |
+| **合計** | **17** | **189 すべて通過**（2026-09-17 実行） |
 
 `pnpm -r typecheck` も 8 パッケージとも通過。
 `tools/serve` の Range のテストは `packages/http-range` へ移りました（同じ実装を

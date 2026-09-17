@@ -1,0 +1,18 @@
+{
+  "name": "@modern-map-japan/asset-check",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "参照されているのに存在しないアセットを、実行時より前に止める（baseline §23）",
+  "scripts": {
+    "check": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}
