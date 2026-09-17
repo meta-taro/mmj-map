@@ -26,6 +26,14 @@ export interface Region {
    * **bbox 1 個だと海まで抱える**ので、複数の四角で囲って落とす。
    */
   readonly region?: string;
+  /**
+   * この倍率から region を使う。これ未満は bbox で取る。
+   *
+   * **低い倍率で region を使うと、海に穴が開く**（z5 で日本全体を見ると、
+   * region の外の海のタイルが無くて黒い矩形が出る）。低い倍率は安いので
+   * （全域 z0-10 で 78 MB）、そこだけ bbox で取って merge する。
+   */
+  readonly regionMinZoom?: number;
   readonly output: string;
   readonly maxzoom?: number;
   readonly note?: string;
@@ -70,6 +78,17 @@ function parseRegion(raw: unknown, name: string): Region {
   const bbox = parseBBox(record["bbox"], `regions.${name}.bbox`);
   const output = requireString(record, "output", `regions.${name}`);
 
+  const regionMinZoomRaw = record["regionMinZoom"];
+  if (
+    regionMinZoomRaw !== undefined &&
+    (typeof regionMinZoomRaw !== "number" ||
+      !Number.isInteger(regionMinZoomRaw) ||
+      regionMinZoomRaw < 1 ||
+      regionMinZoomRaw > 24)
+  ) {
+    throw new TypeError(`regions.${name}.regionMinZoom が 1〜24 の整数ではありません`);
+  }
+
   const regionRaw = record["region"];
   if (regionRaw !== undefined && typeof regionRaw !== "string") {
     throw new TypeError(`regions.${name}.region が文字列ではありません`);
@@ -96,6 +115,7 @@ function parseRegion(raw: unknown, name: string): Region {
   return {
     bbox,
     ...(typeof regionRaw === "string" ? { region: regionRaw } : {}),
+    ...(typeof regionMinZoomRaw === "number" ? { regionMinZoom: regionMinZoomRaw } : {}),
     output,
     ...(typeof maxzoomRaw === "number" ? { maxzoom: maxzoomRaw } : {}),
     ...(note === undefined ? {} : { note }),
