@@ -30,7 +30,7 @@
   **タイル生成パイプラインは自作しません。**
 - **スタイル**は [MapLibre](https://maplibre.org/) のスタイルを手書きします。
   日本の地図特有の条件——**地名の密度・漢字かな英数の混在・鉄道の路線色**——に向けて作ります。
-- **UI 部品**（Marker / Popup / Cluster / 永続レイアウト）を Web Components で配り、
+- **UI 部品**（Marker / Popup / Cluster / 自前 POI）を Web Components で配り、
   React・Vue は薄いラッパにします。
 - **サーバーを立てません。** 静的配信 ＋ HTTP Range だけでデプロイが完結します。
 

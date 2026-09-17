@@ -67,7 +67,7 @@
 |---|---|---|
 | 1 | **ベースタイルの作り方** | Protomaps 日次ビルド → 日本ぶんを `pmtiles extract` → 1 枚の PMTiles。**手元のファイルに依存しない**再現可能ビルド |
 | 2 | **地図スタイル** | MapLibre Style Spec v8 の手書き JSON。ダークを 1 枚目に |
-| 3 | **UI 部品** | Marker / Popup / Cluster / 永続レイアウト。Web Components を軸に、React・Vue はラッパ |
+| 3 | **UI 部品** | Marker / Popup / Cluster / 自前 POI。Web Components を軸に、React・Vue はラッパ |
 | 4 | **配信のやり方** | 静的配信 ＋ HTTP Range。サーバーを立てない |
 | 5 | **デモ** | 上を全部使った 1 枚。**動くものが無い OSS は読まれません** |
 
