@@ -1,0 +1,39 @@
+// 品質ゲートの lint 設定（product-baseline.md §5 / D-015）。
+//
+// **severity を error にしているのは飾りではありません。** oxlint の既定は
+// severity=warning で、違反があっても終了コードが 0 になります。既定のまま
+// hook と CI に置くと、違反を出しながら「通った」と表示される状態になります
+// （実測: 違反 2 件を報告して EXIT=0）。ここと --deny-warnings の二重で止めます。
+//
+// カテゴリは correctness / suspicious / perf の 3 つ。pedantic（95 件）と
+// style（1558 件）は入れていません。手書きのコードの書き方そのものを
+// 書き換える指摘が大半で、**赤が常態になったゲートは読まれなくなる**ためです。
+// 広げるときは、広げた結果を実際に直してから広げること。
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+
+  "rules": {
+    // **このリポでは await を直列に並べているほうが正しい**ため切っています。
+    // 指摘 5 か所はすべて tools/shot の CDP 操作で、内訳は
+    // (1) ブラウザの起動待ちリトライ (2) Page/Runtime/Log/Network.enable の順次投入
+    // (3) 描画が静かになるまでの 250ms ポーリング。
+    // 並列化すると待つ意味が消えるか、CDP のドメイン有効化順が崩れます。
+    // **速度のために壊れるほうを選ばない。**
+    "eslint/no-await-in-loop": "off",
+
+    // 指摘 8 か所を全部見て、**どれも自分が作った配列を sort している**ことを
+    // 確認したうえで切っています（[...x].sort() / .map().sort() / 関数内で
+    // 組み立てた局所配列）。呼び出し元の配列を壊す例は 1 件もありません。
+    // toSorted() へ機械的に書き換えても挙動は 1 件も変わらず、差分だけが残ります。
+    // **他人の配列を sort するコードが出てきたら、この判断は見直すこと。**
+    "unicorn/no-array-sort": "off"
+  },
+
+  "ignorePatterns": ["dist", "node_modules", "**/*.min.js"]
+}
