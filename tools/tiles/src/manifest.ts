@@ -3,6 +3,14 @@ import type { BuildEntry } from "./builds.js";
 import { findBuild } from "./builds.js";
 
 /** manifest.json に pin してある上流ビルド 1 個ぶん。 */
+/** 確認済みの旧版。**戻り先**（D-014） */
+export interface KnownGoodBuild {
+  readonly key: string;
+  readonly basemapVersion: string;
+  readonly size: number;
+  readonly uploaded: string;
+}
+
 export interface PinnedSource {
   readonly provider: string;
   readonly buildsIndexUrl: string;
@@ -13,6 +21,11 @@ export interface PinnedSource {
   readonly uploaded: string;
   readonly md5sum?: string;
   readonly b3sum?: string;
+  /**
+   * 確認済みの旧版。新しい順。**戻り先**（D-014）。
+   * pin は 1 本のまま（D-010）で、ここは「選べる過去」を持つだけ。
+   */
+  readonly knownGood?: readonly KnownGoodBuild[];
 }
 
 export interface Region {
@@ -129,6 +142,8 @@ export function parseManifest(raw: unknown): TilesManifest {
   const md5sum = optionalString(sourceRecord["md5sum"]);
   const b3sum = optionalString(sourceRecord["b3sum"]);
 
+  const knownGood = parseKnownGood(sourceRecord["knownGood"], requireString(sourceRecord, "key", "source"));
+
   const source: PinnedSource = {
     provider: requireString(sourceRecord, "provider", "source"),
     buildsIndexUrl: requireString(sourceRecord, "buildsIndexUrl", "source"),
@@ -139,6 +154,7 @@ export function parseManifest(raw: unknown): TilesManifest {
     uploaded: requireString(sourceRecord, "uploaded", "source"),
     ...(md5sum === undefined ? {} : { md5sum }),
     ...(b3sum === undefined ? {} : { b3sum }),
+    ...(knownGood === undefined ? {} : { knownGood }),
   };
 
   const regionsRecord = requireRecord(root["regions"], "regions");
@@ -242,4 +258,33 @@ export function withPinnedBuild(manifest: TilesManifest, entry: BuildEntry): Til
       ...(entry.b3sum === undefined ? {} : { b3sum: entry.b3sum }),
     },
   };
+}
+
+/**
+ * 確認済みの旧版を読む。**pin と同じ版は書かせない**（どちらが正か分からなくなる）。
+ * @param raw
+ * @param pinnedKey
+ */
+function parseKnownGood(raw: unknown, pinnedKey: string): readonly KnownGoodBuild[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw)) throw new TypeError("source.knownGood が配列ではありません");
+
+  const seen = new Set<string>([pinnedKey]);
+  return raw.map((entry, index) => {
+    const record = requireRecord(entry, `source.knownGood[${index}]`);
+    const key = requireString(record, "key", `source.knownGood[${index}]`);
+    if (seen.has(key)) {
+      throw new TypeError(
+        `source.knownGood[${index}].key が pin または他の行と同じです: ${key}` +
+          "（どちらが正か分からなくなります）",
+      );
+    }
+    seen.add(key);
+    return {
+      key,
+      basemapVersion: requireString(record, "basemapVersion", `source.knownGood[${index}]`),
+      size: requireNumber(record, "size", `source.knownGood[${index}]`),
+      uploaded: requireString(record, "uploaded", `source.knownGood[${index}]`),
+    };
+  });
 }

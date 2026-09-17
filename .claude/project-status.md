@@ -56,6 +56,12 @@
   — baseline §23 が未実装だった。`apps/demo` は素の HTML で**ビルド工程が無い**ため、
   綴りを 1 文字間違えても typecheck も test も通ったまま**開いたときにだけ壊れる**。
   `pnpm asset:check`。対応表は `tools/serve` の mounts と `deploy.yml` のコピー先に揃えてある
+- **上流がおかしいときに戻れるようにした（D-014・2026-09-17）** — pin は 1 本のまま
+  （D-010）だが、確認済みの旧版を `source.knownGood` に 3 本まで持つ。
+  `pnpm tiles:extract -- <region> --build=previous` で切り出せる。
+  **pin 以外で切ったら出力名に版が入る**（新しい方を潰さないため）。
+  **manifest に無い版は使えない**（任意の URL を取りに行かせない・§21）。
+  **実際に戻して確認済み**（`kansai.20260914.pmtiles` が別日のデータであることを確認）
 - **全国の切り出しから、太平洋を落とした（D-013・2026-09-17・実行済み）** —
   **z11 以上は 8 つの四角**（`tools/tiles/regions/japan.geojson`）、
   **z10 以下は bbox 全域**で取って `pmtiles merge`。
@@ -219,7 +225,7 @@ z5 で東京の東に黒い矩形が出ました（撮って気づいた）。�
 
 ## 技術的決定
 
-- `.claude/decisions.md` を参照（D-001 〜 D-013）
+- `.claude/decisions.md` を参照（D-001 〜 D-014）
 
 ## 提案（未決・`.claude/proposals/`）
 
@@ -239,7 +245,7 @@ z5 で東京の東に黒い矩形が出ました（撮って気づいた）。�
 
 | パッケージ | ファイル | テスト |
 |---|---|---|
-| `tools/tiles` | 6 | 93 |
+| `tools/tiles` | 8 | 108 |
 | `tools/serve` | 1 | 7 |
 | `tools/asset-check` | 1 | 13 |
 | `tools/tile-inspect` | 1 | 13 |
@@ -249,7 +255,7 @@ z5 で東京の東に黒い矩形が出ました（撮って気づいた）。�
 | `packages/http-range` | 2 | 18 |
 | `infra/pmtiles-worker` | 1 | 14 |
 | `packages/elements` | 3 | 39 |
-| **合計** | **19** | **250 すべて通過**（2026-09-17 実行） |
+| **合計** | **21** | **265 すべて通過**（2026-09-17 実行） |
 
 `pnpm -r typecheck` も 8 パッケージとも通過。
 `tools/serve` の Range のテストは `packages/http-range` へ移りました（同じ実装を
@@ -314,6 +320,9 @@ GET http://localhost:8787/tiles/kansai.pmtiles  Range: bytes=0-15
   照合できていない**ということです。手元に置いた 1.31.2 の sha256 は
   `a658baa4d7e55020aef6ca17bd9ff9faa1582671266b36f58c52db0ac8e785a1`
   （`go-pmtiles_1.31.2_Windows_x86_64.zip`）。次に入れ直すときはこの値と突き合わせる。
+- **切り出したファイルが「どの上流版から作ったか」を持っていません**（D-014 の未対応）。
+  PMTiles のメタデータにあるのは OSM の時刻だけで、上流のキーは入りません。
+  `pmtiles edit --metadata` で書けるはずですが、手を付けていません。
 - **`PRD.md` と `.claude/decisions.md` が食い違っています。** PRD は
   「ダークを 1 枚目に」と断定していますが（69 行目）、`decisions.md` の未決には
   「1 枚目をダークにするかライトにするか」が残っています。どちらかが古い（baseline §10）。

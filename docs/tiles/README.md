@@ -166,3 +166,63 @@ z5 で日本全体を見たとき、region の外にある海のタイルが無�
 
 **z15 だけで全体の 54%（1.5 GB）**です。
 どこまで寄れる地図にするかは品質の判断なので、`DESIGN.md` 側の話になります。
+
+## 上流がおかしいときに戻る（ロールバック）
+
+pin は 1 本だけです（D-010）。**同じコマンドが日によって違う地図を作らない**ためです。
+ただしそれだけだと**戻り先がありません**ので、確認済みの旧版を 3 本まで持ちます（D-014）。
+
+```bash
+# いまの pin と戻り先を見る
+pnpm tiles:resolve
+#=> pin:      20260915.pmtiles（basemap 4.15.2）
+#   上流最新: 20260916.pmtiles（basemap 4.15.2）
+#   戻り先:   20260914.pmtiles, 20260913.pmtiles
+
+# 1 つ前の版で切り出す（出力名に版が入る）
+pnpm tiles:extract -- japan --build=previous
+#=> dist/tiles/japan.20260914.pmtiles
+
+# 2 つ前 / キー直指定
+pnpm tiles:extract -- japan --build=previous-2
+pnpm tiles:extract -- japan --build=20260913
+
+# 戻り先を足す（上流の索引と突き合わせてから書く・3 本まで）
+pnpm tiles:resolve --remember=20260912
+```
+
+**manifest に書いていない版は使えません**（引数で任意の URL を取りに行かせないため・§21）。
+
+```
+$ pnpm tiles:extract -- kansai --build=20200101
+manifest が知らない版です: 20200101
+使えるのは: 20260915.pmtiles, 20260914.pmtiles, 20260913.pmtiles
+足すなら `pnpm tiles:resolve --remember=<キー>`
+```
+
+### 出力名に版が入ります
+
+**pin 以外で切ったら、`japan.20260914.pmtiles` になります。**
+同じ名前へ上書きすると、20 分かけて作った新しい方を古い版で潰す事故が起きるためです。
+配信へ出すときは rename してください。
+
+### 戻り先が上流から消えたら、resolve が言います
+
+```
+戻り先: 20260914.pmtiles, 20260913.pmtiles
+  警告 20260913.pmtiles は上流の索引から消えています。**戻れません。**
+```
+
+上流は日次ビルドを **61 版・約 2 か月ぶん**保持しています（2026-09-17 実測）。
+
+### 分かっていること
+
+**切り出したファイルは「どの上流版から作ったか」を持っていません。**
+持っているのは OSM の時刻だけです。
+
+```
+planetiler:osm:osmosisreplicationtime  2026-09-15T04:00:00Z
+```
+
+pin で切ったファイル（`japan.pmtiles`）は、**名前からも中身からも版を特定できません。**
+時刻から推測はできます。ここは未対応です（D-014）。
