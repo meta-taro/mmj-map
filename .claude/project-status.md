@@ -56,6 +56,9 @@
   — baseline §23 が未実装だった。`apps/demo` は素の HTML で**ビルド工程が無い**ため、
   綴りを 1 文字間違えても typecheck も test も通ったまま**開いたときにだけ壊れる**。
   `pnpm asset:check`。対応表は `tools/serve` の mounts と `deploy.yml` のコピー先に揃えてある
+- **タイルを開いて数える道具（`tools/tile-inspect`・2026-09-17）** — `pnpm tile:inspect`。
+  推測で地図を作らないため（D-012）。**依存は足していない**（MVT を自前で読む・幾何は読まない）。
+  手順は `docs/tiles/inspect.md`
 - **配信の content-type に `.geojson` を足した（`tools/serve`）** — octet-stream のままでも
   MapLibre は描けるが、掴んだ側が何のファイルか分からない
 
@@ -159,8 +162,7 @@ push は人の確認後（baseline §6）。
 3. 配信先が決まったら、その URL で `pnpm tiles:check-range` を通す
    （**手元では通ったが、本番の配信先では未実行**）
 4. `PRD.md` と `.claude/decisions.md` の食い違い（ダーク / ライトの 1 枚目）を解消する
-5. フィルタが実際に何件拾うかを数える道具（いまはタイルを開いて手で数えている）。
-   **やるなら提案を先に出す**
+5. ~~フィルタが実際に何件拾うかを数える道具~~ — **`tools/tile-inspect` で入れた**（2026-09-17）
 6. **POI の提案の可否**（`.claude/proposals/2026-09-17-poi.md`）。
    群の分け方は設計判断なので、人が決めてから実装する
 7. **2 媒体が自前 POI で何を持っているか**を聞く（属性名・件数）。
@@ -186,7 +188,7 @@ push は人の確認後（baseline §6）。
 
 ## 技術的決定
 
-- `.claude/decisions.md` を参照（D-001 〜 D-011）
+- `.claude/decisions.md` を参照（D-001 〜 D-012）
 
 ## 提案（未決・`.claude/proposals/`）
 
@@ -209,13 +211,14 @@ push は人の確認後（baseline §6）。
 | `tools/tiles` | 5 | 45 |
 | `tools/serve` | 1 | 7 |
 | `tools/asset-check` | 1 | 13 |
+| `tools/tile-inspect` | 1 | 13 |
 | `tools/privacy-check` | 1 | 22 |
 | `tools/style-check` | 2 | 18 |
 | `tools/shot` | 1 | 13 |
 | `packages/http-range` | 2 | 18 |
 | `infra/pmtiles-worker` | 1 | 14 |
 | `packages/elements` | 3 | 39 |
-| **合計** | **17** | **189 すべて通過**（2026-09-17 実行） |
+| **合計** | **18** | **202 すべて通過**（2026-09-17 実行） |
 
 `pnpm -r typecheck` も 8 パッケージとも通過。
 `tools/serve` の Range のテストは `packages/http-range` へ移りました（同じ実装を

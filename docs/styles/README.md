@@ -64,4 +64,4 @@ pnpm --filter @modern-map-japan/style-check run snapshot -- dist/tiles/kansai.pm
 - **実際の見え方。** レイヤが描かれる条件を満たしているかまでで、
   **重なり・読みやすさ・ラベルの衝突は画面を見ないと分かりません**（§29）。
 - **フィルタが何件拾うか。** `kind` の値が上流と噛み合っているかは、
-  いまはタイルを開いて数えるしかありません（`pmtiles tile <file> <z> <x> <y>`）。
+  `pnpm tile:inspect` で数えられます（[手順](../tiles/inspect.md)）。

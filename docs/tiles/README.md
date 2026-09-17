@@ -112,3 +112,8 @@ GET http://localhost:8787/tiles/kansai.pmtiles  Range: bytes=0-15
   **まだ誰もブラウザで見ていません**（§29）。テストが通ることと、地図が読めることは別です。
 
 スタイル JSON は `styles/modern-dark.json` にあります。検査は `docs/styles/README.md`。
+
+## タイルの中身を数える
+
+切り出したタイルに何が何件入っているかは `pnpm tile:inspect` で見ます。
+手順は [inspect.md](inspect.md)。
