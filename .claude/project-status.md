@@ -69,6 +69,12 @@
   **3.37 GiB → 2.60 GiB（-792 MiB / -23%）/ タイル件数 1,732,855 → 819,672（-53%）**。
   **遠方の島は 1 つも落としていない**（島 22 か所をバイト単位で突き合わせ・全部一致）。
   `dist/tiles/japan.pmtiles` は差し替え済み・`pmtiles verify` 通過
+- **公開デモ用のタイルを manifest から再現できるようにした（2026-09-17）** —
+  `pnpm tiles:extract -- demo` で **62.8 MB**（全国 z0-9 の俯瞰 35 MB ＋
+  大阪中心部 z10-15 の街路 31 MB を merge）。
+  **GitHub Pages の 1 ファイル 100 MB に収まる。**
+  `regions/demo-osaka.geojson` と `manifest.json` の `demo` 区画。
+  **まだ Pages へは載せていない**（下の「次のタスク」）
 - **タイルを開いて数える道具（`tools/tile-inspect`・2026-09-17）** — `pnpm tile:inspect`。
   推測で地図を作らないため（D-012）。**依存は足していない**（MVT を自前で読む・幾何は読まない）。
   手順は `docs/tiles/inspect.md`
@@ -168,6 +174,30 @@ Node は **管理者権限なし**で入れてある。公式 zip を SHA256 で
 5. **提案の可否。**7 本あり、**判断待ちは 5 本**
    （`osm-3tile-probe` と `media-poi` は中身を実施済み）。うち `release-plan` は
    「2 媒体がタイルを自分で配信するか」の答え待ちで、そこで順序が変わります。
+
+## 次に座る人がまず読むところ（2026-09-17 夜）
+
+**公開デモに地図を出す作業が、あと 2 手で終わります。**
+提案は `.claude/proposals/2026-09-17-spot-tiles.md` の項 5。
+
+**前提が 1 つ崩れています。GitHub Pages は Range を返します**（実測 `206`）。
+だめだったのは Range ではなくサイズでした。**デモを出すだけなら R2 も鍵も要りません。**
+
+残りの 2 手:
+
+1. **62.8 MB を GitHub Releases へ上げる**（人の工程・外へ出すため）
+
+   ```bash
+   pnpm tiles:extract -- demo          # dist/tiles/demo.pmtiles（62.8 MB）
+   gh release create demo-tiles-20260915 dist/tiles/demo.pmtiles      --title "デモ用タイル（20260915 / basemap 4.15.2）"      --notes "公開デモが読むタイル。全国 z0-9 ＋ 大阪中心部 z10-15。再現: pnpm tiles:extract -- demo"
+   ```
+
+2. **`deploy.yml` に、その資産を取ってきて同梱する段を足す**（AI の工程）
+   - あわせて、成果物の中の `apps/demo/config.js` を書き換えて `tilesUrl` を向ける
+     （**リポジトリの config.js は null のまま。**手元に配信が無いのは事実なので）
+   - **資産が無ければ deploy を落とす。**黙って案内画面のままにしない
+
+**1 を先にやってください。**2 だけ先に入れると deploy が赤になります。
 
 ## 次のタスク
 
