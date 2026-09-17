@@ -1,0 +1,118 @@
+{
+ "type": "FeatureCollection",
+ "note": "自前 POI の表示確認用に作った合成データ。実在の店舗ではない。名前は shop_name に入れてある（name ではない）",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "shop_name": "サンプル店 1",
+    "category": "B"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.47419,
+     34.6671
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "shop_name": "サンプル店 2",
+    "category": "A"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48083,
+     34.6704
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "shop_name": "サンプル店 3",
+    "category": "B"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.47774,
+     34.66609
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "shop_name": "サンプル店 4",
+    "category": "A"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.48033,
+     34.66965
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "shop_name": "サンプル店 5",
+    "category": "B"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.4731,
+     34.67304
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "shop_name": "サンプル店 6",
+    "category": "A"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.47983,
+     34.66992
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "shop_name": "サンプル店 7",
+    "category": "B"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.47461,
+     34.67063
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "shop_name": "サンプル店 8",
+    "category": "A"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     135.47777,
+     34.67125
+    ]
+   }
+  }
+ ]
+}
