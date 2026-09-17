@@ -20,6 +20,22 @@ patch.
 - Read [`.claude/decisions.md`](.claude/decisions.md). If your change contradicts a
   decision there, say so and argue against the decision — do not work around it quietly.
 - **Use pnpm.** npm and yarn are not used in this repository.
+- **Run the gate.** `pnpm gate` runs lint, typecheck, tests, and the two asset/style
+  checks in the same order CI does. It takes about 30 seconds.
+
+## The gate runs before every commit
+
+`pnpm install` points `core.hooksPath` at `.githooks`, so `pnpm gate` runs on
+`git commit`. There is no `husky` dependency — the hook is a shell script you can read.
+
+If you cloned without installing, the hook is not active; CI is the backstop. You can
+skip the hook with `git commit --no-verify`, but **say so in the commit message**. A
+step quietly skipped once becomes the default next time.
+
+Linting is [oxlint](https://oxc.rs) rather than ESLint, because typescript-eslint does
+not support the TypeScript version this repository uses. See `D-015` in
+[`.claude/decisions.md`](.claude/decisions.md) for the reasoning and for the two rules
+that are deliberately turned off.
 
 ## Style JSON is hand-written
 

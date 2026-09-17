@@ -221,11 +221,53 @@
 
   知らない版（`--build=20200101`）は exit 2 で弾くことも確認済み。
 
-## D-016 スタイルの 1 枚目はダークにする（2026-09-17）
+## D-015 lint は oxlint。eslint は TypeScript 7 に追随していないため採らない（2026-09-17）
 
-> **D-015 は欠番ではありません。**lint のゲートを入れているセッションが
-> `.oxlintrc.json` / `tools/lint-gate/` から参照しており、本文は未記入です。
-> **番号を取り合わないため、こちらが D-016 へ寄りました。**
+- **決めたこと**: 手元と CI の lint を **oxlint 1.83.0**（MIT）で回す。
+  設定は `.oxlintrc.json`、入口は `pnpm lint`。**カテゴリは correctness / suspicious / perf の 3 つ**。
+- **根拠**:
+  1. **eslint + typescript-eslint はこのリポで使えない。** typescript-eslint 8.70.0 の
+     peer は `typescript: >=4.8.4 <6.1.0` で、このリポの **TypeScript 7.0.2 が範囲外**。
+     canary（8.70.1-alpha.22）まで見ても 7 系は入っていない。
+     **eslint 単体では TS 構文を読む parser が無い**ため、逃げ道が無い。
+  2. oxlint は **install script を持たず、runtime 依存も無い**。
+     `onlyBuiltDependencies: []`（§1）と噛み合う。追加は 2 パッケージだけ
+     （本体＋プラットフォーム別バイナリ）。
+  3. peer に `oxlint-tsgolint >=7.0.2001` を持っており、**TS 7 / tsgo 前提で作られている**。
+- **カテゴリを 3 つに絞った理由**（実測・59 ファイル）:
+
+  | カテゴリ | 指摘 | 採否 |
+  |---|---|---|
+  | correctness | 0 | 採る |
+  | suspicious | 12 | 採る |
+  | perf | 5 | 採る |
+  | pedantic | 95 | 採らない |
+  | style | 1558 | 採らない |
+
+  pedantic / style は**手書きのコードの書き方そのものを書き換える指摘**が大半。
+  **赤が常態になったゲートは読まれなくなる**ので入れない。広げるときは、
+  広げた結果を実際に直してから広げること。
+- **切ったルールと理由**（`.oxlintrc.json` に同じ理由を書いてある）:
+  - `eslint/no-await-in-loop` — 指摘 5 か所はすべて `tools/shot` の CDP 操作で、
+    **直列でなければ壊れる**（起動待ちリトライ / ドメイン有効化の順序 / 描画の静止待ち）。
+  - `unicorn/no-array-sort` — 指摘 8 か所を全部見て、**どれも自分が作った配列**だった。
+    `toSorted()` へ書き換えても挙動は 1 件も変わらず、差分だけが残る。
+- **severity を error にしてある**。oxlint の既定は warning で、**違反を報告しながら
+  終了コード 0 を返す**（実測: 違反 2 件を報告して EXIT=0）。既定のまま置くと、
+  赤が出ない lint が回り続ける。`tools/lint-gate` が**この 1 点をテストで縛っている**。
+- **採らなかった案**:
+  - **husky / lefthook** — hook のために依存を足す必要が無い。root の `prepare` で
+    `core.hooksPath` を `.githooks` へ張れば済む。
+  - **lint の対象にディレクトリを並べる**（`oxlint apps infra packages tools`）
+    → **新しいパッケージが黙って漏れる。** 2026-09-17 の 1 日で `tools` が 3 つ増えており、
+    実際に起きる事故。対象は `.` にして、除外は `ignorePatterns` 側に寄せた。
+- **止めるべき条件**: typescript-eslint が TS 7 を peer に入れ、
+  かつ eslint 側の資産（共有 config / プラグイン）が要るようになったとき。
+  そのときは**この決定を書き換えてから**乗り換えること。
+- **実行状況**: 入れた初回の実行で **実際に指摘が 2 件出た**（未使用の import
+  `planExtract` と、テスト内の未使用変数）。どちらも直してある。
+
+## D-016 スタイルの 1 枚目はダークにする（2026-09-17）
 
 - **決めたこと**: **Modern Dark を 1 枚目にする。**`PRD.md` の断定が正で、
   `decisions.md` の未決が古かった（baseline §10）。

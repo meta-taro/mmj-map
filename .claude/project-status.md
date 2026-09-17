@@ -80,6 +80,21 @@
   手順は `docs/tiles/inspect.md`
 - **配信の content-type に `.geojson` を足した（`tools/serve`）** — octet-stream のままでも
   MapLibre は描けるが、掴んだ側が何のファイルか分からない
+- **品質ゲートが揃った（baseline §5・D-015・2026-09-18）** — lint（oxlint）・
+  手元の hook・CI 配線の 3 つ。入口は **`pnpm gate`** 1 つで、
+  `lint → typecheck → test → asset:check → style:check` を CI と同じ順に走らせる。
+  **手元 29.6 秒**（うち 25 秒が privacy-check のテスト）。
+  - `pnpm lint` の対象は**ディレクトリを並べず `.`**。並べると新しいパッケージが
+    黙って漏れる（09-17 の 1 日で `tools` が 3 つ増えている）。59 ファイル / 131 ルールを 0.4 秒
+  - hook は `.githooks/pre-commit`。`pnpm install` の `prepare` が `core.hooksPath` を張る。
+    **依存は足していない**（husky を使っていない）
+  - **oxlint の既定は severity=warning で、違反を報告しながら終了コード 0 を返す**
+    （実測: 違反 2 件を報告して EXIT=0）。`tools/lint-gate` の 6 件が**この 1 点を縛っている**。
+    設定を warn へ落として**実際にテストが落ちることを確認済み**
+  - 入れた初回に**実際の指摘が 2 件出た**（未使用 import `planExtract` /
+    テスト内の未使用変数）。どちらも修正済み
+  - `tools/shot` の CDP を `addEventListener` へ直したので、**実物で撮り直して確認した**
+    （大阪 z12・地図が描け、帰属表示も出る）
 
 ## 開発環境（2026-09-16 時点・実測）
 
@@ -112,8 +127,8 @@ Node は **管理者権限なし**で入れてある。公式 zip を SHA256 で
 - 日本語グリフの方針（`localIdeographFontFamily` で逃げている・未決）
 - **配信先を立てること**（R2 + Worker・コードは出来ている／デプロイが未）。
   それまで GitHub Pages のデモは案内画面のまま
-- lint と Git hooks — 未整備。**別セッションが oxlint を入れている最中**で、
-  2026-09-17 時点では devDependency だけあって設定ファイルも CI 配線もありません
+- eslint 相当の型情報つき lint（`--type-aware`）は入れていません。
+  いま止めているのは構文と、型を見ずに分かる範囲までです（D-015）
 
 ## CI の状況（2026-09-17・push 後の実測）
 
@@ -273,23 +288,24 @@ z5 で東京の東に黒い矩形が出ました（撮って気づいた）。�
 - `2026-09-17-media-poi.md` — **利用者が自前 POI を持てるようにする**（`<mmj-poi>` で実装済み）。
   窓口・仕分け・OSM への投稿手続きは**媒体側の運用**なので範囲外として畳んだ
 
-## テスト状況（2026-09-17・手元で実行）
+## テスト状況（2026-09-18・手元で実行）
 
 | パッケージ | ファイル | テスト |
 |---|---|---|
-| `tools/tiles` | 8 | 108 |
+| `tools/tiles` | 7 | 108 |
 | `tools/serve` | 1 | 7 |
 | `tools/asset-check` | 1 | 13 |
 | `tools/tile-inspect` | 1 | 13 |
 | `tools/privacy-check` | 1 | 22 |
 | `tools/style-check` | 2 | 18 |
 | `tools/shot` | 1 | 13 |
+| `tools/lint-gate` | 1 | 6 |
 | `packages/http-range` | 2 | 18 |
-| `infra/pmtiles-worker` | 1 | 14 |
+| `infra/pmtiles-worker` | 1 | 23 |
 | `packages/elements` | 3 | 49 |
-| **合計** | **21** | **275 すべて通過**（2026-09-17 実行） |
+| **合計** | **21** | **290 すべて通過**（2026-09-18 実行） |
 
-`pnpm -r typecheck` も 8 パッケージとも通過。
+`pnpm -r typecheck` も 11 パッケージとも通過（`apps/demo` は素の HTML で対象外）。`pnpm lint` は 59 ファイル / 131 ルールで指摘 0。
 `tools/serve` の Range のテストは `packages/http-range` へ移りました（同じ実装を
 Worker も使うため）。**Worker のテストは Cloudflare へ繋がらない環境でも走ります**（§4）。
 

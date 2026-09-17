@@ -1,0 +1,22 @@
+#!/bin/sh
+# 手元の品質ゲート（product-baseline.md §5 / D-015）。
+#
+# **CI と同じ並びを、同じ順番で走らせる。** 手元と CI で内容がずれると、
+# 「手元では通ったのに CI で落ちる」が常態になり、ゲートが信用されなくなる。
+# 中身は package.json の `gate` 1 か所に置いてあり、ここはそれを呼ぶだけ。
+#
+# 張り付けは `pnpm install` が行う（root の `prepare` が core.hooksPath を向ける）。
+# clone しただけでは効かない。**入れ忘れても CI が最終ゲートとして残る**（§5）。
+#
+# 急いでいるときに外す先は、ここではなくスコープ（§18）。
+# どうしても落ちた状態で記録を残したいときは `git commit --no-verify` が使えるが、
+# **使ったことを commit message に書くこと。** 黙って外すと、次から既定になる。
+set -e
+
+if ! command -v pnpm >/dev/null 2>&1; then
+	echo "pre-commit: pnpm がありません。ゲートを飛ばします（CI が最終ゲート）" >&2
+	exit 0
+fi
+
+echo "pre-commit: lint / typecheck / test / asset:check / style:check"
+pnpm run gate

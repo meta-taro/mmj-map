@@ -123,20 +123,20 @@ describe("worker", () => {
  * ベースデータは ODbL なので隠す対象ではない。守りたいのは**こちらの転送量**。
  * サーバー経由のコピーは止められないが、**ブラウザからの他サイト利用は CORS で止まる。**
  */
+const get = (origin: string | undefined, e: Env) =>
+  worker.fetch(
+    new Request("https://t.example.com/kansai.pmtiles", {
+      // **Range を送る。**送らないと 200（全量）になり、206 を確かめたことにならない
+      headers: origin === undefined ? { range: "bytes=0-9" } : { range: "bytes=0-9", origin },
+    }),
+    e,
+  );
+
 describe("読ませるオリジンの制限", () => {
   const envWith = (allow?: string): Env => ({
     TILES: fakeBucket({ "kansai.pmtiles": CONTENT }),
     ...(allow === undefined ? {} : { ALLOW_ORIGINS: allow }),
   });
-
-  const get = (origin: string | undefined, e: Env) =>
-    worker.fetch(
-      new Request("https://t.example.com/kansai.pmtiles", {
-        // **Range を送る。**送らないと 200（全量）になり、206 を確かめたことにならない
-        headers: origin === undefined ? { range: "bytes=0-9" } : { range: "bytes=0-9", origin },
-      }),
-      e,
-    );
 
   it("**未設定なら閉じる。**設定を忘れたデプロイが開放されない", async () => {
     const res = await get("https://evil.example", envWith());
