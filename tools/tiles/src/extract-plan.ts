@@ -20,8 +20,10 @@ export interface ExtractPlan {
 export interface ExtractOptions {
   /** PATH 上の go-pmtiles。既定は `pmtiles`。 */
   readonly command?: string;
-  /** manifest の bbox を上書きする（試し切り用）。 */
+  /** manifest の bbox を上書きする（試し切り用）。**region より優先する。** */
   readonly bbox?: BBox;
+  /** manifest のある場所。region の相対パスをここから解く。 */
+  readonly manifestDir?: string;
 }
 
 export function buildSourceUrl(manifest: TilesManifest): string {
@@ -43,11 +45,21 @@ export function planExtract(
     throw new Error(`region '${regionName}' は manifest にありません。ある region: ${known}`);
   }
 
-  const bbox = options.bbox ?? region.bbox;
   const sourceUrl = buildSourceUrl(manifest);
   const outputPath = path.join(outDir, region.output);
 
-  const args = ["extract", sourceUrl, outputPath, `--bbox=${formatBBox(bbox)}`];
+  // **--bbox と --region を両方渡さない。**go-pmtiles は片方しか見ないので、
+  // 両方書くと「どちらが効いているか」が読む人に分からなくなる。
+  // 試し切りの bbox 上書きは、範囲を狭めるためのものなので region より優先する。
+  const args = ["extract", sourceUrl, outputPath];
+  if (options.bbox !== undefined) {
+    args.push(`--bbox=${formatBBox(options.bbox)}`);
+  } else if (region.region !== undefined) {
+    const regionPath = path.join(options.manifestDir ?? "", region.region);
+    args.push(`--region=${regionPath.split(path.sep).join("/")}`);
+  } else {
+    args.push(`--bbox=${formatBBox(region.bbox)}`);
+  }
   if (region.maxzoom !== undefined) {
     args.push(`--maxzoom=${region.maxzoom}`);
   }

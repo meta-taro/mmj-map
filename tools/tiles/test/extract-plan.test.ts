@@ -19,6 +19,12 @@ function manifestWith(buildBaseUrl: string) {
     regions: {
       japan: { bbox: [122.93, 20.42, 153.99, 45.56], maxzoom: 15, output: "japan.pmtiles" },
       nozoom: { bbox: [134.2, 33.4, 136.6, 35.9], output: "nozoom.pmtiles" },
+      shaped: {
+        bbox: [122.93, 20.42, 153.99, 45.56],
+        region: "regions/japan.geojson",
+        maxzoom: 15,
+        output: "shaped.pmtiles",
+      },
     },
     attribution: "© OpenStreetMap contributors",
   });
@@ -61,6 +67,25 @@ describe("planExtract", () => {
   it("maxzoom が無い region では --maxzoom を付けない", () => {
     const plan = planExtract(manifest, "nozoom", "dist/tiles");
     expect(plan.args.some((arg) => arg.startsWith("--maxzoom"))).toBe(false);
+  });
+
+  it("**region があれば bbox ではなく region を渡す**（海のぶんを切り落とすため）", () => {
+    const plan = planExtract(manifest, "shaped", "dist/tiles");
+    expect(plan.args.some((a) => a.startsWith("--region="))).toBe(true);
+    // **両方渡さない。**go-pmtiles は片方だけを見るので、
+    // 両方書くと「どちらが効いているか」が読む人に分からなくなる
+    expect(plan.args.some((a) => a.startsWith("--bbox="))).toBe(false);
+  });
+
+  it("region のパスは manifest のある場所から解く（叩いた場所に依存させない）", () => {
+    const plan = planExtract(manifest, "shaped", "dist/tiles", { manifestDir: "tools/tiles" });
+    expect(plan.args).toContain("--region=tools/tiles/regions/japan.geojson");
+  });
+
+  it("bbox の上書きは region より優先する（試し切りは範囲を狭めるため）", () => {
+    const plan = planExtract(manifest, "shaped", "dist/tiles", { bbox: [135, 34, 136, 35] });
+    expect(plan.args).toContain("--bbox=135,34,136,35");
+    expect(plan.args.some((a) => a.startsWith("--region="))).toBe(false);
   });
 
   it("bbox を上書きできる（試し切り）", () => {
