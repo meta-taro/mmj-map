@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { resolveUnderMount } from "../src/server.js";
+import { contentTypeFor, resolveUnderMount } from "../src/server.js";
 
 describe("resolveUnderMount", () => {
   // **mount の dir を文字列で直書きしない。** "C:/repo/..." は Linux では絶対パスに
@@ -33,5 +33,20 @@ describe("resolveUnderMount", () => {
   it("壊れた符号化と NUL を弾く", () => {
     expect(resolveUnderMount("/%E0%A4%A", mounts)).toBe(null);
     expect(resolveUnderMount("/a%00b", mounts)).toBe(null);
+  });
+});
+
+describe("contentTypeFor", () => {
+  it("GeoJSON は専用の型で返す（**octet-stream で返すと、掴んだ側が中身を見に行かない**）", () => {
+    expect(contentTypeFor("/x/points.geojson")).toBe("application/geo+json; charset=utf-8");
+  });
+
+  it("拡張子の大文字小文字を区別しない", () => {
+    expect(contentTypeFor("/x/STYLE.JSON")).toBe("application/json; charset=utf-8");
+  });
+
+  it("知らない拡張子は octet-stream（**憶測で型を付けない**）", () => {
+    expect(contentTypeFor("/x/data.bin")).toBe("application/octet-stream");
+    expect(contentTypeFor("/x/noext")).toBe("application/octet-stream");
   });
 });

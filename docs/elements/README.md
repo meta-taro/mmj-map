@@ -17,6 +17,7 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 ```
 
 手元で動かすなら `pnpm serve` のあと <http://localhost:8787/elements.html>。
+点をまとめる例は <http://localhost:8787/cluster.html>。
 
 ## 属性
 
@@ -40,6 +41,36 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 | `popup` | 押したときに出す文字 |
 | `popup-open` | 最初から開いておく |
 | `color` | 目印の色 |
+
+### `<mmj-cluster>`
+
+点が多いときに、まとめて描きます。**まとめる計算は MapLibre の GeoJSON source が
+持っている**ので、この部品は 3 枚のレイヤを排他の filter で置くだけです（D-011）。
+
+```html
+<mmj-map tiles="..." style-url="...">
+  <mmj-cluster src="./data/sample-points.geojson" radius="50" max-zoom="14"></mmj-cluster>
+</mmj-map>
+```
+
+| 属性 | 意味 |
+| --- | --- |
+| `src` | 点の GeoJSON の URL（必須） |
+| `radius` | まとめる距離（px）。既定 50 |
+| `max-zoom` | ここより寄ると、まとめずに 1 点ずつ出す。既定 14 |
+| `color` | まとまりの色。既定は MapLibre の Marker と同じ `#3FB1CE` |
+| `text-color` | 件数の文字色と、丸の縁の色。既定 `#111418` |
+| `point-color` | ばらの点の色 |
+| `layer-id` | source / layer の名前。既定は自動で振る（同じページに複数置ける） |
+
+- **まとまりを押すと、それが解ける倍率まで寄ります。**
+- **ばらの点を押すと `mmj-cluster-point` が飛びます**（`detail.properties` /
+  `detail.lngLat`）。ポップアップを出すかどうかは**使う側が決めます**。
+  ここで決めると厚くなるので、部品は中身を渡すところで止めています。
+- **件数は色ではなく大きさで表しています。**色の段階は配色を決める行為で、
+  凡例が無いまま出すと読む人ごとに違う意味に読まれます（baseline §11 / D-011）。
+  既定の 2 色は**新しく作った色ではなく**、MapLibre の既定値と
+  `styles/modern-dark.json` に既にある値です。**DESIGN.md が埋まるまでの仮置きです。**
 
 ## この部品が引き受けていること
 
@@ -73,10 +104,15 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 
 ![ポップアップ](../screenshots/2026-09-16-elements-popup.jpg)
 
+200 点を `<mmj-cluster>` で置いたところ（z11 でまとまり、z15 でばらける）。
+**この 200 点は合成データで、実在の場所ではありません**（`apps/demo/data/README.md`）。
+
+![点をまとめたところ](../screenshots/2026-09-17-cluster-z11.jpg)
+
+![寄るとばらける](../screenshots/2026-09-17-cluster-z15.jpg)
+
 ## まだやっていないこと（S2 の残り）
 
-- **Cluster。** 点が増えたときにまとめる部品。MapLibre の GeoJSON source が
-  クラスタリングを持っているので、それを `<mmj-cluster>` から使う形を検討中です。
 - **永続レイアウト**（地図の状態を保ったまま周りだけ差し替わる形）。
 - **React / Vue のラッパ**（S3 / S4）。Web Components はそのまま使えるので、
   ラッパが薄くならないなら作りません。
@@ -90,3 +126,9 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
   MapLibre が元々想定している対比へ戻しているだけ**です。
 - **属性は部品を読み込む前に入れる。** 逆にすると、属性が付く前に
   `connectedCallback` が走り「配信先が無い」と言って終わります。
+- **`mmj-ready` の時点では、まだ source を足せない。** `mmj-ready` は Map を作った直後に
+  出ますが、そこではスタイルがまだ読み終わっていません。`addSource` すると例外になります。
+  `<mmj-cluster>` は `isStyleLoaded()` を見て、必要なら `load` を待ってから足しています。
+- **GeoJSON を配るとき、content-type が `application/octet-stream` だと紛らわしい。**
+  MapLibre は中身を見に行くので描けますが、掴んだ側が何のファイルか分かりません。
+  `tools/serve` に `.geojson` → `application/geo+json` を足しました。

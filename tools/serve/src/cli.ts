@@ -58,6 +58,7 @@ createStaticServer(mounts, { "/config.js": { type: "text/javascript; charset=utf
   console.log(`タイル:     http://localhost:${port}/tiles/${region}.pmtiles`);
   console.log(`スタイル:   http://localhost:${port}/styles/modern-dark.json`);
   console.log(`部品の例:   http://localhost:${port}/elements.html`);
+  console.log(`点のまとめ: http://localhost:${port}/cluster.html`);
   console.log("");
   console.log("Range の疎通確認:");
   console.log(`  pnpm tiles:check-range -- http://localhost:${port}/tiles/${region}.pmtiles`);

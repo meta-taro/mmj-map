@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>modern-map-japan — 点をまとめる（mmj-cluster）</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #14161a; color: #e7e9ee; }
+  body { font: 14px/1.7 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  header { padding: .75rem 1rem; border-bottom: 1px solid #262a32; }
+  header h1 { font-size: 1rem; margin: 0 0 .25rem; }
+  header p { margin: 0; color: #aeb4c0; font-size: .85rem; }
+  header code { background: #1e2128; padding: .1em .35em; border-radius: 3px; }
+  mmj-map { position: absolute; inset: 6.5rem 0 0; }
+  #picked {
+    position: absolute; left: 1rem; bottom: 1rem; z-index: 1;
+    background: #1b1f24; border: 1px solid #2e343b; border-radius: 6px;
+    padding: .5rem .75rem; font-size: .85rem; color: #c9d0d8;
+  }
+  #notice { padding: 2rem; color: #aeb4c0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>点をまとめる</h1>
+  <p>
+    <code>&lt;mmj-cluster&gt;</code> に GeoJSON の URL を渡すだけ。200 点のサンプルを置いています。
+    まとまりを押すと、そこが解ける倍率まで寄ります。
+    <strong>この 200 点は合成データで、実在の場所ではありません</strong>（<code>data/README.md</code>）。
+  </p>
+</header>
+
+<mmj-map id="map" center="135.5023,34.6937" zoom="11" hash>
+  <mmj-cluster id="cluster" src="./data/sample-points.geojson" radius="50" max-zoom="14"></mmj-cluster>
+</mmj-map>
+
+<div id="picked" hidden></div>
+
+<div id="notice" hidden>
+  まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script type="module">
+  // **属性を入れてから部品を読み込む。**逆にすると connectedCallback が先に走る。
+  const cfg = window.MMJ_CONFIG ?? {};
+  const map = document.getElementById('map');
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    map.remove();
+    document.getElementById('notice').hidden = false;
+  } else {
+    map.setAttribute('tiles', cfg.tilesUrl);
+    map.setAttribute('style-url', cfg.styleUrl);
+
+    // ばらの点を押したときに何を出すかは、**使う側が決める**。
+    // 部品はイベントで中身を渡すところまでしかやらない（PRD §3・厚くしない）。
+    const picked = document.getElementById('picked');
+    document.getElementById('cluster').addEventListener('mmj-cluster-point', (event) => {
+      picked.textContent = `${event.detail.properties.name}（${event.detail.properties.group}）`;
+      picked.hidden = false;
+    });
+
+    await import('/elements/index.js');
+  }
+</script>
+</body>
+</html>

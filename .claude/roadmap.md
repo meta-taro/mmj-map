@@ -62,7 +62,10 @@
 - [x] Map / Marker / Popup を Web Components として書く（2026-09-16・`packages/elements`）
       — ビルド工程なし（素の ESM）。属性の解釈は純粋関数でテスト済み（14 件）。
       実物は `docs/screenshots/2026-09-16-elements-*.jpg`
-- [ ] Cluster — MapLibre の GeoJSON source のクラスタリングを使う形を検討中
+- [x] Cluster — `<mmj-cluster>`（2026-09-17）。**まとめる計算は MapLibre の GeoJSON source**
+      に任せ、部品は 3 枚のレイヤを排他の filter で置くだけ（D-011）。
+      件数は色ではなく大きさで表す（配色は人の領域・§11）。
+      実物は `docs/screenshots/2026-09-17-cluster-z11.jpg` / `-z15.jpg`
 - [ ] 永続レイアウト（地図の状態を保ったまま周りだけ差し替わる形）
 - [x] **素の MapLibre を呼ぶのと変わらない厚さなら、そこで止める**（PRD §3）
       — **止めていません。**素の呼び出し 40 行に対し、部品を使うと 10 行。
