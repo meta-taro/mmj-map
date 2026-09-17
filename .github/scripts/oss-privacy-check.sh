@@ -11,6 +11,8 @@
 #   OSS_ALLOWED_EMAIL_DOMAINS       追加行・commit message で許可するメールドメイン（空白区切り）
 #   OSS_ALLOWED_EMAILS              同上を、ドメインではなくアドレス完全一致で許可（空白区切り）
 #   OSS_DENY_WORDS                  禁止語（実名等）を 1 行 1 語。CI では secrets から渡す
+#   OSS_ALLOWED_HOME_NAMES          ホームディレクトリのパスに現れてよい名前（空白区切り）
+#                                   既定: runner user ubuntu vagrant administrator
 #
 # 設計上の約束:
 #   - 検出しても「見つかった中身」をログへ出さない。CI ログは公開されるため、
@@ -25,12 +27,19 @@ ALLOWED_DOMAINS="${OSS_ALLOWED_EMAIL_DOMAINS:-example.com example.org example.ne
 # 実在の個人アドレスまで通ってしまうため、値で許す。
 ALLOWED_EMAILS="${OSS_ALLOWED_EMAILS:-noreply@anthropic.com}"
 DENY_WORDS="${OSS_DENY_WORDS:-}"
+# 個人のホームディレクトリのパスは、**メールと同じくらい個人を指す**。
+# 手元の実行ログや環境メモを貼ると、OS のアカウント名がそのまま公開される。
+# ここに挙げるのは「誰の名前でもない」ことが分かっているものだけ。
+ALLOWED_HOME_NAMES="${OSS_ALLOWED_HOME_NAMES:-runner user ubuntu vagrant administrator}"
 
 EMAIL_RE='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 # 検査スクリプト自身は正規表現やドメイン例を含むため除外する
 SELF_RE='^\.github/(scripts/oss-privacy-check\.sh|workflows/oss-privacy-check\.yml)$'
 
 fail=0
+# バックスラッシュ 1 文字。パス区切りを剥がすときに使う。
+# **式の中へ直接書かない。**書き換えのたびにエスケープが 1 本ずつ減って壊れる。
+BS='\'
 note() { printf '%s\n' "$*" >&2; }
 
 # メールを y***@***.com 形式へ落とす（公開ログへ原文を出さないため）
@@ -49,6 +58,15 @@ allowed_email() {
   d="${e##*@}"
   for a in $ALLOWED_DOMAINS; do
     [ "$d" = "$(lower "$a")" ] && return 0
+  done
+  return 1
+}
+
+allowed_home_name() {
+  local n
+  n="$(lower "$1")"
+  for a in $ALLOWED_HOME_NAMES; do
+    [ "$n" = "$(lower "$a")" ] && return 0
   done
   return 1
 }
@@ -182,8 +200,12 @@ AWK_EMAIL_RE='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z][A-Za-z]+'
 # 実行のたびに awk の警告が出る（**警告で出力が汚れると、本物の NG が埋もれる**）。
 AWK_SELF_RE="${SELF_RE//\\/\\\\}"
 
+# 個人のホームディレクトリ。Windows / macOS / Linux の 3 形。
+# 末尾の名前だけを取り出して、許可名簿と突き合わせる（判定は bash 側）。
+AWK_HOME_RE='([Cc]:[\\\\/]|/)[Uu]sers[\\\\/][A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+'
+
 hits="$(printf '%s\n' "$diff_out" | awk \
-  -v self_re="$AWK_SELF_RE" -v email_re="$AWK_EMAIL_RE" -v deny="$DENY_WORDS" '
+  -v self_re="$AWK_SELF_RE" -v email_re="$AWK_EMAIL_RE" -v home_re="$AWK_HOME_RE" -v deny="$DENY_WORDS" '
   BEGIN {
     dn = split(deny, dw, "\n")
     for (i = 1; i <= dn; i++) dwl[i] = tolower(dw[i])
@@ -196,6 +218,11 @@ hits="$(printf '%s\n' "$diff_out" | awk \
       rest = line
       while (match(rest, email_re)) {
         print "E\t" f "\t" ln "\t" substr(rest, RSTART, RLENGTH)
+        rest = substr(rest, RSTART + RLENGTH)
+      }
+      rest = line
+      while (match(rest, home_re)) {
+        print "H" "	" f "	" ln "	" substr(rest, RSTART, RLENGTH)
         rest = substr(rest, RSTART + RLENGTH)
       }
       if (dn > 0) {
@@ -216,6 +243,14 @@ if [ -n "$hits" ]; then
     if [ "$kind" = "E" ]; then
       allowed_email "$value" && continue
       note "NG [added-email] $file:$lineno : $(printf '%s' "$value" | mask_email)"
+      fail=1
+    elif [ "$kind" = "H" ]; then
+      # 末尾の 1 区切りが、OS のアカウント名
+      name="${value##*/}"
+      name="${name##*"$BS"}"
+      allowed_home_name "$name" && continue
+      # **原文を出さない。**先頭 1 文字だけ残す（メールと同じ扱い）
+      note "NG [added-homepath] $file:$lineno : ${name:0:1}*** のホームディレクトリのパス"
       fail=1
     else
       note "NG [added-denyword] $file:$lineno : 禁止語 #$value に一致"
