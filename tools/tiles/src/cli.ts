@@ -19,6 +19,10 @@ import {
   type TilesManifest,
 } from "./manifest.js";
 import { planExtract, planExtractSteps, planVerify, formatCommandLine, type ExtractPlan } from "./extract-plan.js";
+import { chooseBuild, outputNameFor, rememberBuild, type KnownBuild } from "./rollback.js";
+
+/** 戻り先として覚えておく本数。際限なく増やさない（D-014） */
+const KNOWN_GOOD_LIMIT = 3;
 import { interpretRangeResponse, PROBE_RANGE_HEADER } from "./range.js";
 
 const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -55,6 +59,34 @@ async function commandResolve(argv: readonly string[]): Promise<number> {
     for (const reason of skipped.slice(0, 5)) console.warn(`  - ${reason}`);
   }
 
+  // 確認済みの旧版を覚える（戻り先・D-014）。**上流の索引と突き合わせてから書く。**
+  const remember = getFlag(argv, "remember");
+  if (remember !== undefined) {
+    const key = remember.endsWith(".pmtiles") ? remember : `${remember}.pmtiles`;
+    const entry = findBuild(entries, key);
+    if (entry === undefined) {
+      console.error(`上流に ${key} がありません。索引にあるものだけ覚えられます。`);
+      return 1;
+    }
+    if (key === manifest.source.key) {
+      console.error(`${key} は pin そのものです。戻り先としては覚えません。`);
+      return 1;
+    }
+    const next = rememberBuild(manifest.source.knownGood ?? [], entry, KNOWN_GOOD_LIMIT);
+    const rawSource = (raw as Record<string, unknown>)["source"] as Record<string, unknown>;
+    await writeFile(
+      manifestPath,
+      `${JSON.stringify({ ...raw, source: { ...rawSource, knownGood: next } }, null, 2)}
+`,
+      "utf8",
+    );
+    console.log(`戻り先に ${key}（basemap ${entry.version}）を覚えました。`);
+    console.log(`いまの戻り先: ${next.map((b) => b.key).join(", ")}`);
+    console.log("**この版で実際に地図が出ることは、まだ誰も確かめていません。**");
+    console.log(`確かめるなら: pnpm tiles:extract -- <region> --build=${key.replace(".pmtiles", "")}`);
+    return 0;
+  }
+
   const updateTo = getFlag(argv, "update");
   if (updateTo !== undefined) {
     const target = updateTo === "latest" ? latestBuild(entries) : findBuild(entries, updateTo);
@@ -72,6 +104,18 @@ async function commandResolve(argv: readonly string[]): Promise<number> {
   const newest = latestBuild(entries);
   console.log(`pin:   ${manifest.source.key}（basemap ${manifest.source.basemapVersion}）`);
   console.log(`上流最新: ${newest?.key ?? "不明"}（basemap ${newest?.version ?? "不明"}）`);
+
+  // **戻り先が上流から消えていたら、消えたと言う。**いざ戻ろうとした日に気づくのでは遅い
+  const knownGood = manifest.source.knownGood ?? [];
+  if (knownGood.length === 0) {
+    console.warn("戻り先: ありません（pin 1 本だけ）。--remember=<キー> で足せます。");
+  } else {
+    const gone = knownGood.filter((build) => findBuild(entries, build.key) === undefined);
+    console.log(`戻り先: ${knownGood.map((b) => b.key).join(", ")}`);
+    for (const build of gone) {
+      console.warn(`  警告 ${build.key} は上流の索引から消えています。**戻れません。**`);
+    }
+  }
 
   const issues = verifyPin(manifest, entries);
   if (issues.length === 0) {
@@ -102,12 +146,47 @@ async function commandExtract(argv: readonly string[]): Promise<number> {
   const outDir = getFlag(argv, "out-dir") ?? defaultOutDir;
   const bboxFlag = getFlag(argv, "bbox");
   const commandFlag = getFlag(argv, "command");
+  const buildFlag = getFlag(argv, "build");
+
+  // manifest が知っている版だけ（先頭が pin）。**引数で任意の URL を取りに行かせない**（§21）
+  const known: KnownBuild[] = [
+    {
+      key: manifest.source.key,
+      basemapVersion: manifest.source.basemapVersion,
+      size: manifest.source.size,
+      uploaded: manifest.source.uploaded,
+    },
+    ...(manifest.source.knownGood ?? []),
+  ];
+
+  let build: { key: string; outputName: string } | undefined;
+  if (buildFlag !== undefined) {
+    let chosen;
+    try {
+      chosen = chooseBuild(known, buildFlag);
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      return 2;
+    }
+    const region = manifest.regions[regionName];
+    if (region === undefined) {
+      console.error(`region '${regionName}' は manifest にありません`);
+      return 2;
+    }
+    build = { key: chosen.key, outputName: outputNameFor(region.output, chosen.key, manifest.source.key) };
+    if (chosen.key !== manifest.source.key) {
+      // **戻していることを黙って進めない。**pin と違う版で切ったことが後から分かるように
+      console.warn(`pin（${manifest.source.key}）ではなく ${chosen.key} で切り出します。`);
+      console.warn(`出力: ${build.outputName}（pin の成果物は上書きしません）`);
+    }
+  }
 
   const steps = planExtractSteps(manifest, regionName, outDir, {
     // region の相対パスは manifest のある場所から解く（叩いた場所に依存させない）
     manifestDir: packageRoot,
     ...(commandFlag === undefined ? {} : { command: commandFlag }),
     ...(bboxFlag === undefined ? {} : { bbox: parseBBoxString(bboxFlag) }),
+    ...(build === undefined ? {} : { build }),
   });
 
   // 最後の段の出力が成果物（1 段のときはその段そのもの）

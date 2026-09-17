@@ -24,6 +24,11 @@ export interface ExtractOptions {
   readonly bbox?: BBox;
   /** manifest のある場所。region の相対パスをここから解く。 */
   readonly manifestDir?: string;
+  /**
+   * 上流ビルドを pin 以外へ差し替える（ロールバック・D-014）。
+   * **manifest が知っている版だけ**を呼ぶ側が解決して渡すこと。
+   */
+  readonly build?: { readonly key: string; readonly outputName: string };
 }
 
 export function buildSourceUrl(manifest: TilesManifest): string {
@@ -45,8 +50,11 @@ export function planExtract(
     throw new Error(`region '${regionName}' は manifest にありません。ある region: ${known}`);
   }
 
-  const sourceUrl = buildSourceUrl(manifest);
-  const outputPath = path.join(outDir, region.output);
+  const sourceUrl =
+    options.build === undefined
+      ? buildSourceUrl(manifest)
+      : buildSourceUrl({ ...manifest, source: { ...manifest.source, key: options.build.key } });
+  const outputPath = path.join(outDir, options.build?.outputName ?? region.output);
 
   // **--bbox と --region を両方渡さない。**go-pmtiles は片方しか見ないので、
   // 両方書くと「どちらが効いているか」が読む人に分からなくなる。

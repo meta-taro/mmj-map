@@ -14,7 +14,21 @@
     "size": 138031484053,
     "md5sum": "gKc5TWbhCwYIeUrIcDReAQ==",
     "b3sum": "ba618b3b5f301cc8b4142736932c798b0444860bb2caa67cc79a7b4bc5e35357",
-    "uploaded": "2026-09-15T09:02:55.277Z"
+    "uploaded": "2026-09-15T09:02:55.277Z",
+    "knownGood": [
+      {
+        "key": "20260914.pmtiles",
+        "basemapVersion": "4.15.2",
+        "size": 138013553034,
+        "uploaded": "2026-09-14T08:57:17.654Z"
+      },
+      {
+        "key": "20260913.pmtiles",
+        "basemapVersion": "4.15.2",
+        "size": 137999059691,
+        "uploaded": "2026-09-13T08:54:28.274Z"
+      }
+    ]
   },
   "regions": {
     "japan": {
