@@ -26,8 +26,9 @@
       ],
       "maxzoom": 15,
       "output": "japan.pmtiles",
-      "note": "日本の領域。四隅は 西=与那国島 西崎 / 南=沖ノ鳥島 / 東=南鳥島 / 北=択捉島。遠方の島を落とすと『日本の地図』ではなくなるため、面積ではなく領域で切る。ただし四隅の四角 1 個だと太平洋を丸ごと抱えるので、切り出しは regions/japan.geojson（8 つの四角）で行う。bbox はその外枠として残してある。落としていないことは test/coverage.test.ts が止める。",
-      "region": "regions/japan.geojson"
+      "note": "日本の領域。四隅は 西=与那国島 西崎 / 南=沖ノ鳥島 / 東=南鳥島 / 北=択捉島。遠方の島を落とすと『日本の地図』ではなくなるため、面積ではなく領域で切る。ただし四隅の四角 1 個だと太平洋を丸ごと抱えるので、z11 以上は regions/japan.geojson（8 つの四角）で切る。z10 以下は bbox 全域で取る（低い倍率で region を使うと、日本全体を見たときに海のタイルが無くて黒い矩形が出る。低い倍率は安く、全域 z0-10 で 78 MB）。島を落としていないことは test/coverage.test.ts が止める。",
+      "region": "regions/japan.geojson",
+      "regionMinZoom": 11
     },
     "kansai": {
       "bbox": [

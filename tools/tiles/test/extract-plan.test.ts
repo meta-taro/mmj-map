@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { parseManifest } from "../src/manifest.js";
-import { buildSourceUrl, planExtract, planVerify, formatCommandLine } from "../src/extract-plan.js";
+import { buildSourceUrl, planExtract, planExtractSteps, planVerify, formatCommandLine } from "../src/extract-plan.js";
 
 function manifestWith(buildBaseUrl: string) {
   return parseManifest({
@@ -24,6 +24,13 @@ function manifestWith(buildBaseUrl: string) {
         region: "regions/japan.geojson",
         maxzoom: 15,
         output: "shaped.pmtiles",
+      },
+      split: {
+        bbox: [122.93, 20.42, 153.99, 45.56],
+        region: "regions/japan.geojson",
+        regionMinZoom: 11,
+        maxzoom: 15,
+        output: "split.pmtiles",
       },
     },
     attribution: "© OpenStreetMap contributors",
@@ -111,5 +118,52 @@ describe("formatCommandLine", () => {
     expect(formatCommandLine(plan)).toBe(
       `pmtiles extract https://build.protomaps.com/20260915.pmtiles ${path.join("out", "nozoom.pmtiles")} --bbox=134.2,33.4,136.6,35.9`,
     );
+  });
+});
+
+/**
+ * **低い倍率で region を使うと、海に穴が開く。**
+ *
+ * z5 で日本全体を見ると、region の外の海のタイルが無いので黒い矩形が出る
+ * （実測: 2026-09-17 に撮って気づいた）。低い倍率のタイルは安いので
+ * （全域 z0-10 で 78 MB）、そこだけ bbox で取って merge する。
+ */
+describe("planExtractSteps（倍率で切り分ける）", () => {
+  it("regionMinZoom があれば、低い倍率は bbox・高い倍率は region で取って merge する", () => {
+    const steps = planExtractSteps(manifest, "split", "dist/tiles", { manifestDir: "tools/tiles" });
+    expect(steps).toHaveLength(3);
+
+    const [low, high, merge] = steps;
+    expect(low?.args).toContain("--bbox=122.93,20.42,153.99,45.56");
+    expect(low?.args).toContain("--maxzoom=10");
+    expect(low?.args.some((a) => a.startsWith("--region="))).toBe(false);
+
+    expect(high?.args).toContain("--region=tools/tiles/regions/japan.geojson");
+    expect(high?.args).toContain("--minzoom=11");
+    expect(high?.args).toContain("--maxzoom=15");
+
+    expect(merge?.args[0]).toBe("merge");
+  });
+
+  it("merge の出力が、最終的な成果物になる", () => {
+    const steps = planExtractSteps(manifest, "split", "dist/tiles", { manifestDir: "tools/tiles" });
+    const merge = steps[2];
+    expect(merge?.outputPath.endsWith("split.pmtiles")).toBe(true);
+    expect(merge?.args.at(-1)).toBe(merge?.outputPath);
+    // **中間ファイルは最終成果物と別名にする。**同じ名前にすると、
+    // merge の入力と出力が同じファイルになって壊れる
+    expect(steps[0]?.outputPath).not.toBe(merge?.outputPath);
+    expect(steps[1]?.outputPath).not.toBe(merge?.outputPath);
+  });
+
+  it("regionMinZoom が無ければ、1 段のまま（いままでどおり）", () => {
+    expect(planExtractSteps(manifest, "shaped", "dist/tiles", { manifestDir: "tools/tiles" })).toHaveLength(1);
+    expect(planExtractSteps(manifest, "nozoom", "dist/tiles")).toHaveLength(1);
+  });
+
+  it("bbox の上書き（試し切り）は 1 段に落とす。**切り分ける意味がないため**", () => {
+    const steps = planExtractSteps(manifest, "split", "dist/tiles", { bbox: [135, 34, 136, 35] });
+    expect(steps).toHaveLength(1);
+    expect(steps[0]?.args).toContain("--bbox=135,34,136,35");
   });
 });

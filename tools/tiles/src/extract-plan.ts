@@ -84,3 +84,78 @@ export function planVerify(plan: ExtractPlan): ExtractPlan {
 export function formatCommandLine(plan: ExtractPlan): string {
   return [plan.command, ...plan.args].join(" ");
 }
+
+/**
+ * 切り出しを何段で行うかを決める。
+ *
+ * **低い倍率で region を使うと、海に穴が開く。**z5 で日本全体を見ると、
+ * region の外の海のタイルが無いので黒い矩形が出る（2026-09-17 に撮って気づいた）。
+ * 低い倍率のタイルは安い（全域 z0-10 で 78 MB）ので、そこだけ bbox で取って merge する。
+ *
+ * `regionMinZoom` が無ければ 1 段のまま（いままでどおり）。
+ */
+export function planExtractSteps(
+  manifest: TilesManifest,
+  regionName: string,
+  outDir: string,
+  options: ExtractOptions = {},
+): ExtractPlan[] {
+  const region = manifest.regions[regionName];
+  if (region === undefined) return [planExtract(manifest, regionName, outDir, options)];
+
+  const split = region.regionMinZoom;
+  // 試し切り（bbox 上書き）は切り分けない。範囲を狭めるためのものなので、意味がない
+  if (split === undefined || region.region === undefined || options.bbox !== undefined) {
+    return [planExtract(manifest, regionName, outDir, options)];
+  }
+
+  const base = planExtract(manifest, regionName, outDir, options);
+  const command = base.command;
+  const sourceUrl = base.sourceUrl;
+  const finalPath = base.outputPath;
+  // **中間ファイルは最終成果物と別名にする。**同じ名前にすると merge の入力と出力が
+  // 同じファイルになって壊れる
+  const lowPath = finalPath.replace(/.pmtiles$/, ".low.pmtiles");
+  const highPath = finalPath.replace(/.pmtiles$/, ".high.pmtiles");
+
+  const regionPath = path.join(options.manifestDir ?? "", region.region).split(path.sep).join("/");
+
+  const low: ExtractPlan = {
+    region: regionName,
+    sourceUrl,
+    outputPath: lowPath,
+    command,
+    args: [
+      "extract",
+      sourceUrl,
+      lowPath,
+      `--bbox=${formatBBox(region.bbox)}`,
+      `--maxzoom=${split - 1}`,
+    ],
+  };
+
+  const high: ExtractPlan = {
+    region: regionName,
+    sourceUrl,
+    outputPath: highPath,
+    command,
+    args: [
+      "extract",
+      sourceUrl,
+      highPath,
+      `--region=${regionPath}`,
+      `--minzoom=${split}`,
+      ...(region.maxzoom === undefined ? [] : [`--maxzoom=${region.maxzoom}`]),
+    ],
+  };
+
+  const merge: ExtractPlan = {
+    region: regionName,
+    sourceUrl,
+    outputPath: finalPath,
+    command,
+    args: ["merge", lowPath, highPath, finalPath],
+  };
+
+  return [low, high, merge];
+}

@@ -5,7 +5,7 @@
  * 判断は src/ の純粋関数側にあり、こちらは運ぶだけ。
  */
 import { spawn } from "node:child_process";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -18,7 +18,7 @@ import {
   withPinnedBuild,
   type TilesManifest,
 } from "./manifest.js";
-import { planExtract, planVerify, formatCommandLine, type ExtractPlan } from "./extract-plan.js";
+import { planExtract, planExtractSteps, planVerify, formatCommandLine, type ExtractPlan } from "./extract-plan.js";
 import { interpretRangeResponse, PROBE_RANGE_HEADER } from "./range.js";
 
 const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -103,27 +103,37 @@ async function commandExtract(argv: readonly string[]): Promise<number> {
   const bboxFlag = getFlag(argv, "bbox");
   const commandFlag = getFlag(argv, "command");
 
-  const plan = planExtract(manifest, regionName, outDir, {
+  const steps = planExtractSteps(manifest, regionName, outDir, {
     // region の相対パスは manifest のある場所から解く（叩いた場所に依存させない）
     manifestDir: packageRoot,
     ...(commandFlag === undefined ? {} : { command: commandFlag }),
     ...(bboxFlag === undefined ? {} : { bbox: parseBBoxString(bboxFlag) }),
   });
 
+  // 最後の段の出力が成果物（1 段のときはその段そのもの）
+  const plan = steps[steps.length - 1]!;
+
   if (argv.includes("--dry-run")) {
-    console.log(formatCommandLine(plan));
+    for (const step of steps) console.log(formatCommandLine(step));
     console.log(formatCommandLine(planVerify(plan)));
     return 0;
   }
 
   await mkdir(outDir, { recursive: true });
 
-  const extractCode = await run(plan);
-  if (extractCode !== 0) return extractCode;
+  for (const step of steps) {
+    const code = await run(step);
+    if (code !== 0) return code;
+  }
 
   // extract が 0 で返っても中身が揃っているとは限らない。必ず verify まで通す。
   const verifyCode = await run(planVerify(plan));
   if (verifyCode !== 0) return verifyCode;
+
+  // 中間ファイルは verify が通ってから消す。**先に消すと、失敗したときに取り直しになる**
+  for (const step of steps.slice(0, -1)) {
+    if (steps.length > 1) await rm(step.outputPath, { force: true });
+  }
 
   console.log(`できました: ${plan.outputPath}`);
   console.log(`帰属表示（画面から外さない）: ${manifest.attribution}`);
