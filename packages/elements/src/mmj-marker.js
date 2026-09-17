@@ -8,20 +8,26 @@
  * 親の地図がまだ出来ていなければ、`mmj-ready` を待ってから付ける。
  * **待たずに付けると、読み込み順で付いたり付かなかったりする**（再現しない不具合になる）。
  */
-import { parseLngLat } from "./attrs.js";
+import { buildPopupOptions, buildPopupStyle, parseLngLat } from "./attrs.js";
 
 /**
- * ポップアップの文字色だけを固定する。**配色を決めているのではない**（§11）。
- * MapLibre のポップアップは白地で、文字色はページから継承する。暗いページに置くと
- * **白地に明るい文字**になって読めなくなる（実測: docs/screenshots の部品の例で発生）。
- * ここで戻しているのは MapLibre が元々想定している対比であって、新しい色ではない。
+ * ポップアップを、暗い地図の上で読める形にする。
+ *
+ * **色は新しく作っていない**（baseline §11）。すべて `styles/modern-dark.json` に
+ * ある値を借りている（`POPUP_COLORS`・借りていることはテストで縛ってある）。
+ *
+ * 撮って初めて分かった不具合が 3 つある。
+ *
+ * 1. **白地に明るい文字。**暗いページだと文字色を継承して読めなくなる
+ * 2. **右上の「謎の四角」。**閉じるボタン（×）が絶対配置で、短い文字だと重なって潰れる
+ * 3. **白い紙が 1 枚浮く。**暗い地図の上で MapLibre 既定の白地が浮く
  */
 function ensurePopupContrast() {
   const id = "mmj-popup-contrast";
   if (document.getElementById(id)) return;
   const style = document.createElement("style");
   style.id = id;
-  style.textContent = ".mmj-popup .maplibregl-popup-content{color:#14161a;}";
+  style.textContent = buildPopupStyle();
   document.head.append(style);
 }
 
@@ -61,7 +67,7 @@ export class MmjMarker extends HTMLElement {
     const popup = this.getAttribute("popup");
     if (popup) {
       ensurePopupContrast();
-      this.marker.setPopup(new maplibregl.Popup({ offset: 24, className: "mmj-popup" }).setText(popup));
+      this.marker.setPopup(new maplibregl.Popup(buildPopupOptions()).setText(popup));
     }
 
     this.marker.addTo(map);

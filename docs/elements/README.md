@@ -126,9 +126,9 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 
 ## 実物
 
-![部品で置いた目印](../screenshots/2026-09-16-elements-markers.jpg)
+![部品で置いた目印](../screenshots/2026-09-17-elements-markers.jpg)
 
-![ポップアップ](../screenshots/2026-09-16-elements-popup.jpg)
+![ポップアップ](../screenshots/2026-09-17-elements-popup.jpg)
 
 200 点を `<mmj-cluster>` で置いたところ（z11 でまとまり、z15 でばらける）。
 **この 200 点は合成データで、実在の場所ではありません**（`apps/demo/data/README.md`）。

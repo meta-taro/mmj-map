@@ -4,6 +4,9 @@
     // **ビルド工程を持たない**ので、配るのは素の JS。型は JSDoc で書き、ここで検査する。
     "allowJs": true,
     "checkJs": true,
+    // テストだけが node の API を使う（スタイルの色と突き合わせるため styles/*.json を読む）。
+    // **配る側（src）は node に依存していない。**
+    "types": ["node"],
     "lib": ["es2023", "dom"]
   },
   "include": ["src/**/*.js", "test/**/*.js"]
