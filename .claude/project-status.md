@@ -108,22 +108,29 @@ Node は **管理者権限なし**で入れてある。公式 zip を SHA256 で
 - lint と Git hooks — 未整備。**別セッションが oxlint を入れている最中**で、
   2026-09-17 時点では devDependency だけあって設定ファイルも CI 配線もありません
 
-## CI の状況（2026-09-16 時点）
+## CI の状況（2026-09-17・push 後の実測）
 
-最後に走ったのは `fd6eaca`。**3 つとも success**。
+**`e7406a0` で 3 つとも success。**`fd6eaca` 以来 20 本ぶんが未検証だった状態を解消。
 
 | workflow | 結果 | 所要 |
 | --- | --- | --- |
-| CI（typecheck / test） | success | 16s |
-| Deploy demo to GitHub Pages | success | 16s |
-| oss-privacy-check | success | 8s |
+| CI（typecheck / test 281 件 / style:check / asset:check） | success | 22s |
+| Deploy demo to GitHub Pages | success | 20s |
+| oss-privacy-check | success | 11s |
 
-privacy-check は 2 時間超かかっていたのを 1 パスへ書き直して 5 秒台になりました（`30e36e3`）。
+今日入れた検査 2 つ（`asset:check` / `[added-homepath]`）も、本番の CI で初めて緑になった。
 
-**未 push の commit があります**（本数は `git rev-list --count origin/develop..HEAD`。
-数を本文へ書くと、その修正自体で 1 本増えて必ずずれる）。上の結果は `fd6eaca` までのもので、
-以降の変更（スタイル修正・style-check・shot・Worker・部品）は **CI を通っていません**。
-push は人の確認後（baseline §6）。
+### 一度落ちた（2026-09-17・`a2a85f9`）
+
+**別セッションの作業を半分だけ commit していた。**lint（oxlint）を入れている
+別セッションに配慮して `.oxlintrc.json` を `git restore --staged` で毎回外していたが、
+`git add -A` が同じセッションの `tools/lint-gate`（テスト 6 件）は拾っていた。
+設定ファイル抜きでゲートだけが入り、CI で 5 件が落ちた（`e7406a0` で修正）。
+
+**手元では 275 件すべて通っていた。**設定ファイルがローカルに未追跡で存在していたため。
+**追跡外のファイルに依存して通るテストは、CI でしか落ちない。**
+
+教訓: `git add -A` してから 1 ファイルだけ外す形にしない。**足す側を明示する。**
 
 ## 止まっているもの（人にしかできない工程・baseline §29）
 
