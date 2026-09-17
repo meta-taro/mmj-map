@@ -185,6 +185,9 @@ importers:
 
   packages/elements:
     devDependencies:
+      '@types/node':
+        specifier: ^26.5.1
+        version: 26.5.1
       typescript:
         specifier: ^7.0.2
         version: 7.0.2

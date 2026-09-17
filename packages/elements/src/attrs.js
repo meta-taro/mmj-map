@@ -81,3 +81,82 @@ function toNumber(text) {
   const value = Number(trimmed);
   return Number.isFinite(value) ? value : null;
 }
+
+/**
+ * 目印のポップアップに渡す設定。
+ *
+ * **閉じるボタンを出さない。** MapLibre の既定は `closeButton: true` で、
+ * `position: absolute; right: 0; top: 0` の × が箱の右上に乗る。
+ * 「大阪城」のような短い文字だと箱が狭く、**× が文字に重なって潰れて見える**
+ * （実測: docs/screenshots/2026-09-16-elements-popup.jpg の「謎の四角」がこれ）。
+ *
+ * **閉じる手段は奪っていない。**地図を押せば閉じる（`closeOnClick`）。
+ * 目印をもう一度押しても閉じる。
+ */
+export function buildPopupOptions() {
+  return {
+    offset: 24,
+    className: "mmj-popup",
+    closeButton: false,
+    closeOnClick: true,
+  };
+}
+
+/**
+ * ポップアップに使う色。**すべて `styles/modern-dark.json` に既にある値。**
+ *
+ * **新しい色を作っていない**（baseline §11）。見た目の方向性は人が決める領域で、
+ * ここで足した色はそのまま既成事実になるため、スタイルの正本（D-002）から借りるだけにする。
+ * **借りていることはテストで縛ってある**（スタイルに無い値を書いたら落ちる）。
+ */
+export const POPUP_COLORS = {
+  /** 地図のパネル面と同じ（`background` / `station-dot` の circle-color） */
+  background: "#1B1F24",
+  /** 地名ラベルと同じ（`label-place-city` の text-color） */
+  text: "#D8DCE1",
+  /** 道路の線と同じ（`roads-minor` の line-color） */
+  border: "#2E343B",
+};
+
+/** tip（三角）が向きごとに塗る辺。**1 つでも漏らすと、その向きだけ白い三角が残る。** */
+const TIP_SIDES = {
+  top: "bottom",
+  "top-left": "bottom",
+  "top-right": "bottom",
+  bottom: "top",
+  "bottom-left": "top",
+  "bottom-right": "top",
+  left: "right",
+  right: "left",
+};
+
+/**
+ * ポップアップを暗い地図に合わせる CSS。**ここは純粋関数**（文字列を組むだけ）。
+ *
+ * MapLibre の既定は白地で、暗い地図の上に置くと紙が 1 枚浮いて見える。
+ * **箱だけ暗くしても足りない。**三角（tip）は向きごとに別の辺を `#fff` で塗るので、
+ * 8 方向すべてを上書きしないと、開く向きによって白い三角が残る。
+ */
+export function buildPopupStyle() {
+  const tip = Object.entries(TIP_SIDES)
+    .map(
+      ([anchor, side]) =>
+        `.mmj-popup.maplibregl-popup-anchor-${anchor} .maplibregl-popup-tip{border-${side}-color:${POPUP_COLORS.background};}`,
+    )
+    .join("");
+
+  return (
+    ".mmj-popup .maplibregl-popup-content{" +
+    `background:${POPUP_COLORS.background};` +
+    `color:${POPUP_COLORS.text};` +
+    `border:1px solid ${POPUP_COLORS.border};` +
+    "border-radius:4px;" +
+    "padding:6px 10px;" +
+    "box-shadow:0 2px 8px rgba(0,0,0,.45);" +
+    "font:13px/1.5 system-ui,-apple-system,'Segoe UI','Hiragino Sans','Noto Sans JP',sans-serif;" +
+    // 「大阪梅田」の 4 文字が 2 行に割れると、箱が縦長になって読みにくい
+    "white-space:nowrap;" +
+    "}" +
+    tip
+  );
+}

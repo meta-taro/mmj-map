@@ -1,6 +1,15 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { applyTilesUrl, buildMapOptions, parseLngLat, parseZoom } from "../src/attrs.js";
+import {
+  applyTilesUrl,
+  buildMapOptions,
+  buildPopupOptions,
+  buildPopupStyle,
+  parseLngLat,
+  parseZoom,
+  POPUP_COLORS,
+} from "../src/attrs.js";
 
 describe("parseLngLat", () => {
   it("経度,緯度 の順で読む（GeoJSON と同じ並び）", () => {
@@ -77,5 +86,59 @@ describe("buildMapOptions", () => {
 
   it("hash は指定どおり", () => {
     expect(buildMapOptions({ ...base, hash: true }).hash).toBe(true);
+  });
+});
+
+describe("buildPopupOptions", () => {
+  it("**閉じるボタンを出さない。**狭い吹き出しでは文字に重なる", () => {
+    // MapLibre の既定は closeButton: true で、position:absolute の × が右上に乗る。
+    // 「大阪城」の 3 文字だと箱が狭く、文字が押しつぶされて四角く見える（実測・撮って気づいた）
+    expect(buildPopupOptions().closeButton).toBe(false);
+  });
+
+  it("地図を押せば閉じる（**閉じる手段を奪っていない**）", () => {
+    expect(buildPopupOptions().closeOnClick).toBe(true);
+  });
+
+  it("目印の上に出す。**重ならない距離を既定に持つ**", () => {
+    expect(buildPopupOptions().offset).toBeGreaterThan(0);
+  });
+
+  it("独自のクラスを付ける（**MapLibre 全体の見た目を書き換えない**）", () => {
+    expect(buildPopupOptions().className).toBe("mmj-popup");
+  });
+});
+
+describe("POPUP_COLORS", () => {
+  // **新しい色を作っていないことを、機械で縛る**（baseline §11）。
+  // スタイルは手書きの正本（D-002）なので、そこに無い色を部品が持ち込んだら落とす。
+  const style = readFileSync(new URL("../../../styles/modern-dark.json", import.meta.url), "utf8");
+
+  for (const [name, value] of Object.entries(POPUP_COLORS)) {
+    it(`${name} (${value}) は styles/modern-dark.json にある色`, () => {
+      expect(style.toUpperCase()).toContain(value.toUpperCase());
+    });
+  }
+});
+
+describe("buildPopupStyle", () => {
+  const css = buildPopupStyle();
+
+  it("独自クラスの中だけを変える（**MapLibre 全体の見た目を書き換えない**）", () => {
+    for (const rule of css.split("}").filter((r) => r.trim() !== "")) {
+      expect(rule).toContain(".mmj-popup");
+    }
+  });
+
+  it("**三角（tip）も塗り替える。**箱だけ暗くすると、白い三角が残る", () => {
+    expect(css).toContain("maplibregl-popup-tip");
+    // 8 方向すべて。1 つでも漏らすと、その向きに開いたときだけ白い三角が出る
+    for (const anchor of ["top", "bottom", "left", "right", "top-left", "top-right", "bottom-left", "bottom-right"]) {
+      expect(css).toContain(`maplibregl-popup-anchor-${anchor} `);
+    }
+  });
+
+  it("折り返しを止める（短い名前が 2 行に割れない）", () => {
+    expect(css).toContain("white-space:nowrap");
   });
 });
