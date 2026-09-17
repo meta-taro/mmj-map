@@ -37,8 +37,14 @@ jobs:
       - run: pnpm -r test
 
       # 参照だけ足してアップロードを忘れる事故を、ここで止める（§23）。
-      - name: Demo references an existing config
-        run: test -f apps/demo/config.js
+      #
+      # `apps/demo` は素の HTML で**ビルド工程が無い**。綴りを 1 文字間違えても
+      # typecheck も test も通ったまま、**開いたときにだけ壊れる**。
+      # HTML が書いている src / href / import を全部たどって、実体があるかを見る。
+      # 対応表は `tools/serve` の mounts と `deploy.yml` のコピー先に揃えてある
+      # （**片方だけで通る参照を作らないため**）。
+      - name: Demo references existing assets
+        run: pnpm asset:check
 
       # デモが読むスタイルが、pin したビルドの中身と噛み合っているかを確かめる（§23）。
       # JSON として読めることに加えて、**存在しない source-layer を指していないか**・

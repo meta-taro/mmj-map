@@ -16,6 +16,10 @@
     "tiles:check-range": "pnpm --filter @modern-map-japan/tiles-build run check-range",
     "serve": "pnpm --filter @modern-map-japan/serve run dev",
     "style:check": "pnpm --filter @modern-map-japan/style-check run check",
-    "shot": "pnpm --filter @modern-map-japan/shot run shot"
+    "shot": "pnpm --filter @modern-map-japan/shot run shot",
+    "asset:check": "pnpm --filter @modern-map-japan/asset-check run check"
+  },
+  "devDependencies": {
+    "oxlint": "^1.83.0"
   }
 }
