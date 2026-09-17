@@ -9,8 +9,11 @@
     "node": ">=22.12"
   },
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks || exit 0",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
+    "lint": "oxlint --config .oxlintrc.json --deny-warnings .",
+    "gate": "pnpm lint && pnpm -r typecheck && pnpm -r test && pnpm asset:check && pnpm style:check",
     "tiles:resolve": "pnpm --filter @modern-map-japan/tiles-build run resolve",
     "tiles:extract": "pnpm --filter @modern-map-japan/tiles-build run extract",
     "tiles:check-range": "pnpm --filter @modern-map-japan/tiles-build run check-range",
