@@ -91,9 +91,16 @@ describe("worker", () => {
     expect(res.headers.get("allow")).toBe("GET, HEAD, OPTIONS");
   });
 
-  it("別オリジンのデモから読めるよう CORS を返す", async () => {
-    const res = await call("/kansai.pmtiles", { headers: { range: "bytes=0-15" } });
-    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+  it("別オリジンのデモから読めるよう CORS を返す（許可したオリジンに対して）", async () => {
+    // **既定は閉じる**ようになったので（設定忘れで開放しないため）、
+    // ここは許可を与えたうえで確かめる。閉じる側は「読ませるオリジンの制限」にある
+    const res = await worker.fetch(
+      new Request("https://t.example.com/kansai.pmtiles", {
+        headers: { range: "bytes=0-15", origin: "https://ok.example" },
+      }),
+      { TILES: fakeBucket({ "kansai.pmtiles": CONTENT }), ALLOW_ORIGINS: "https://ok.example" },
+    );
+    expect(res.headers.get("access-control-allow-origin")).toBe("https://ok.example");
     // **Content-Range を expose しないと、ブラウザ側が範囲を読めない**
     expect(res.headers.get("access-control-expose-headers")).toContain("content-range");
   });
@@ -107,5 +114,84 @@ describe("worker", () => {
   it("帰属表示の出どころを応答からも辿れるようにする", async () => {
     const res = await call("/kansai.pmtiles", { method: "HEAD" });
     expect(res.headers.get("x-attribution")).toContain("OpenStreetMap");
+  });
+});
+
+/**
+ * **タダ乗りを防ぐ側の振る舞い。**
+ *
+ * ベースデータは ODbL なので隠す対象ではない。守りたいのは**こちらの転送量**。
+ * サーバー経由のコピーは止められないが、**ブラウザからの他サイト利用は CORS で止まる。**
+ */
+describe("読ませるオリジンの制限", () => {
+  const envWith = (allow?: string): Env => ({
+    TILES: fakeBucket({ "kansai.pmtiles": CONTENT }),
+    ...(allow === undefined ? {} : { ALLOW_ORIGINS: allow }),
+  });
+
+  const get = (origin: string | undefined, e: Env) =>
+    worker.fetch(
+      new Request("https://t.example.com/kansai.pmtiles", {
+        // **Range を送る。**送らないと 200（全量）になり、206 を確かめたことにならない
+        headers: origin === undefined ? { range: "bytes=0-9" } : { range: "bytes=0-9", origin },
+      }),
+      e,
+    );
+
+  it("**未設定なら閉じる。**設定を忘れたデプロイが開放されない", async () => {
+    const res = await get("https://evil.example", envWith());
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("未設定のときは、**理由が分かる応答を返す**（黙って壊れない）", async () => {
+    const res = await get("https://evil.example", envWith());
+    expect(res.status).toBe(403);
+    expect(await res.text()).toMatch(/ALLOW_ORIGINS/);
+  });
+
+  it("許可したオリジンには、そのオリジンを返す", async () => {
+    const e = envWith("https://ok.example");
+    const res = await get("https://ok.example", e);
+    expect(res.headers.get("access-control-allow-origin")).toBe("https://ok.example");
+  });
+
+  it("**複数書ける。**デモと媒体で最低 3 つ要る", async () => {
+    const e = envWith("https://a.example, https://b.example ,https://c.example");
+    for (const origin of ["https://a.example", "https://b.example", "https://c.example"]) {
+      expect((await get(origin, e)).headers.get("access-control-allow-origin")).toBe(origin);
+    }
+  });
+
+  it("許可していないオリジンは 403（**タイルを流さない**）", async () => {
+    const res = await get("https://evil.example", envWith("https://ok.example"));
+    expect(res.status).toBe(403);
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("**`*` を明示したときだけ、誰にでも開く**（自分で選んだときだけ）", async () => {
+    const res = await get("https://anyone.example", envWith("*"));
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(res.status).toBe(206);
+  });
+
+  it("**Origin が無い要求は通す。**curl や配信の疎通確認を殺さない", async () => {
+    const res = await get(undefined, envWith("https://ok.example"));
+    expect(res.status).toBe(206);
+  });
+
+  it("**Vary: Origin を付ける。**付けないと CDN が 1 つのオリジンの応答を配り回す", async () => {
+    const res = await get("https://ok.example", envWith("https://ok.example, https://b.example"));
+    expect(res.headers.get("vary")).toMatch(/origin/i);
+  });
+
+  it("OPTIONS も同じ判定にする（**preflight だけ通る抜け道を作らない**）", async () => {
+    const res = await worker.fetch(
+      new Request("https://t.example.com/kansai.pmtiles", {
+        method: "OPTIONS",
+        headers: { origin: "https://evil.example" },
+      }),
+      envWith("https://ok.example"),
+    );
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
   });
 });
