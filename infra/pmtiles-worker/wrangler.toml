@@ -15,7 +15,11 @@ bucket_name = "modern-map-japan-tiles"
 [vars]
 # 読ませるオリジン。ベースデータは ODbL で隠す対象ではないため既定は "*"。
 # 絞るなら、デモの配信元（GitHub Pages のドメイン）を入れる。
-ALLOW_ORIGIN = "*"
+# 読ませるオリジン。カンマ区切りで複数書ける。**未設定なら閉じる**（設定忘れで開放しない）。
+# 例: "https://meta-taro.github.io,https://example.co.jp"
+# **ブラウザにしか効かない。**サーバー経由の取得を止めたいなら、Range で配らず
+# 地域ごとのファイルを渡すほうが確実（原案 §8.2）。
+ALLOW_ORIGINS = ""
 
 # 独自ドメインを当てるときに外す。**ドメインを取ってから。**
 # [[routes]]

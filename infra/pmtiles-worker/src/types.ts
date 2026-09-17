@@ -27,6 +27,16 @@ export interface R2BucketLike {
 export interface Env {
   /** wrangler.toml の r2_buckets binding */
   readonly TILES: R2BucketLike;
-  /** 読ませるオリジン。既定は "*"（ベースデータは ODbL で、隠す対象ではない） */
-  readonly ALLOW_ORIGIN?: string;
+  /**
+   * 読ませるオリジン。カンマ区切りで複数書ける。`*` で誰にでも開く。
+   *
+   * **未設定なら閉じます。**設定を忘れたデプロイが、そのまま誰でも使える CDN に
+   * ならないようにするためです。守っているのはデータではなく（ODbL なので隠す対象では
+   * ない）、**こちらの転送量**です。
+   *
+   * **これはブラウザにしか効きません。**サーバー経由の取得は止まりません。
+   * 止めたいなら、そもそも Range で配らず**地域ごとのファイルを渡す**ほうが確実です
+   * （原案 §8.2）。
+   */
+  readonly ALLOW_ORIGINS?: string;
 }
