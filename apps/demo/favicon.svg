@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  デモの favicon。**仮置きです。**
+
+  昨日 `pnpm shot` を 15 回走らせて、15 回とも `HTTP 404 /favicon.ico` が出ていました。
+  無いものを無いままにしておくと、ログのノイズになって本物の 404 が埋もれます。
+
+  色は `styles/modern-dark.json` にある値だけを使っています
+  （地 #1B1F24 / 線 #D8DCE1）。**新しい色を作っていません。**
+
+  これはブランドマークではありません。`DESIGN.md` が「決めない」と書いている
+  デモサイトの装飾の範囲です。ブランドを作るなら、人が決めてください。
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="modern-map-japan">
+  <rect width="32" height="32" rx="6" fill="#1B1F24"/>
+  <!-- 交差する街路。地図であることだけを示す -->
+  <g stroke="#D8DCE1" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.55">
+    <path d="M6 12h20"/>
+    <path d="M6 21h20"/>
+    <path d="M12 6v20"/>
+    <path d="M21 6v20"/>
+  </g>
+  <!-- 1 点を指す。この地図が「どこか 1 か所を見せる」ためのものであること -->
+  <circle cx="21" cy="12" r="3.6" fill="#D8DCE1"/>
+</svg>
