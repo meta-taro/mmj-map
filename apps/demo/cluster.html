@@ -3,45 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>modern-map-japan — 点をまとめる（mmj-cluster）</title>
+<title>点をまとめる — modern-map-japan</title>
+<meta name="description" content="点が多いときにまとめて描くデモ。まとめる計算は MapLibre の GeoJSON source に任せています。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="点をまとめる — modern-map-japan">
+<meta property="og:description" content="点が多いときにまとめて描くデモ。まとめる計算は MapLibre の GeoJSON source に任せています。">
+<link rel="icon" href="./favicon.svg">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
-<style>
-  :root { color-scheme: dark; }
-  html, body { margin: 0; height: 100%; background: #14161a; color: #e7e9ee; }
-  body { font: 14px/1.7 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif; }
-  header { padding: .75rem 1rem; border-bottom: 1px solid #262a32; }
-  header h1 { font-size: 1rem; margin: 0 0 .25rem; }
-  header p { margin: 0; color: #aeb4c0; font-size: .85rem; }
-  header code { background: #1e2128; padding: .1em .35em; border-radius: 3px; }
-  mmj-map { position: absolute; inset: 6.5rem 0 0; }
-  #picked {
-    position: absolute; left: 1rem; bottom: 1rem; z-index: 1;
-    background: #1b1f24; border: 1px solid #2e343b; border-radius: 6px;
-    padding: .5rem .75rem; font-size: .85rem; color: #c9d0d8;
-  }
-  #notice { padding: 2rem; color: #aeb4c0; }
-</style>
+<link rel="stylesheet" href="./demo.css">
 </head>
 <body>
 
-<header>
+<header class="site-header">
   <h1>点をまとめる</h1>
   <p>
     <code>&lt;mmj-cluster&gt;</code> に GeoJSON の URL を渡すだけ。200 点のサンプルを置いています。
     まとまりを押すと、そこが解ける倍率まで寄ります。
     <strong>この 200 点は合成データで、実在の場所ではありません</strong>（<code>data/README.md</code>）。
   </p>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./cluster.html" aria-current="page">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="https://github.com/meta-taro/modern-map-japan">リポジトリ</a>
+  </nav>
 </header>
 
-<mmj-map id="map" center="135.5023,34.6937" zoom="11" hash>
-  <mmj-cluster id="cluster" src="./data/sample-points.geojson" radius="50" max-zoom="14"></mmj-cluster>
-</mmj-map>
+<main class="map-area">
+  <mmj-map id="map" center="135.5023,34.6937" zoom="11" hash>
+    <mmj-cluster id="cluster" src="./data/sample-points.geojson" radius="50" max-zoom="14"></mmj-cluster>
+  </mmj-map>
 
-<div id="picked" hidden></div>
+  <div id="picked" class="picked" hidden></div>
 
-<div id="notice" hidden>
-  まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。
-</div>
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+    </div>
+  </div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>

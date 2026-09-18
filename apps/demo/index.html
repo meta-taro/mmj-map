@@ -3,48 +3,53 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>modern-map-japan — demo</title>
+<title>素の MapLibre で描く — modern-map-japan</title>
+<meta name="description" content="日本の地図を、手書きのスタイルと PMTiles だけで描くデモ。地図サーバーを立てず、静的配信と HTTP Range で完結します。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="素の MapLibre で描く — modern-map-japan">
+<meta property="og:description" content="日本の地図を、手書きのスタイルと PMTiles だけで描くデモ。地図サーバーを立てず、静的配信と HTTP Range で完結します。">
+<link rel="icon" href="./favicon.svg">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
-<style>
-  :root { color-scheme: light dark; }
-  html, body { margin: 0; height: 100%; }
-  body { font: 14px/1.7 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif; }
-  #map { position: absolute; inset: 0; }
-  #notice {
-    position: absolute; inset: 0; display: grid; place-items: center;
-    padding: 2rem; background: #14161a; color: #e7e9ee;
-  }
-  /* `hidden` を CSS で殺さない。#notice の display:grid は ID セレクタなので
-     UA スタイルの [hidden]{display:none} に勝ってしまい、**地図が出ていても
-     案内が被り続ける**（実際にそうなっていた）。 */
-  #notice[hidden] { display: none; }
-  #notice .box { max-width: 34rem; }
-  #notice h1 { font-size: 1.25rem; margin: 0 0 .75rem; }
-  #notice p { margin: 0 0 .75rem; color: #aeb4c0; }
-  #notice code { background: #1e2128; padding: .15em .4em; border-radius: 3px; color: #e7e9ee; }
-  #notice a { color: #7fb2ff; }
-</style>
+<link rel="stylesheet" href="./demo.css">
 </head>
 <body>
-<div id="map"></div>
 
-<div id="notice" hidden>
-  <div class="box">
-    <h1>まだタイルの配信元がありません</h1>
-    <p>
-      このデモは、ベースタイル（PMTiles）とグリフの配信元が決まると地図を描きます。
-      配信元は <code>apps/demo/config.js</code> に設定します。
-    </p>
-    <p>
-      自分でタイルをビルドして配信する手順は、リポジトリの
-      <a href="https://github.com/meta-taro/modern-map-japan">README</a> を見てください。
-    </p>
-    <p>
-      空の地図を出す代わりに、この案内を出しています。
-      <strong>無いものを、あるように見せないためです。</strong>
-    </p>
+<header class="site-header">
+  <h1>素の MapLibre で描く</h1>
+  <p>
+    手書きのスタイル（<code>styles/modern-dark.json</code>）と PMTiles だけで描いています。
+    地図サーバーは立てていません。
+  </p>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html" aria-current="page">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="https://github.com/meta-taro/modern-map-japan">リポジトリ</a>
+  </nav>
+</header>
+
+<main class="map-area">
+  <div id="map"></div>
+
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <h2>まだタイルの配信元がありません</h2>
+      <p>
+        このデモは、ベースタイル（PMTiles）とグリフの配信元が決まると地図を描きます。
+        配信元は <code>apps/demo/config.js</code> に設定します。
+      </p>
+      <p>
+        自分でタイルをビルドして配信する手順は、リポジトリの
+        <a href="https://github.com/meta-taro/modern-map-japan">README</a> を見てください。
+      </p>
+      <p>
+        空の地図を出す代わりに、この案内を出しています。
+        <strong>無いものを、あるように見せないためです。</strong>
+      </p>
+    </div>
   </div>
-</div>
+</main>
 
 
 <!--

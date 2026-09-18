@@ -3,43 +3,49 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>modern-map-japan — 部品（Web Components）</title>
+<title>HTML だけで地図を置く — modern-map-japan</title>
+<meta name="description" content="mmj-map と mmj-marker だけで地図を置くデモ。ビルド工程なしの素の Web Components です。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="HTML だけで地図を置く — modern-map-japan">
+<meta property="og:description" content="mmj-map と mmj-marker だけで地図を置くデモ。ビルド工程なしの素の Web Components です。">
+<link rel="icon" href="./favicon.svg">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
-<style>
-  :root { color-scheme: dark; }
-  html, body { margin: 0; height: 100%; background: #14161a; color: #e7e9ee; }
-  body { font: 14px/1.7 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif; }
-  header { padding: .75rem 1rem; border-bottom: 1px solid #262a32; }
-  header h1 { font-size: 1rem; margin: 0 0 .25rem; }
-  header p { margin: 0; color: #aeb4c0; font-size: .85rem; }
-  header code { background: #1e2128; padding: .1em .35em; border-radius: 3px; }
-  mmj-map { position: absolute; inset: 5.5rem 0 0; }
-  #notice { padding: 2rem; color: #aeb4c0; }
-</style>
+<link rel="stylesheet" href="./demo.css">
 </head>
 <body>
 
-<header>
+<header class="site-header">
   <h1>HTML だけで地図を置く</h1>
   <p>
     この画面の地図は <code>&lt;mmj-map&gt;</code> と <code>&lt;mmj-marker&gt;</code> だけで出しています。
     JavaScript は書いていません（属性を配信元へ向けている部分を除く）。
   </p>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">素の地図</a>
+    <a href="./elements.html" aria-current="page">HTML だけで置く</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="https://github.com/meta-taro/modern-map-japan">リポジトリ</a>
+  </nav>
 </header>
 
 <!--
   **部品は素の ESM で、ビルド工程を持たない**（packages/elements/src をそのまま配る）。
   maplibre-gl と pmtiles は読み込む側が入れる。
 -->
-<mmj-map id="map" center="135.5023,34.6937" zoom="12" hash>
-  <mmj-marker lnglat="135.4959,34.7024" popup="大阪梅田"></mmj-marker>
-  <mmj-marker lnglat="135.5022,34.6659" popup="難波" color="#7fb2ff"></mmj-marker>
-  <mmj-marker lnglat="135.5258,34.6873" popup="大阪城" color="#8fd3a6" popup-open></mmj-marker>
-</mmj-map>
+<main class="map-area">
+  <mmj-map id="map" center="135.5023,34.6937" zoom="12" hash>
+    <mmj-marker lnglat="135.4959,34.7024" popup="大阪梅田"></mmj-marker>
+    <mmj-marker lnglat="135.5022,34.6659" popup="難波" color="#7fb2ff"></mmj-marker>
+    <mmj-marker lnglat="135.5258,34.6873" popup="大阪城" color="#8fd3a6" popup-open></mmj-marker>
+  </mmj-map>
 
-<div id="notice" hidden>
-  まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。
-</div>
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+    </div>
+  </div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
