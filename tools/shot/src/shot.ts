@@ -70,3 +70,30 @@ export function pickBrowser(candidates: readonly string[], exists: (path: string
  * 見たいのは配信への要求（タイル・スタイル・グリフ）だけ。
  */
 export const isCountableRequest = (url: string): boolean => /^https?:/i.test(url);
+
+/**
+ * 案内画面（配信元が無いときの代替表示）が出たまま撮れたかどうか。
+ *
+ * ブラウザ側は 3 つの状態を返す。**「案内画面を持たないページ」を
+ * 「案内画面が出ている」と混同しない**ための区別。
+ *
+ * - `true`  … 案内画面がある、かつ出ている → 地図ではない。成功にしない
+ * - `false` … 案内画面があるが隠れている → 地図が出ている
+ * - `null`  … そのページに案内画面が無い → 判定の対象外
+ *
+ * 以前は `!document.getElementById('notice')?.hidden` と書いていた。
+ * 要素が無いと `!undefined` で **true** になるため、デモ以外のページを撮ると
+ * 毎回 exit 1 になった（実測: 3D の検証用ページで、地図が撮れているのに失敗扱い）。
+ */
+export function isNoticeShown(probeJson: string): boolean {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(probeJson);
+  } catch {
+    throw new Error(`画面の状態を読めません: ${probeJson.slice(0, 200)}`);
+  }
+  if (typeof parsed !== "object" || parsed === null || !("notice" in parsed)) {
+    throw new Error(`画面の状態に notice がありません: ${probeJson.slice(0, 200)}`);
+  }
+  return (parsed as { notice: unknown }).notice === true;
+}

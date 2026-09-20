@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isCountableRequest, nextWaitState, parseShotArgs, pickBrowser } from "../src/shot.js";
+import { isCountableRequest, isNoticeShown, nextWaitState, parseShotArgs, pickBrowser } from "../src/shot.js";
 
 describe("parseShotArgs", () => {
   it("既定は手元の配信のトップ", () => {
@@ -72,5 +72,27 @@ describe("isCountableRequest", () => {
 
   it("data: も数えない", () => {
     expect(isCountableRequest("data:image/png;base64,iVBOR")).toBe(false);
+  });
+});
+
+const probe = (notice: unknown) => JSON.stringify({ notice, webgl2: true, config: null });
+
+describe("isNoticeShown", () => {
+  it("案内画面が出たまま撮れたなら、成功にしない", () => {
+    expect(isNoticeShown(probe(true))).toBe(true);
+  });
+
+  it("案内画面が隠れているなら、地図が出ている", () => {
+    expect(isNoticeShown(probe(false))).toBe(false);
+  });
+
+  it("**案内画面を持たないページは、案内画面ではない。**", () => {
+    // `!el?.hidden` と書くと、要素が無いページで !undefined === true になり、
+    // 地図が撮れているのに失敗扱いになる（実測: デモ以外のページが毎回 exit 1）。
+    expect(isNoticeShown(probe(null))).toBe(false);
+  });
+
+  it("読めない値なら、黙って通さずに落とす", () => {
+    expect(() => isNoticeShown("<html>")).toThrow(/画面の状態/);
   });
 });
