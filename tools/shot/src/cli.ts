@@ -15,7 +15,14 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { isCountableRequest, nextWaitState, parseShotArgs, pickBrowser, type WaitState } from "./shot.js";
+import {
+  isCountableRequest,
+  isNoticeShown,
+  nextWaitState,
+  parseShotArgs,
+  pickBrowser,
+  type WaitState,
+} from "./shot.js";
 
 // pnpm はスクリプトをパッケージの中で走らせる。出力先を process.cwd() で解くと
 // tools/shot/ の下に置かれてしまうので、**人が叩いた場所**（pnpm が INIT_CWD で教えてくる）で解く。
@@ -165,7 +172,8 @@ const probe = (
     "Runtime.evaluate",
     {
       expression: `JSON.stringify({
-        notice: !document.getElementById('notice')?.hidden,
+        // 3 状態で返す。**無いページを「出ている」と混同しない**（isNoticeShown を見ること）
+        notice: (() => { const el = document.getElementById('notice'); return el ? !el.hidden : null; })(),
         webgl2: !!document.createElement('canvas').getContext('webgl2'),
         config: window.MMJ_CONFIG ?? null
       })`,
@@ -186,7 +194,7 @@ ws.close();
 chrome.kill();
 
 // 案内画面が出たまま撮れたなら、それは地図ではない。**成功として返さない。**
-if (probe.result.value.includes('"notice":true')) {
+if (isNoticeShown(probe.result.value)) {
   console.error("デモは案内画面のままです（配信元が設定されていません）");
   process.exitCode = 1;
 }
