@@ -18,7 +18,8 @@
  *
  * maplibre-gl と pmtiles は、**読み込む側が `<script>` で入れる**（ゼロ構築の方針）。
  */
-import { applyTilesUrl, buildMapOptions, parseLngLat, parseZoom } from "./attrs.js";
+import { applyTilesUrl, buildMapOptions, parseLngLat, parsePitch, parseZoom } from "./attrs.js";
+import { addExtrusion } from "./extrude.js";
 
 /** pmtiles プロトコルは 1 回だけ登録する（2 度目は MapLibre が投げる） */
 let protocolRegistered = false;
@@ -69,13 +70,22 @@ export class MmjMap extends HTMLElement {
     this.style.display = "block";
     this.replaceChildren(container);
 
+    // `3d` を付けると建物を押し出す。**タイルは同じもの**で、足すデータも取得も無い
+    // （実測: 梅田 z16 で 17 リクエスト / 735,015 バイト。2D と 1 バイトも変わらない）。
+    // 手書きスタイルは書き換えず、読み込んだ後のオブジェクトへ 1 枚足すだけ。
+    const wants3d = this.hasAttribute("3d");
+    const style = JSON.parse(applied.text);
+
     this.map = new maplibregl.Map(
       buildMapOptions({
         container,
-        style: JSON.parse(applied.text),
+        style: wants3d ? addExtrusion(style) : style,
         center: parseLngLat(this.getAttribute("center")) ?? [135.5023, 34.6937],
         zoom: parseZoom(this.getAttribute("zoom"), 12),
         hash: this.hasAttribute("hash"),
+        // 押し出しは傾けて初めて見える。`3d` なのに真上から見た絵にならないよう、
+        // pitch の指定が無いときだけ既定で倒す。**角度は仮置き**（DESIGN.md に規定が無い）
+        pitch: parsePitch(this.getAttribute("pitch"), wants3d ? 45 : 0),
       }),
     );
 
