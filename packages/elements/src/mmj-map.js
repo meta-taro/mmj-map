@@ -18,7 +18,7 @@
  *
  * maplibre-gl と pmtiles は、**読み込む側が `<script>` で入れる**（ゼロ構築の方針）。
  */
-import { applyTilesUrl, buildMapOptions, parseLngLat, parsePitch, parseZoom } from "./attrs.js";
+import { applyTilesUrl, buildMapOptions, parseLngLat, parsePitch, parseZoom, hashOverridesPitch } from "./attrs.js";
 import { addExtrusion } from "./extrude.js";
 
 /** pmtiles プロトコルは 1 回だけ登録する（2 度目は MapLibre が投げる） */
@@ -88,6 +88,16 @@ export class MmjMap extends HTMLElement {
         pitch: parsePitch(this.getAttribute("pitch"), wants3d ? 45 : 0),
       }),
     );
+
+    // **`hash` は pitch を奪う。**MapLibre の hash は `#zoom/lat/lng/bearing/pitch` で、
+    // 3 要素しか書かれていない URL を開くと bearing と pitch が 0 に戻る。
+    // その結果、**3D のページを URL で渡すと渡された側では建物が平らになる**
+    // （実測・2026-09-20）。hash が pitch を持っていないときだけ当て直す。
+    // **持っているときは触らない。**利用者が URL で指定した角度を奪わないため。
+    const pitch = parsePitch(this.getAttribute("pitch"), wants3d ? 45 : 0);
+    if (pitch > 0 && this.hasAttribute("hash") && !hashOverridesPitch(location.hash)) {
+      this.map.setPitch(pitch);
+    }
 
     this.map.addControl(new maplibregl.NavigationControl(), "top-right");
     this.map.addControl(new maplibregl.ScaleControl({ unit: "metric" }));

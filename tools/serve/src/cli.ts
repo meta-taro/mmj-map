@@ -58,6 +58,7 @@ createStaticServer(mounts, { "/config.js": { type: "text/javascript; charset=utf
   console.log(`タイル:     http://localhost:${port}/tiles/${region}.pmtiles`);
   console.log(`スタイル:   http://localhost:${port}/styles/modern-dark.json`);
   console.log(`部品の例:   http://localhost:${port}/elements.html`);
+  console.log(`建物を立てる: http://localhost:${port}/3d.html`);
   console.log(`点のまとめ: http://localhost:${port}/cluster.html`);
   console.log(`自前の POI: http://localhost:${port}/poi.html`);
   console.log("");
