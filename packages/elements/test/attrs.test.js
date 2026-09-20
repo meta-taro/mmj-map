@@ -7,6 +7,7 @@ import {
   buildMapOptions,
   buildPopupOptions,
   buildPopupStyle,
+  hashOverridesPitch,
   parseLngLat,
   parseZoom,
   POPUP_COLORS,
@@ -157,5 +158,38 @@ describe("parsePitch", () => {
   it("MapLibre の範囲（0〜85）へ収める", () => {
     expect(parsePitch("120", 0)).toBe(85);
     expect(parsePitch("-10", 0)).toBe(0);
+  });
+});
+
+describe("hashOverridesPitch", () => {
+  // **`hash` を付けると pitch 属性が無視される。**
+  // MapLibre の hash は `#zoom/lat/lng/bearing/pitch` の 5 要素で、
+  // 3 要素しか書かれていない URL を開くと bearing と pitch が 0 に戻される。
+  // 実測: `3d.html#16/34.7024/135.4959` で建物が立たなかった（2026-09-20・撮って気づいた）。
+
+  it("**3 要素の hash は pitch を持たない**（0 に戻される側）", () => {
+    expect(hashOverridesPitch("#16/34.7024/135.4959")).toBe(false);
+  });
+
+  it("5 要素の hash は pitch を持つ（利用者が指定した角度を尊重する）", () => {
+    expect(hashOverridesPitch("#16/34.7024/135.4959/0/60")).toBe(true);
+  });
+
+  it("4 要素（bearing まで）も pitch は持たない", () => {
+    expect(hashOverridesPitch("#16/34.7024/135.4959/30")).toBe(false);
+  });
+
+  it("hash が無い・空なら持たない", () => {
+    expect(hashOverridesPitch("")).toBe(false);
+    expect(hashOverridesPitch("#")).toBe(false);
+    expect(hashOverridesPitch(null)).toBe(false);
+  });
+
+  it("**数でない要素を pitch と数えない**（`#foo/bar/baz/qux/quux` を信じない）", () => {
+    expect(hashOverridesPitch("#a/b/c/d/e")).toBe(false);
+  });
+
+  it("MapLibre の名前つき hash（`#map=...`）は対象外", () => {
+    expect(hashOverridesPitch("#map=16/34.7/135.5")).toBe(false);
   });
 });

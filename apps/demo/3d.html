@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>点をまとめる — modern-map-japan</title>
-<meta name="description" content="点が多いときにまとめて描くデモ。まとめる計算は MapLibre の GeoJSON source に任せています。">
+<title>建物を立てる — modern-map-japan</title>
+<meta name="description" content="属性を 1 つ付けるだけで建物が立つデモ。タイルは 2D と同じもので、転送量は 1 バイトも増えません。">
 <meta property="og:type" content="website">
-<meta property="og:title" content="点をまとめる — modern-map-japan">
-<meta property="og:description" content="点が多いときにまとめて描くデモ。まとめる計算は MapLibre の GeoJSON source に任せています。">
+<meta property="og:title" content="建物を立てる — modern-map-japan">
+<meta property="og:description" content="属性を 1 つ付けるだけで建物が立つデモ。タイルは 2D と同じもので、転送量は 1 バイトも増えません。">
 <link rel="icon" href="./favicon.svg">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
 <link rel="stylesheet" href="./demo.css">
@@ -15,28 +15,24 @@
 <body>
 
 <header class="site-header">
-  <h1>点をまとめる</h1>
+  <h1>建物を立てる</h1>
   <p>
-    <code>&lt;mmj-cluster&gt;</code> に GeoJSON の URL を渡すだけ。200 点のサンプルを置いています。
-    まとまりを押すと、そこが解ける倍率まで寄ります。
-    <strong>この 200 点は合成データで、実在の場所ではありません</strong>（<code>data/README.md</code>）。
+    <code>&lt;mmj-map&gt;</code> に <code>3d</code> を付けただけです。
+    <strong>タイルは 2D と同じもので、転送量は 1 バイトも増えません</strong>（実測 17 リクエスト / 735,015 B）。
+    <strong>高さを持たない建物は平らなまま残ります</strong>（梅田で約 3 割）。データに無い高さを作っていません。
   </p>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">素の地図</a>
     <a href="./elements.html">HTML だけで置く</a>
-    <a href="./3d.html">建物を立てる</a>
-    <a href="./cluster.html" aria-current="page">点をまとめる</a>
+    <a href="./3d.html" aria-current="page">建物を立てる</a>
+    <a href="./cluster.html">点をまとめる</a>
     <a href="./poi.html">自前の POI</a>
     <a href="https://github.com/meta-taro/modern-map-japan">リポジトリ</a>
   </nav>
 </header>
 
 <main class="map-area">
-  <mmj-map id="map" center="135.5023,34.6937" zoom="11" hash>
-    <mmj-cluster id="cluster" src="./data/sample-points.geojson" radius="50" max-zoom="14"></mmj-cluster>
-  </mmj-map>
-
-  <div id="picked" class="picked" hidden></div>
+  <mmj-map id="map" center="135.4959,34.7024" zoom="16" pitch="60" hash 3d></mmj-map>
 
   <div id="notice" class="notice" hidden>
     <div class="box">
@@ -59,15 +55,6 @@
   } else {
     map.setAttribute('tiles', cfg.tilesUrl);
     map.setAttribute('style-url', cfg.styleUrl);
-
-    // ばらの点を押したときに何を出すかは、**使う側が決める**。
-    // 部品はイベントで中身を渡すところまでしかやらない（PRD §3・厚くしない）。
-    const picked = document.getElementById('picked');
-    document.getElementById('cluster').addEventListener('mmj-cluster-point', (event) => {
-      picked.textContent = `${event.detail.properties.name}（${event.detail.properties.group}）`;
-      picked.hidden = false;
-    });
-
     await import('/elements/index.js');
   }
 </script>

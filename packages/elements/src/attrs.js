@@ -176,3 +176,32 @@ export function buildPopupStyle() {
     tip
   );
 }
+
+/**
+ * URL の hash が傾き（pitch）まで持っているかを見る。**ここは純粋関数。**
+ *
+ * MapLibre の hash は `#zoom/lat/lng/bearing/pitch` の 5 要素。
+ * **3 要素しか書かれていない URL を開くと、bearing と pitch が 0 に戻される。**
+ * `pitch="60"` と書いてあっても hash が勝つ。
+ *
+ * その結果、**3D のページを URL で渡すと、渡された側では建物が平らになる**
+ * （実測: `3d.html#16/34.7024/135.4959` で立たなかった・2026-09-20）。
+ *
+ * hash が pitch を持っていないときだけ、属性の pitch を当て直す。
+ * **持っているときは触らない。**利用者が URL で指定した角度を奪わないため。
+ *
+ * @param {string | null | undefined} hash `location.hash`（先頭の `#` は有無どちらでも）
+ * @returns {boolean} pitch を持っているなら true
+ */
+export function hashOverridesPitch(hash) {
+  if (typeof hash !== "string") return false;
+  const body = hash.startsWith("#") ? hash.slice(1) : hash;
+  if (body === "") return false;
+  // `#map=16/34.7/135.5` のような名前つきの形は、この判定の対象にしない
+  if (body.includes("=")) return false;
+
+  const parts = body.split("/");
+  if (parts.length < 5) return false;
+  // 5 要素目が数でなければ pitch ではない。**位置だけ見て信じない**
+  return toNumber(parts[4]) !== null;
+}
