@@ -51,9 +51,24 @@ export function applyTilesUrl(styleText, tilesUrl) {
 }
 
 /**
+ * 傾き（pitch）を読む。読めなければ既定値。MapLibre の範囲（0〜85）へ収める。
+ *
+ * **3D にしたのに真上から見た絵が出る**、という壊れ方を避けるために要る。
+ * 押し出しは傾けて初めて見えるので、`3d` を付けたときは 0 のままにしない。
+ * @param {string | null | undefined} value
+ * @param {number} fallback
+ * @returns {number}
+ */
+export function parsePitch(value, fallback) {
+  const parsed = typeof value === "string" ? toNumber(value) : null;
+  if (parsed === null) return fallback;
+  return Math.min(85, Math.max(0, parsed));
+}
+
+/**
  * MapLibre の Map へ渡す設定。
  * **帰属表示と CJK の扱いを、呼ぶ側が忘れられない場所に置く**のがこの関数の役目。
- * @param {{ container: unknown, style: unknown, center: [number, number], zoom: number, hash: boolean }} input
+ * @param {{ container: unknown, style: unknown, center: [number, number], zoom: number, hash: boolean, pitch?: number }} input
  */
 export function buildMapOptions(input) {
   return {
@@ -62,6 +77,7 @@ export function buildMapOptions(input) {
     center: input.center,
     zoom: input.zoom,
     hash: input.hash,
+    pitch: input.pitch ?? 0,
     // グリフに CJK が無いため、漢字かなは閲覧側のフォントで描く（decisions.md 未決）
     localIdeographFontFamily: "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif",
     // 帰属表示は必須。**消せる形で渡さない**（LICENSES.md・ODbL）

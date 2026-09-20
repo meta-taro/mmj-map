@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyTilesUrl,
+  parsePitch,
   buildMapOptions,
   buildPopupOptions,
   buildPopupStyle,
@@ -140,5 +141,21 @@ describe("buildPopupStyle", () => {
 
   it("折り返しを止める（短い名前が 2 行に割れない）", () => {
     expect(css).toContain("white-space:nowrap");
+  });
+});
+
+describe("parsePitch", () => {
+  it("読めれば、その角度", () => {
+    expect(parsePitch("60", 0)).toBe(60);
+  });
+
+  it("読めなければ既定値（黙って 0 へ倒すと、3D にしたのに真上から見た絵になる）", () => {
+    expect(parsePitch("ななめ", 45)).toBe(45);
+    expect(parsePitch(null, 45)).toBe(45);
+  });
+
+  it("MapLibre の範囲（0〜85）へ収める", () => {
+    expect(parsePitch("120", 0)).toBe(85);
+    expect(parsePitch("-10", 0)).toBe(0);
   });
 });
