@@ -1,14 +1,52 @@
 {
   "name": "@mmj-map/elements",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
+  "version": "0.1.0",
   "description": "HTML だけで地図を置ける Web Components（ビルド不要・素の ESM）",
+  "license": "MIT",
+  "type": "module",
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
     "./attrs": "./src/attrs.js",
     "./palette": "./src/palette.js"
+  },
+  "files": [
+    "src/",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "map",
+    "maplibre",
+    "pmtiles",
+    "web-components",
+    "protomaps",
+    "openstreetmap",
+    "mmj"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meta-taro/modern-map-japan.git",
+    "directory": "packages/elements"
+  },
+  "homepage": "https://meta-taro.github.io/modern-map-japan/",
+  "bugs": {
+    "url": "https://github.com/meta-taro/modern-map-japan/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "maplibre-gl": ">=5",
+    "pmtiles": ">=4"
+  },
+  "peerDependenciesMeta": {
+    "maplibre-gl": {
+      "optional": true
+    },
+    "pmtiles": {
+      "optional": true
+    }
   },
   "scripts": {
     "test": "vitest run",
