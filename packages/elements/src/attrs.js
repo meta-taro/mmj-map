@@ -113,14 +113,17 @@ function toNumber(text) {
  * **閉じる手段は奪っていない。**地図を押せば閉じる（`closeOnClick`）。
  * 目印をもう一度押しても閉じる。
  */
-export function buildPopupOptions() {
+export function buildPopupOptions(className = DEFAULT_POPUP_CLASS) {
   return {
     offset: 24,
-    className: "mmj-popup",
+    className,
     closeButton: false,
     closeOnClick: true,
   };
 }
+
+/** 配色を渡さないときのクラス名。**既定の見た目を変えないため** */
+const DEFAULT_POPUP_CLASS = "mmj-popup";
 
 /**
  * ポップアップに使う色。**すべて `styles/modern-dark.json` に既にある値。**
@@ -156,20 +159,30 @@ const TIP_SIDES = {
  * MapLibre の既定は白地で、暗い地図の上に置くと紙が 1 枚浮いて見える。
  * **箱だけ暗くしても足りない。**三角（tip）は向きごとに別の辺を `#fff` で塗るので、
  * 8 方向すべてを上書きしないと、開く向きによって白い三角が残る。
+ *
+ * **色は読み込んだスタイルから借りる**（`palette.js` の `readTheme`）。
+ * 以前は暗いスタイルの値を固定で持っていたため、配色が 6 枚になった時点で
+ * **明るい地図の上でポップアップだけ暗い箱**になっていた（D-019）。
+ *
+ * `className` を分けるのは、1 ページに配色違いを並べたときに
+ * **最初の 1 枚の色が全部へ効く**のを防ぐため（`themes.html` は 6 枚並ぶ）。
+ *
+ * @param {{ background: string, text: string, border: string }} [colors]
+ * @param {string} [className]
  */
-export function buildPopupStyle() {
+export function buildPopupStyle(colors = POPUP_COLORS, className = DEFAULT_POPUP_CLASS) {
   const tip = Object.entries(TIP_SIDES)
     .map(
       ([anchor, side]) =>
-        `.mmj-popup.maplibregl-popup-anchor-${anchor} .maplibregl-popup-tip{border-${side}-color:${POPUP_COLORS.background};}`,
+        `.${className}.maplibregl-popup-anchor-${anchor} .maplibregl-popup-tip{border-${side}-color:${colors.background};}`,
     )
     .join("");
 
   return (
-    ".mmj-popup .maplibregl-popup-content{" +
-    `background:${POPUP_COLORS.background};` +
-    `color:${POPUP_COLORS.text};` +
-    `border:1px solid ${POPUP_COLORS.border};` +
+    `.${className} .maplibregl-popup-content{` +
+    `background:${colors.background};` +
+    `color:${colors.text};` +
+    `border:1px solid ${colors.border};` +
     "border-radius:4px;" +
     "padding:6px 10px;" +
     "box-shadow:0 2px 8px rgba(0,0,0,.45);" +

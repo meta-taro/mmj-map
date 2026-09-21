@@ -24,9 +24,18 @@ export class MmjPoi extends HTMLElement {
   /** @type {{ sourceId: string, source: any, layers: any[] } | null} */
   spec = null;
 
+  /**
+   * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
+   * 親は描画時に `replaceChildren` で子を DOM から外すので、
+   * **あとから `closest` を呼ぶと null になる**（配色を借り損ねていた）。
+   * @type {any}
+   */
+  owner = null;
+
   connectedCallback() {
     const parent = this.closest("mmj-map");
     if (!parent) return void console.error("[mmj-poi] <mmj-map> の中に置いてください");
+    this.owner = parent;
 
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
@@ -55,14 +64,19 @@ export class MmjPoi extends HTMLElement {
     const src = this.getAttribute("src");
     if (!src) return void console.error("[mmj-poi] src に点の GeoJSON の URL が要ります");
 
+    const theme = this.owner?.theme;
+    const accent = this.owner?.accent;
+
     try {
       this.spec = buildPoiSpec({
         id: this.getAttribute("layer-id") || `mmj-poi-${++serial}`,
         src,
         labelKey: this.getAttribute("label-key") ?? undefined,
         minZoom: parseCount(this.getAttribute("min-zoom"), POI_DEFAULTS.minZoom),
-        color: this.getAttribute("color") ?? undefined,
-        textColor: this.getAttribute("text-color") ?? undefined,
+        // 指定が無ければ、サイトのテーマカラー（`<mmj-map accent>`）を既定にする。
+        // 名前は地図のラベルと同じ色を借りる。**ここで色を作らない**
+        color: this.getAttribute("color") ?? accent ?? undefined,
+        textColor: this.getAttribute("text-color") ?? theme?.text ?? undefined,
       });
     } catch (error) {
       // 握り潰さない（§8）。ここで黙ると、点が出ない理由が画面にもログにも残らない

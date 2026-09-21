@@ -243,3 +243,90 @@ mmj-map,
     grid-template-columns: 1fr;
   }
 }
+
+/* --- サイトの色を当てる（brand.html） ------------------------------------- */
+
+.brand-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 0.85rem;
+}
+
+.brand-bar[hidden] {
+  display: none;
+}
+
+.brand-bar label {
+  color: var(--muted);
+}
+
+.brand-bar input[type="color"] {
+  /* 既定の見た目は OS ごとに違う。**枠だけ揃えて、中身は OS に任せる** */
+  inline-size: 3rem;
+  block-size: 1.9rem;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.brand-bar select {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.brand-samples {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.brand-samples button {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--swatch);
+  cursor: pointer;
+  transition: transform 160ms ease;
+}
+
+.brand-samples button:hover {
+  transform: scale(1.12);
+}
+
+.brand-samples button:active {
+  transform: scale(0.96);
+}
+
+.brand-samples button:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* そのまま貼れる 1 行。**見せないと「どう書くのか」が伝わらない** */
+.brand-snippet {
+  flex: 1 1 22rem;
+  min-inline-size: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  background: var(--code);
+  color: var(--muted);
+}
+
+.brand-map {
+  min-height: 0;
+  block-size: 100%;
+}
