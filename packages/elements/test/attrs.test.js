@@ -221,3 +221,51 @@ describe("buildMapOptions の cooperative", () => {
     expect(options.localIdeographFontFamily).toContain("Noto Sans JP");
   });
 });
+
+/**
+ * **ポップアップの色を焼き込まない。**
+ *
+ * 以前は `modern-dark.json` から借りた暗い色を固定で持っていた。
+ * 配色が 6 枚になり、**明るいスタイルの上では暗い箱が 1 枚浮く**ようになった
+ * （D-019 で light / ink / sand / candy が入った）。
+ * 借りる先を、読み込んだスタイルへ移す。
+ */
+describe("buildPopupStyle に色を渡す", () => {
+  const light = { background: "#EDF0F3", text: "#2B3138", border: "#D4D9DF" };
+
+  it("渡した色を使う", () => {
+    const css = buildPopupStyle(light);
+    expect(css).toContain("#EDF0F3");
+    expect(css).toContain("#2B3138");
+    expect(css).toContain("#D4D9DF");
+  });
+
+  it("渡さなければ、これまでと同じ既定（暗い側）", () => {
+    expect(buildPopupStyle()).toContain(POPUP_COLORS.background);
+  });
+
+  it("**三角も渡した色で塗る**（箱だけ変えると、明るい地図に暗い三角が残る）", () => {
+    const css = buildPopupStyle(light);
+    for (const anchor of ["top", "bottom", "left", "right"]) {
+      expect(css).toContain(`maplibregl-popup-anchor-${anchor} `);
+    }
+    expect(css).not.toContain(POPUP_COLORS.background);
+  });
+
+  it("クラス名を変えると、そのクラスの中だけを変える", () => {
+    const css = buildPopupStyle(light, "mmj-popup-abc");
+    for (const rule of css.split("}").filter((r) => r.trim() !== "")) {
+      expect(rule).toContain(".mmj-popup-abc");
+    }
+  });
+});
+
+describe("buildPopupOptions のクラス名", () => {
+  it("既定は mmj-popup（これまでと同じ）", () => {
+    expect(buildPopupOptions().className).toBe("mmj-popup");
+  });
+
+  it("**配色ごとに別のクラスを付けられる。**同じだと 6 枚並べたとき色が混ざる", () => {
+    expect(buildPopupOptions("mmj-popup-abc").className).toBe("mmj-popup-abc");
+  });
+});

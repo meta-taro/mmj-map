@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>サイトの色を当てる — modern-map-japan</title>
+<meta name="description" content="サイトのテーマカラーを 1 色渡すだけで地図に反映されます。スタイル JSON を書く必要はありません。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="サイトの色を当てる — modern-map-japan">
+<meta property="og:description" content="テーマカラーを 1 色渡すだけ。スタイル JSON を書く必要はありません。">
+<link rel="icon" href="./favicon.svg">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>サイトの色を当てる</h1>
+  <p>
+    導入先にはたいていテーマカラーがあります。<strong>180 行のスタイル JSON を書かせません。</strong>
+    <code>accent</code> に 1 色渡すだけで、高速道路・駅の丸・目印の色が変わります。
+    <strong>地図全体は塗りません</strong>（塗ると陸・水・建物・道の区別が付かなくなります）。
+    もっと広く変えたいときは <code>palette-url</code> で役割ごとに指定できます。
+  </p>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./3d.html">建物を立てる</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="./themes.html">配色を見くらべる</a>
+    <a href="./brand.html" aria-current="page">サイトの色を当てる</a>
+    <a href="https://github.com/meta-taro/modern-map-japan">リポジトリ</a>
+  </nav>
+</header>
+
+<main class="map-area">
+  <form class="brand-bar" id="bar">
+    <label for="accent">テーマカラー</label>
+    <input type="color" id="accent" value="#0a5fff">
+
+    <span class="brand-samples" role="group" aria-label="色の例">
+      <button type="button" data-color="#0a5fff" style="--swatch:#0a5fff" aria-label="例 1"></button>
+      <button type="button" data-color="#e2453c" style="--swatch:#e2453c" aria-label="例 2"></button>
+      <button type="button" data-color="#1f9d55" style="--swatch:#1f9d55" aria-label="例 3"></button>
+      <button type="button" data-color="#f2a71b" style="--swatch:#f2a71b" aria-label="例 4"></button>
+    </span>
+
+    <label for="base">土台</label>
+    <select id="base">
+      <option value="modern-light">Modern Light</option>
+      <option value="modern-dark">Modern Dark</option>
+      <option value="modern-ink">Modern Ink</option>
+      <option value="modern-sand">Modern Sand</option>
+      <option value="modern-neon">Modern Neon</option>
+      <option value="modern-candy">Modern Candy</option>
+    </select>
+
+    <code class="brand-snippet" id="snippet"></code>
+  </form>
+
+  <div class="brand-map" id="slot"></div>
+
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script type="module">
+  const cfg = window.MMJ_CONFIG ?? {};
+  const slot = document.getElementById('slot');
+  const accentInput = document.getElementById('accent');
+  const baseSelect = document.getElementById('base');
+  const snippet = document.getElementById('snippet');
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    document.getElementById('bar').hidden = true;
+    document.getElementById('notice').hidden = false;
+  } else {
+    // **読み込んだあとに属性を書き換えても切り替わりません**（生成時に 1 回だけ読むため）。
+    // 切り替えは要素を置き直して行う。仕様として docs/elements/README.md に書いてある。
+    const render = () => {
+      const accent = accentInput.value;
+      const base = baseSelect.value;
+      // **置き場所は config が決める。**先頭からのパスを自分で組み立てない
+      const styleUrl = new URL(`${base}.json`, cfg.styleUrl).href;
+
+      const map = document.createElement('mmj-map');
+      map.setAttribute('tiles', cfg.tilesUrl);
+      map.setAttribute('style-url', styleUrl);
+      map.setAttribute('accent', accent);
+      map.setAttribute('center', '135.5023,34.6937');
+      map.setAttribute('zoom', '14');
+
+      const marker = document.createElement('mmj-marker');
+      marker.setAttribute('lnglat', '135.5023,34.6937');
+      marker.setAttribute('popup', '北浜');
+      marker.setAttribute('popup-open', '');
+      map.append(marker);
+
+      slot.replaceChildren(map);
+      snippet.textContent =
+        `<mmj-map tiles="..." style-url="/styles/${base}.json" accent="${accent}">`;
+    };
+
+    for (const button of document.querySelectorAll('.brand-samples button')) {
+      button.addEventListener('click', () => {
+        accentInput.value = button.dataset.color;
+        render();
+      });
+    }
+    accentInput.addEventListener('change', render);
+    baseSelect.addEventListener('change', render);
+
+    await import('./elements/index.js');
+    render();
+  }
+</script>
+</body>
+</html>

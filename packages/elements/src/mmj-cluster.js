@@ -25,9 +25,18 @@ export class MmjCluster extends HTMLElement {
   /** @type {{ sourceId: string, source: any, layers: any[] } | null} */
   spec = null;
 
+  /**
+   * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
+   * 親は描画時に `replaceChildren` で子を DOM から外すので、
+   * **あとから `closest` を呼ぶと null になる**（配色を借り損ねていた）。
+   * @type {any}
+   */
+  owner = null;
+
   connectedCallback() {
     const parent = this.closest("mmj-map");
     if (!parent) return void console.error("[mmj-cluster] <mmj-map> の中に置いてください");
+    this.owner = parent;
 
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
@@ -56,15 +65,21 @@ export class MmjCluster extends HTMLElement {
     const src = this.getAttribute("src");
     if (!src) return void console.error("[mmj-cluster] src に点の GeoJSON の URL が要ります");
 
+    const theme = this.owner?.theme;
+    const accent = this.owner?.accent;
+
     try {
       this.spec = buildClusterSpec({
         id: this.getAttribute("layer-id") || `mmj-cluster-${++serial}`,
         src,
         radius: parseCount(this.getAttribute("radius"), DEFAULTS.radius),
         maxZoom: parseCount(this.getAttribute("max-zoom"), DEFAULTS.maxZoom),
-        color: this.getAttribute("color") ?? undefined,
-        textColor: this.getAttribute("text-color") ?? undefined,
-        pointColor: this.getAttribute("point-color") ?? undefined,
+        // 指定が無ければ、サイトのテーマカラー（`<mmj-map accent>`）を既定にする。
+        // 文字は地図の地色を借りる（**明るい地図でも暗い地図でも、丸の上で読める側**）。
+        // どちらも読めなければ cluster.js の既定へ落ちる。**ここで色を作らない**
+        color: this.getAttribute("color") ?? accent ?? undefined,
+        textColor: this.getAttribute("text-color") ?? theme?.background ?? undefined,
+        pointColor: this.getAttribute("point-color") ?? accent ?? undefined,
       });
     } catch (error) {
       // 握り潰さない（§8）。ここで黙ると、点が出ない理由が画面にもログにも残らない

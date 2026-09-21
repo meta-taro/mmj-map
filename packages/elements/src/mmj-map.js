@@ -8,18 +8,26 @@
  * </mmj-map>
  * ```
  *
+ * サイトのテーマカラーを当てるときは `accent`（1 色）か `palette-url`（役割ごと）。
+ *
+ * ```html
+ * <mmj-map tiles="..." style-url="/styles/modern-light.json" accent="#0A5FFF"></mmj-map>
+ * ```
+ *
  * **素の MapLibre より薄くならないなら、この部品は要らない**（PRD §3）。
- * ここが引き受けているのは 5 つ。
+ * ここが引き受けているのは 6 つ。
  *   1. pmtiles プロトコルの登録
  *   2. スタイルの取得と `__TILES_URL__` の差し替え
  *   3. 帰属表示と CJK フォントの既定（忘れると ODbL 違反 / 字が出ない）
  *   4. **失敗したときに白い地図を出さず、理由を画面へ出す**
- *   5. 子要素（marker）への map の受け渡し
+ *   5. 子要素（marker）への map と配色の受け渡し
+ *   6. **導入者の色をスタイルへ当てる**（色はここで作らない・`palette.js`）
  *
  * maplibre-gl と pmtiles は、**読み込む側が `<script>` で入れる**（ゼロ構築の方針）。
  */
 import { applyTilesUrl, buildMapOptions, parseLngLat, parsePitch, parseZoom, hashOverridesPitch } from "./attrs.js";
 import { addExtrusion } from "./extrude.js";
+import { accentPalette, applyPalette, readTheme } from "./palette.js";
 
 /** pmtiles プロトコルは 1 回だけ登録する（2 度目は MapLibre が投げる） */
 let protocolRegistered = false;
@@ -27,6 +35,20 @@ let protocolRegistered = false;
 export class MmjMap extends HTMLElement {
   /** @type {any} */
   map = null;
+
+  /**
+   * 読み込んだスタイルから読んだ色。子要素がここから借りる。
+   * **部品が色を持たないようにするため**（baseline §11）。
+   * @type {ReturnType<typeof readTheme> | null}
+   */
+  theme = null;
+
+  /**
+   * 導入者が渡したテーマカラー（`accent` 属性、または palette の `highway`）。
+   * **渡されていなければ null。**子要素はここが null のとき自分の既定を使う。
+   * @type {string | null}
+   */
+  accent = null;
 
   connectedCallback() {
     this.#render().catch((error) => this.#fail(error));
@@ -74,7 +96,12 @@ export class MmjMap extends HTMLElement {
     // （実測: 梅田 z16 で 17 リクエスト / 735,015 バイト。2D と 1 バイトも変わらない）。
     // 手書きスタイルは書き換えず、読み込んだ後のオブジェクトへ 1 枚足すだけ。
     const wants3d = this.hasAttribute("3d");
-    const style = JSON.parse(applied.text);
+    const style = await this.#recolor(JSON.parse(applied.text));
+
+    // 子要素（目印・まとまり・自前 POI・ポップアップ）が借りる色。
+    // **部品が色を持たないようにするため**、読み込んだスタイルから読む。
+    // `map` を入れる前に用意する（子は `map` が入った瞬間に付きに来る）。
+    this.theme = readTheme(style);
 
     this.map = new maplibregl.Map(
       buildMapOptions({
@@ -107,6 +134,48 @@ export class MmjMap extends HTMLElement {
     this.map.on("error", (/** @type {any} */ event) => console.error("[mmj-map]", event?.error ?? event));
 
     this.dispatchEvent(new CustomEvent("mmj-ready", { detail: { map: this.map } }));
+  }
+
+  /**
+   * サイトのテーマカラーをスタイルへ当てる。**色はここで作らない。**
+   *
+   *   <mmj-map accent="#0A5FFF">             1 色だけ渡す（高速道路・駅・点に当たる）
+   *   <mmj-map palette-url="./brand.json">   役割ごとに全部指定する
+   *
+   * 両方あるときは `palette-url` が勝つ（細かく書いたほうを優先する）。
+   * **1 つも当たらなかったら投げる。**渡した色が効いていない地図を黙って出すと、
+   * 「指定したのに変わらない」という気づきにくい壊れ方になる。
+   *
+   * @param {any} style
+   * @returns {Promise<any>} 当てたあとのスタイル（**元は書き換えない**）
+   */
+  async #recolor(style) {
+    const attribute = this.getAttribute("accent");
+    const paletteUrl = this.getAttribute("palette-url");
+    if (!attribute && !paletteUrl) return style;
+
+    let colors = attribute ? accentPalette(attribute) : {};
+    if (paletteUrl) {
+      const response = await fetch(paletteUrl);
+      if (!response.ok) {
+        throw new Error(`配色を取得できません: ${paletteUrl} -> HTTP ${response.status}`);
+      }
+      colors = { ...colors, ...(await response.json()) };
+    }
+
+    // **渡された色だけを覚える。**スタイルが元から持っている高速道路の色を
+    // ここへ入れると、**テーマカラーを渡していない地図の目印まで灰色になる**
+    // （modern-dark の highway は `#4E5863`。実際に梅田の目印が灰色になった）。
+    this.accent = attribute ?? colors["highway"] ?? null;
+
+    const result = applyPalette(style, colors);
+    if (result.applied === 0) {
+      throw new Error(
+        `渡した色がどのレイヤにも当たりませんでした（役割: ${Object.keys(colors).join(", ")}）。` +
+          "スタイルのレイヤ id が MMJ の 6 枚と違う可能性があります",
+      );
+    }
+    return result.style;
   }
 
   /** @param {unknown} error */

@@ -32,6 +32,75 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 | `hash` | 付けると URL の `#zoom/lat/lon` で場所を持つ |
 | `3d` | 付けると建物を押し出す（下記） |
 | `pitch` | 傾き 0〜85。既定 0、`3d` を付けたときだけ 45。**`hash` と併用しても効きます**（下記） |
+| `accent` | **サイトのテーマカラー 1 色。**高速道路・駅の丸の縁・目印/まとまり/POI の既定色に当たる（下記） |
+| `palette-url` | 役割ごとに色を指定した JSON の URL。`accent` より優先する（下記） |
+| `cooperative` | 付けると 1 本指はページ送り、2 本指だけ地図が取る。**1 ページに何枚も置くときに要る** |
+
+### `accent` / `palette-url` — サイトの色を当てる
+
+**ほとんどの導入先には、そのサイトのテーマカラーがあります。**
+180 行のスタイル JSON を書かせないために、色だけを渡せるようにしてあります。
+
+```html
+<!-- 1 色だけ渡す。土台は 6 枚から選ぶ -->
+<mmj-map tiles="..." style-url="/styles/modern-light.json" accent="#0A5FFF"></mmj-map>
+```
+
+`accent` の 1 色が当たるのは **2 か所だけ**です。
+
+| 当たる | 何 |
+| --- | --- |
+| `highway` | 高速道路の線。**画面で一番目に入る線** |
+| `station` | 駅の丸の縁 |
+
+加えて、`<mmj-marker>` / `<mmj-cluster>` / `<mmj-poi>` の**色を指定しなかったとき**の既定が
+この色になります。ポップアップの箱と文字は、**土台のスタイルから借ります**
+（明るいスタイルなら明るい箱）。
+
+**地図全体をテーマカラーで塗りません。**塗ると陸・水・建物・道の区別が付かなくなり、
+地図として読めなくなります。**もっと広く変えたいときは `palette-url`** を使ってください。
+
+```html
+<mmj-map tiles="..." style-url="/styles/modern-light.json" palette-url="./brand.json"></mmj-map>
+```
+
+```json
+{
+  "background": "#FFFFFF",
+  "earth": "#FFFFFF",
+  "water": "#DCE9F5",
+  "buildings": "#EFF2F6",
+  "road-minor": "#FFFFFF",
+  "road-medium": "#FFFFFF",
+  "road-major": "#F4F6F9",
+  "highway": "#0A5FFF",
+  "highway-casing": "#0842B5",
+  "label-city": "#10172A",
+  "halo": "#FFFFFF"
+}
+```
+
+役割は 24 個あります。**書いたものだけが当たり、書かなかったところは土台のまま**です。
+
+`background` `earth` `landcover` `green` `built` `paved` `water` `waterway` `buildings`
+`path` `road-minor` `road-medium` `road-major` `highway-casing` `highway` `rail` `boundary`
+`station` `station-fill` `label-city` `label-station` `label-neighbourhood` `label-water` `halo`
+
+`accent` と `palette-url` を両方書いたときは `palette-url` が勝ちます（細かいほうを優先）。
+
+**当たらなかったら例外を投げます。** 色を渡したのに 1 つも当たらない地図を黙って出すと、
+「指定したのに変わらない」という気づきにくい壊れ方になります。
+自前のスタイルに当てるときは、`styles/README.md` のレイヤ id を保ってください。
+
+**こちらは色を作りません**（baseline §11 / D-002）。1 色から陸・水・道の明度を機械的に
+振って土台ごと生成する案は、**D-002 が採らなかった案**なので入れていません。
+必要なら提案として出します。
+
+#### いま出来ないこと
+
+- **読み込んだあとに `style-url` / `accent` を書き換えても切り替わりません。**
+  生成時に 1 回だけ読みます。切り替えたいときは要素を置き直してください
+  （`apps/demo/brand.html` がそうしています）
 
 ### `3d` — 建物の押し出し
 
