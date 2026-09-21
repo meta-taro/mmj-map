@@ -68,7 +68,8 @@ export function ensurePopupContrast(colors) {
 export function popupColorsFrom(parent) {
   const theme = /** @type {any} */ (parent)?.theme;
   return {
-    background: theme?.background ?? POPUP_COLORS.background,
+    // **地色ではなく surface。**地色を使うと明るい土台で箱が地図に溶ける
+    background: theme?.surface ?? theme?.background ?? POPUP_COLORS.background,
     text: theme?.text ?? POPUP_COLORS.text,
     border: theme?.border ?? POPUP_COLORS.border,
   };
