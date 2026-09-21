@@ -1,7 +1,7 @@
 {
   "_note": [
     "pin したビルドが実際に持っている vector_layers。**手で書かない**。",
-    "再生成: pnpm --filter @modern-map-japan/style-check run snapshot -- <PMTiles のパス>",
+    "再生成: pnpm --filter @mmj-map/style-check run snapshot -- <PMTiles のパス>",
     "スタイルが参照する source-layer が、ここに無ければ CI が落ちる（ベースルール §23）。"
   ],
   "source": {

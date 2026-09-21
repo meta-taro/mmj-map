@@ -1,5 +1,5 @@
 {
-  "name": "@modern-map-japan/serve",
+  "name": "@mmj-map/serve",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -16,6 +16,6 @@
     "vitest": "^5.0.0"
   },
   "dependencies": {
-    "@modern-map-japan/http-range": "workspace:*"
+    "@mmj-map/http-range": "workspace:*"
   }
 }

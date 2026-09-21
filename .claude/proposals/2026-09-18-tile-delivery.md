@@ -1,5 +1,10 @@
 # 提案 — タイルの配り方を決める。CF が要るのか要らないのか（2026-09-18）
 
+> **スコープは後から確定した。**この文書は `@modern-map-japan/*` を前提に書かれていたが、
+> D-018（2026-09-21）で正式名称が MMJ になり、npm スコープは **`@mmj-map`** に決まった。
+> **古い名前で案内しないよう、本文の名前を置き換えてある**（決定そのものは D-018 / D-020 を見ること）。
+
+
 **これは提案です。決定ではありません。**
 
 問われたこと:
@@ -104,7 +109,7 @@ $ pmtiles verify out.pmtiles
 ### 利用者から見える形は、1 コマンド 1 ファイル
 
 ```bash
-pnpm dlx @modern-map-japan/tiles get \
+pnpm dlx @mmj-map/tiles get \
   --center=135.4959,34.7024 --radius=2km -o public/maps/office.pmtiles
 ```
 

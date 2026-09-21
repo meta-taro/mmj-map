@@ -172,7 +172,7 @@ importers:
 
   infra/pmtiles-worker:
     dependencies:
-      '@modern-map-japan/http-range':
+      '@mmj-map/http-range':
         specifier: workspace:*
         version: link:../../packages/http-range
     devDependencies:
@@ -233,7 +233,7 @@ importers:
 
   tools/palette:
     dependencies:
-      '@modern-map-japan/elements':
+      '@mmj-map/elements':
         specifier: workspace:*
         version: link:../../packages/elements
     devDependencies:
@@ -267,7 +267,7 @@ importers:
 
   tools/serve:
     dependencies:
-      '@modern-map-japan/http-range':
+      '@mmj-map/http-range':
         specifier: workspace:*
         version: link:../../packages/http-range
     devDependencies:

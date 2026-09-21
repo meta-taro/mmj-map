@@ -1,7 +1,7 @@
 /**
  * pin したビルドの vector_layers を実測して `basemap-layers.json` を書き直す。
  *
- *   pnpm --filter @modern-map-japan/style-check run snapshot -- dist/tiles/kansai.pmtiles
+ *   pnpm --filter @mmj-map/style-check run snapshot -- dist/tiles/kansai.pmtiles
  *
  * **手で書かない。**上流の版を上げたとき（`pnpm tiles:resolve -- --update=...`）は、
  * 切り出し直したアーカイブでこれを走らせる。
@@ -36,7 +36,7 @@ if (vectorLayers.length === 0) throw new Error(`vector_layers が空です: ${ar
 const out = {
   _note: [
     "pin したビルドが実際に持っている vector_layers。**手で書かない**。",
-    "再生成: pnpm --filter @modern-map-japan/style-check run snapshot -- <PMTiles のパス>",
+    "再生成: pnpm --filter @mmj-map/style-check run snapshot -- <PMTiles のパス>",
     "スタイルが参照する source-layer が、ここに無ければ CI が落ちる（ベースルール §23）。",
   ],
   source: {

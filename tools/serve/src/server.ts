@@ -12,7 +12,7 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { extname, join, resolve, sep } from "node:path";
-import { parseRangeHeader } from "@modern-map-japan/http-range";
+import { parseRangeHeader } from "@mmj-map/http-range";
 
 export interface Mount {
   /** URL の先頭（"/" で始まる）。長いものから順に照合する */

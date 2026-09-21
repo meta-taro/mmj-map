@@ -10,10 +10,10 @@
  *  3. **PMTiles 以外を配らない。** バケツの中身を無条件に公開しない
  *  4. **許可したオリジンにだけ読ませる。** 未設定なら閉じる（設定忘れで開放しない）
  *
- * Range の解釈は `@modern-map-japan/http-range` にある。**手元の配信と同じものを使う。**
+ * Range の解釈は `@mmj-map/http-range` にある。**手元の配信と同じものを使う。**
  * 別々に書くと、手元では通って本番で 200 を返す、という壊れ方をする。
  */
-import { planRangeResponse } from "@modern-map-japan/http-range";
+import { planRangeResponse } from "@mmj-map/http-range";
 
 import { keyFromPath } from "./key.js";
 import type { Env } from "./types.js";

@@ -53,7 +53,7 @@ Protomaps の `places` / `pois` / `water` は、地物ごとに
 アーカイブでこれを再生成します。
 
 ```bash
-pnpm --filter @modern-map-japan/style-check run snapshot -- dist/tiles/kansai.pmtiles
+pnpm --filter @mmj-map/style-check run snapshot -- dist/tiles/kansai.pmtiles
 ```
 
 `pmtiles` が PATH に無い場合は `PMTILES_BIN=/path/to/pmtiles` を付けてください。
