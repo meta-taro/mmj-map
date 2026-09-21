@@ -68,7 +68,7 @@ export function parsePitch(value, fallback) {
 /**
  * MapLibre の Map へ渡す設定。
  * **帰属表示と CJK の扱いを、呼ぶ側が忘れられない場所に置く**のがこの関数の役目。
- * @param {{ container: unknown, style: unknown, center: [number, number], zoom: number, hash: boolean, pitch?: number }} input
+ * @param {{ container: unknown, style: unknown, center: [number, number], zoom: number, hash: boolean, pitch?: number, cooperative?: boolean }} input
  */
 export function buildMapOptions(input) {
   return {
@@ -82,6 +82,10 @@ export function buildMapOptions(input) {
     localIdeographFontFamily: "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif",
     // 帰属表示は必須。**消せる形で渡さない**（LICENSES.md・ODbL）
     attributionControl: { compact: false },
+    // 1 本指をページへ返し、2 本指だけを地図が取る。
+    // **地図を縦に並べたページで、指でページを送れなくなるのを防ぐ。**
+    // 既定は false。1 枚だけのページで 2 本指を要求すると、そちらが使いにくくなる。
+    cooperativeGestures: input.cooperative === true,
   };
 }
 

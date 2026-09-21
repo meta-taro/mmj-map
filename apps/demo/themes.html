@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>配色を見くらべる — modern-map-japan</title>
+<meta name="description" content="同じタイル・同じレイヤ構成で、色だけを変えた 6 枚を並べています。スタイルを差し替える以外に何も要りません。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="配色を見くらべる — modern-map-japan">
+<meta property="og:description" content="同じタイル・同じレイヤ構成で、色だけを変えた 4 枚を並べています。">
+<link rel="icon" href="./favicon.svg">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>配色を見くらべる</h1>
+  <p>
+    6 枚とも<strong>同じタイル・同じレイヤ構成</strong>で、違うのは色だけです。
+    切り替えに要るのは <code>style-url</code> を差し替えることだけで、タイルの作り直しも再取得も要りません。
+    動かすと 6 枚が連動します（地図の操作は<strong>指 2 本 / Ctrl+ホイール</strong>。そうしないとページを送れません）。下 2 枚は<strong>道の序列を明るさではなく色相で分けた版</strong>です。<strong>この 6 枚はまだ提案です</strong>（<code>DESIGN.md</code> の配色欄は空のまま）。
+  </p>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./3d.html">建物を立てる</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="./themes.html" aria-current="page">配色を見くらべる</a>
+    <a href="https://github.com/meta-taro/modern-map-japan">リポジトリ</a>
+  </nav>
+</header>
+
+<main class="map-area">
+  <div class="theme-grid" id="grid">
+    <figure class="theme-cell">
+      <mmj-map data-theme="modern-dark" center="135.5023,34.6937" zoom="13" cooperative></mmj-map>
+      <figcaption><b>Modern Dark</b><span>夜。既定の 1 枚</span><code>styles/modern-dark.json</code></figcaption>
+    </figure>
+    <figure class="theme-cell">
+      <mmj-map data-theme="modern-light" center="135.5023,34.6937" zoom="13" cooperative></mmj-map>
+      <figcaption><b>Modern Light</b><span>昼。道を白で抜き、太さだけで序列を付ける</span><code>styles/modern-light.json</code></figcaption>
+    </figure>
+    <figure class="theme-cell">
+      <mmj-map data-theme="modern-ink" center="135.5023,34.6937" zoom="13" cooperative></mmj-map>
+      <figcaption><b>Modern Ink</b><span>無彩色。白黒で刷っても潰れないことを狙った版</span><code>styles/modern-ink.json</code></figcaption>
+    </figure>
+    <figure class="theme-cell">
+      <mmj-map data-theme="modern-sand" center="135.5023,34.6937" zoom="13" cooperative></mmj-map>
+      <figcaption><b>Modern Sand</b><span>暖色。紙の地図寄り。緑と水が強く出る</span><code>styles/modern-sand.json</code></figcaption>
+    </figure>
+    <figure class="theme-cell">
+      <mmj-map data-theme="modern-neon" center="135.5023,34.6937" zoom="13" cooperative></mmj-map>
+      <figcaption><b>Modern Neon</b><span>夜のネオン。道の序列を明るさではなく色相で分ける</span><code>styles/modern-neon.json</code></figcaption>
+    </figure>
+    <figure class="theme-cell">
+      <mmj-map data-theme="modern-candy" center="135.5023,34.6937" zoom="13" cooperative></mmj-map>
+      <figcaption><b>Modern Candy</b><span>昼のパステル。同じ色相の並びを明るい側で使う</span><code>styles/modern-candy.json</code></figcaption>
+    </figure>
+  </div>
+
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script type="module">
+  // **属性を入れてから部品を読み込む。**逆にすると connectedCallback が先に走る。
+  const cfg = window.MMJ_CONFIG ?? {};
+  const maps = [...document.querySelectorAll('mmj-map')];
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    for (const map of maps) map.remove();
+    document.getElementById('notice').hidden = false;
+  } else {
+    for (const map of maps) {
+      map.setAttribute('tiles', cfg.tilesUrl);
+      // **置き場所は config が決める。**同じ場所に並んでいる前提だけを使い、
+      // 先頭からのパスを自分で組み立てない（公開先の base path で壊れる）。
+      map.setAttribute('style-url', new URL(`${map.dataset.theme}.json`, cfg.styleUrl).href);
+    }
+
+    // 4 枚を連動させる。**比べる相手が別の場所を見ていたら比べられない。**
+    const ready = [];
+    let syncing = false;
+    for (const element of maps) {
+      element.addEventListener('mmj-ready', (event) => {
+        const map = event.detail.map;
+        ready.push(map);
+        map.on('move', () => {
+          if (syncing) return; // 反射して無限に往復するのを止める
+          syncing = true;
+          for (const other of ready) {
+            if (other === map) continue;
+            other.jumpTo({
+              center: map.getCenter(),
+              zoom: map.getZoom(),
+              bearing: map.getBearing(),
+              pitch: map.getPitch(),
+            });
+          }
+          syncing = false;
+        });
+      });
+    }
+
+    await import('./elements/index.js');
+  }
+</script>
+</body>
+</html>

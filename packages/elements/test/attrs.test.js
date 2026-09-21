@@ -193,3 +193,31 @@ describe("hashOverridesPitch", () => {
     expect(hashOverridesPitch("#map=16/34.7/135.5")).toBe(false);
   });
 });
+
+/**
+ * **1 ページに地図を何枚も置くと、指で送れなくなる。**
+ *
+ * 地図は 1 本指のなぞりを自分の移動として受け取るので、画面いっぱいの地図が
+ * 縦に並ぶと、触れた指では**ページが下へ送れない**（themes.html で実際に詰まる）。
+ * MapLibre の `cooperativeGestures` は 1 本指をページへ返し、2 本指だけを地図が取る。
+ *
+ * **既定では入れない。**地図が 1 枚だけのページで 2 本指を要求すると、
+ * 今度はそちらが使いにくくなる。置く側が選ぶ。
+ */
+describe("buildMapOptions の cooperative", () => {
+  const base = { container: {}, style: {}, center: /** @type {[number, number]} */ ([135, 34]), zoom: 12, hash: false };
+
+  it("既定では cooperativeGestures を付けない", () => {
+    expect(buildMapOptions(base).cooperativeGestures).toBe(false);
+  });
+
+  it("cooperative: true で有効にする", () => {
+    expect(buildMapOptions({ ...base, cooperative: true }).cooperativeGestures).toBe(true);
+  });
+
+  it("他の設定を壊さない（帰属表示と CJK は残る）", () => {
+    const options = buildMapOptions({ ...base, cooperative: true });
+    expect(options.attributionControl).toEqual({ compact: false });
+    expect(options.localIdeographFontFamily).toContain("Noto Sans JP");
+  });
+});
