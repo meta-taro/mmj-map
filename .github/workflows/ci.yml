@@ -46,6 +46,17 @@ jobs:
 
       - run: pnpm -r test
 
+      # カバレッジが下がったら止める（ECC `testing.md` は 80% 必須）。
+      #
+      # **測っていなかった。**2026-09-21 に初めて測り、除外を決めたうえで
+      # statements 92.9% / branches 88.7% / functions 97.1% / lines 94.9% だった。
+      # **測るだけにすると、次に下がったとき誰も気づかない**ので閾値で止める。
+      #
+      # 閾値を下げて通すのは禁止。下がったならテストを足すか、
+      # 測らないと決めた理由を `vitest.config.ts` の exclude に書くか、どちらか。
+      - name: Coverage does not fall below 80%
+        run: pnpm coverage
+
       # 参照だけ足してアップロードを忘れる事故を、ここで止める（§23）。
       #
       # `apps/demo` は素の HTML で**ビルド工程が無い**。綴りを 1 文字間違えても
