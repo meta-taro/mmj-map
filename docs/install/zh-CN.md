@@ -7,10 +7,15 @@
 > **Machine-translated. No native speaker has reviewed this page.**
 > [`en.md`](en.md) is authoritative. Corrections welcome.
 
-> **MMJ 尚未发布到 npm。**包存在于本仓库，但全部是 `private: true`，
-> 而且 `@mmj-map` 这个 scope 也还没有注册。
-> **`pnpm add @mmj-map/elements` 目前无法使用。**
-> 下面是**现在真正可行**的做法：把三样东西放进你的网站。
+> **组件已发布到 npm。**其余部分由你自行托管。
+>
+> ```bash
+> pnpm add @mmj-map/elements
+> ```
+>
+> **这只会给你组件，不包含其他东西。**没有托管的瓦片端点，也没有托管的样式：
+> `.pmtiles` 文件与样式 JSON 仍需你自己准备。**这正是本项目的用意**——
+> 不需 API 密钥、不按浏览次数计费、不必架瓦片服务器。
 
 一张地图需要三样东西。MMJ 提供后两样，并告诉你第一样怎么做。
 
@@ -70,13 +75,20 @@ pnpm tiles:extract -- demo        # 也可以用 japan / kansai，或自己加�
 每个样式都保留 `__TILES_URL__` 作为占位符。**请不要把瓦片地址写死进去**——
 组件会在加载时替换，所以同一个样式在任何环境都能用。
 
-## 3. 复制组件
+## 3. 获取组件
+
+```bash
+pnpm add @mmj-map/elements
+```
+
+也可以直接复制。它们是纯 ES 模块且**不需要打包步骤**，两种方式都行：
 
 ```bash
 cp -r packages/elements/src/ your-site/elements/
 ```
 
-**不需要打包步骤。**它们是纯 ES 模块，除非你想要，否则打包工具不会介入。
+下面的示例使用复制后的路径（`./elements/index.js`）。若从 npm 安装，
+请指向 `node_modules/@mmj-map/elements/src/index.js`，或让打包工具解析 `@mmj-map/elements`。
 
 ## 4. 页面
 
@@ -149,7 +161,6 @@ pnpm palette -- --land=#f7f9fb --water=#bfd7e8 --ink=#16202b --accent=#0a5fff --
 
 ## 还没有的东西
 
-- **npm 包。**尚未发布。目前请直接复制文件
 - **托管的瓦片。**没有 MMJ 的瓦片服务端点可以指向。请自行托管你的文件
 - **路径规划。**`<mmj-route>` 只会**绘制**你提供的路线，不会计算路线
 - **中日文字形文件。**CJK 标签使用浏览端自己的字体

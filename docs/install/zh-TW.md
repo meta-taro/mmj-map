@@ -7,10 +7,15 @@
 > **Machine-translated. No native speaker has reviewed this page.**
 > [`en.md`](en.md) is authoritative. Corrections welcome.
 
-> **MMJ 尚未發佈到 npm。**套件存在於本儲存庫，但全部是 `private: true`，
-> 而且 `@mmj-map` 這個 scope 也還沒註冊。
-> **`pnpm add @mmj-map/elements` 目前無法使用。**
-> 以下是**現在真的可行**的做法：把三樣東西放進你的網站。
+> **元件已發佈到 npm。**其餘部分由你自行託管。
+>
+> ```bash
+> pnpm add @mmj-map/elements
+> ```
+>
+> **這只會給你元件，不包含其他東西。**沒有代管的圖磚端點，也沒有代管的樣式：
+> `.pmtiles` 檔與樣式 JSON 仍需你自己準備。**這正是本專案的用意**——
+> 不需 API 金鑰、不按瀏覽次數計費、不必架圖磚伺服器。
 
 一張地圖需要三樣東西。MMJ 提供後兩樣，並告訴你第一樣怎麼做。
 
@@ -70,13 +75,20 @@ pnpm tiles:extract -- demo        # 也可以用 japan / kansai，或自己加�
 每個樣式都保留 `__TILES_URL__` 作為佔位符。**請不要把圖磚網址寫死進去**——
 元件會在載入時替換，所以同一個樣式在任何環境都能用。
 
-## 3. 複製元件
+## 3. 取得元件
+
+```bash
+pnpm add @mmj-map/elements
+```
+
+也可以直接複製。它們是純 ES 模組且**不需要打包步驟**，兩種方式都行：
 
 ```bash
 cp -r packages/elements/src/ your-site/elements/
 ```
 
-**不需要打包步驟。**它們是純 ES 模組，除非你想要，否則打包工具不會介入。
+下面的範例使用複製後的路徑（`./elements/index.js`）。若從 npm 安裝，
+請指向 `node_modules/@mmj-map/elements/src/index.js`，或讓打包工具解析 `@mmj-map/elements`。
 
 ## 4. 頁面
 
@@ -149,7 +161,6 @@ pnpm palette -- --land=#f7f9fb --water=#bfd7e8 --ink=#16202b --accent=#0a5fff --
 
 ## 還沒有的東西
 
-- **npm 套件。**尚未發佈。目前請直接複製檔案
 - **代管的圖磚。**沒有 MMJ 的圖磚服務端點可以指。請自行託管你的檔案
 - **路線規劃。**`<mmj-route>` 只會**繪製**你提供的路線，不會計算路線
 - **中日文字形檔。**CJK 標籤使用瀏覽端自己的字型

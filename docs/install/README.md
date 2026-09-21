@@ -21,14 +21,19 @@ If you fix a page, say so in the table above: change the ⚠️ row to name your
 
 ## The short version, in any language
 
-MMJ is **not on npm yet**. Every package here is `private: true` and the `@mmj-map` scope
-is not registered, so `pnpm add @mmj-map/elements` does nothing today.
+**The components are on npm. Everything else you host yourself.**
 
-What works right now is copying three things onto your site:
+```bash
+pnpm add @mmj-map/elements
+```
 
-1. **Tiles** — one `.pmtiles` file you host yourself
-2. **A style** — one `.json` from [`styles/`](../../styles/)
-3. **The components** — plain ES modules from `packages/elements/src/`
+A map needs three things, and that command gives you one of them:
+
+1. **Tiles** — one `.pmtiles` file **you host yourself**
+2. **A style** — one `.json` from [`styles/`](../../styles/), **copied next to your page**
+3. **The components** — `@mmj-map/elements` from npm, or the plain ES modules copied by hand
+
+**There is no hosted tile endpoint and no hosted style.** That is deliberate, not missing.
 
 **No tile server. No API key. No per-view billing.** Static hosting plus HTTP Range.
 
