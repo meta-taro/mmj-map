@@ -364,7 +364,8 @@
   地域ごとに作るのは**スタイル**。
 - **npm のスコープ**: `@mmj` は**取得済み（他者）**。空いているのは
   `@mmj-map` / `@mmjmap` / `@modern-map-japan`（2026-09-21 実測）。
-  **`@mmj-map` を推す**（`pnpm add @mmj-map/elements` → `<mmj-map>` と一貫する）。
+  **`@mmj-map` に確定**（2026-09-21・「こだわりはなく、認識されるなら OK」）。
+  `pnpm add @mmj-map/elements` → `<mmj-map>` と一貫する。
   **スコープの取得は人の工程**（組織アカウントが要る・§14）。
 - **採らなかった案**: リポジトリ名を変える。
   → 公開済みで、URL・Pages・CI・commit history が全部動く。**名前は MMJ で通し、
