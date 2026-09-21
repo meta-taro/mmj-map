@@ -32,7 +32,10 @@
 </header>
 
 <main class="map-area">
-  <mmj-map id="map" center="135.5023,34.6937" zoom="11" hash>
+  <!-- z11 だと、切り出した範囲の端が画面に入って左右が黒帯になる。
+       まとまりの様子は z12 でも十分見えるので、**帯が出ない倍率を既定にする**。
+       範囲外の見せ方そのものは未決。決まったらここではなく部品側で持つ。 -->
+  <mmj-map id="map" center="135.5023,34.6937" zoom="12" hash>
     <mmj-cluster id="cluster" src="./data/sample-points.geojson" radius="50" max-zoom="14"></mmj-cluster>
   </mmj-map>
 
@@ -68,7 +71,7 @@
       picked.hidden = false;
     });
 
-    await import('/elements/index.js');
+    await import('./elements/index.js');
   }
 </script>
 </body>

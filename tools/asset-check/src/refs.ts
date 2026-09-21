@@ -108,3 +108,23 @@ function join(...parts: string[]): string {
   }
   return out.join("/");
 }
+
+/**
+ * **公開先に base path があると壊れる参照**を挙げる。**ここは純粋関数。**
+ *
+ * GitHub Pages は `https://<user>.github.io/<repo>/` の下に置かれる。
+ * `/elements/index.js` は `https://<user>.github.io/elements/index.js` を見に行き、404 になる。
+ *
+ * **手元の `pnpm serve` は `/` 直下で配るので通ってしまう。**
+ * `resolveReference` も mount 表で解けてしまうため「実在する」と判定していた。
+ * **公開先でしか出ない壊れ方**で、実際に 4 枚のデモが地図を出せなくなっていた
+ * （2026-09-21）。
+ *
+ * 相対パスなら base path があっても無くても通る。
+ *
+ * @param references `extractReferences` の結果
+ */
+export function findBasePathHazards(references: readonly Reference[]): Reference[] {
+  // `//host/path` はプロトコル相対の外部 URL。base path の話ではない
+  return references.filter((r) => r.raw.startsWith("/") && !r.raw.startsWith("//"));
+}
