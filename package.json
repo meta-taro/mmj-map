@@ -23,9 +23,12 @@
     "asset:check": "pnpm --filter @mmj-map/asset-check run check",
     "tile:inspect": "pnpm --filter @mmj-map/tile-inspect run inspect",
     "palette": "pnpm --filter @mmj-map/palette run make",
-    "palette:mcp": "pnpm --filter @mmj-map/palette run mcp"
+    "palette:mcp": "pnpm --filter @mmj-map/palette run mcp",
+    "coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "oxlint": "^1.83.0"
+    "@vitest/coverage-v8": "5.0.0",
+    "oxlint": "^1.83.0",
+    "vitest": "5.0.0"
   }
 }
