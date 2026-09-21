@@ -58,6 +58,7 @@
 
 ## 資料
 
+- [`docs/install/`](docs/install/) — **サイトに地図を置く手順**（English / 日本語 / 繁體中文 / 简体中文 / Tiếng Việt）
 - [`docs/tiles/README.md`](docs/tiles/README.md) — **ベースタイルを自分で作る手順**（公開データと公開ツールだけで完結します）
 - [`PRINCIPLES.md`](PRINCIPLES.md) — このプロジェクトの指針。何を約束し、データを何で選び、誰を歓迎するか（英語）
 - [`CREDITS.md`](CREDITS.md) — この地図が立っている土台（英語）

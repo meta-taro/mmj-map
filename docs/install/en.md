@@ -1,0 +1,156 @@
+# Install MMJ
+
+> **MMJ is not on npm yet.** The packages exist in this repository but are all
+> `private: true`, and the `@mmj-map` scope has not been registered.
+> `pnpm add @mmj-map/elements` **will not work today.**
+> What follows is what actually works right now: copy three things onto your site.
+
+A map needs three things. MMJ gives you the last two and shows you how to make the first.
+
+| | What | Where it comes from |
+| --- | --- | --- |
+| 1 | **Tiles** — one `.pmtiles` file | You build it, or you take the demo file |
+| 2 | **A style** — one `.json` file | `styles/` in this repository (6 of them) |
+| 3 | **The components** — plain ESM, no build step | `packages/elements/src/` |
+
+**There is no server to run.** Static hosting plus HTTP Range requests is the whole thing.
+
+## 1. Get tiles
+
+### Option A — take the demo tiles (fastest)
+
+```bash
+gh release download demo-tiles-20260915 \
+  --repo meta-taro/modern-map-japan \
+  --pattern demo.pmtiles --output tiles/demo.pmtiles
+```
+
+**62.8 MB, Osaka only, zoom 0–15.** Good enough to see whether you like the map.
+Not good enough to ship a site about anywhere else.
+
+### Option B — build your own
+
+Cut any area of the planet out of a [Protomaps](https://protomaps.com/) daily build.
+You need [go-pmtiles](https://github.com/protomaps/go-pmtiles) and disk space.
+
+```bash
+git clone https://github.com/meta-taro/modern-map-japan
+cd modern-map-japan && pnpm install
+pnpm tiles:extract -- demo        # or japan / kansai, or add your own region
+```
+
+The full walkthrough is in [`docs/tiles/README.md`](../tiles/README.md) (Japanese).
+**Public data and public tools only** — no account, no key, no quota.
+
+> **Size matters.** A single file over 100 MB will not fit on GitHub Pages.
+> Cut a smaller area or fewer zoom levels rather than paying for a tile server.
+
+## 2. Pick a style
+
+Copy one `.json` from [`styles/`](../../styles/) next to your page.
+
+| File | What it looks like |
+| --- | --- |
+| `modern-dark.json` | Night. The default |
+| `modern-light.json` | Day. White roads, hierarchy by width alone |
+| `modern-ink.json` | Greyscale. Survives a black-and-white printer |
+| `modern-sand.json` | Warm. Closer to a paper map |
+| `modern-neon.json` | Night neon. Road hierarchy by **hue**, not lightness |
+| `modern-candy.json` | Daylight pastel. The same hues on the light side |
+
+**These six are proposals, not an approved palette.** See [`styles/README.md`](../../styles/README.md).
+
+Every style keeps `__TILES_URL__` as a placeholder. **Do not bake your tile URL into it** —
+the component substitutes it at load time, so the same style works in every environment.
+
+## 3. Copy the components
+
+```bash
+cp -r packages/elements/src/ your-site/elements/
+```
+
+**No build step.** They are plain ES modules; your bundler is not involved unless you want it to be.
+
+## 4. The page
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<style>
+  mmj-map { display: block; height: 70vh; }
+</style>
+</head>
+<body>
+
+<mmj-map
+  tiles="./tiles/demo.pmtiles"
+  style-url="./styles/modern-dark.json"
+  center="135.5023,34.6937"
+  zoom="12">
+  <mmj-marker lnglat="135.4959,34.7024" popup="Umeda"></mmj-marker>
+</mmj-map>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script type="module" src="./elements/index.js"></script>
+</body>
+</html>
+```
+
+`maplibre-gl` and `pmtiles` are loaded by **you**, with `<script>` tags. MMJ does not bundle them,
+so you stay in control of the versions.
+
+`center` is `longitude,latitude` — the same order as GeoJSON, not the order you say out loud.
+
+## Your brand colour
+
+Most sites have one. You should not have to write a 180-line style file to use it.
+
+```html
+<mmj-map tiles="..." style-url="./styles/modern-light.json" accent="#0A5FFF"></mmj-map>
+```
+
+`accent` lands on the motorway line and the station ring, and becomes the default colour for
+markers, clusters and your own POIs. **It does not repaint the whole map** — do that and land,
+water, buildings and roads stop being distinguishable.
+
+For full control, specify all 24 roles:
+
+```html
+<mmj-map tiles="..." style-url="./styles/modern-light.json" palette-url="./brand.json"></mmj-map>
+```
+
+You can generate that file from four colours instead of writing it by hand:
+
+```bash
+pnpm palette -- --land=#f7f9fb --water=#bfd7e8 --ink=#16202b --accent=#0a5fff --out=brand.json
+```
+
+See [`tools/palette/README.md`](../../tools/palette/README.md), which also documents an MCP
+server so an agent can build palettes for you.
+
+## Attribution is not optional
+
+The base data is OpenStreetMap, under **ODbL 1.0**. `© OpenStreetMap contributors` must stay
+visible on screen. The component renders it and **gives you no attribute to switch it off**.
+
+The code and the styles are MIT. Your own data layered on top stays yours.
+Read [`LICENSES.md`](../../LICENSES.md) before you ship.
+
+## What is not ready
+
+- **npm packages.** Not published. Copy the files for now
+- **Hosted tiles.** There is no MMJ tile endpoint to point at. You host your own file
+- **Routing.** `<mmj-route>` *draws* a route you supply; it does not compute one
+- **Japanese glyph files.** CJK labels use the viewer's own fonts
+  (`localIdeographFontFamily`), so letterforms vary by device
+
+## More
+
+- [`docs/elements/README.md`](../elements/README.md) — every attribute of every component
+- [`docs/styles/README.md`](../styles/README.md) — how the styles are checked against the tiles
+- [`docs/serving/README.md`](../serving/README.md) — hosting and HTTP Range
+- Live demo: https://meta-taro.github.io/modern-map-japan/
