@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>素の MapLibre で描く — MMJ</title>
+<meta name="description" content="日本の地図を、手書きのスタイルと PMTiles だけで描くデモ。地図サーバーを立てず、静的配信と HTTP Range で完結します。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="素の MapLibre で描く — MMJ">
+<meta property="og:description" content="日本の地図を、手書きのスタイルと PMTiles だけで描くデモ。地図サーバーを立てず、静的配信と HTTP Range で完結します。">
+<link rel="icon" href="./favicon.svg">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>素の MapLibre で描く</h1>
+  <p>
+    手書きのスタイル（<code>styles/modern-dark.json</code>）と PMTiles だけで描いています。
+    地図サーバーは立てていません。
+  </p>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">はじめに</a>
+    <a href="./plain.html" aria-current="page">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./3d.html">建物を立てる</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="./route.html">経路と案内</a>
+    <a href="./themes.html">配色を見くらべる</a>
+    <a href="./brand.html">サイトの色を当てる</a>
+    <a href="https://github.com/meta-taro/modern-map-japan">リポジトリ</a>
+  </nav>
+</header>
+
+<main class="map-area">
+  <div id="map"></div>
+
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <h2>まだタイルの配信元がありません</h2>
+      <p>
+        このデモは、ベースタイル（PMTiles）とグリフの配信元が決まると地図を描きます。
+        配信元は <code>apps/demo/config.js</code> に設定します。
+      </p>
+      <p>
+        自分でタイルをビルドして配信する手順は、リポジトリの
+        <a href="https://github.com/meta-taro/modern-map-japan">README</a> を見てください。
+      </p>
+      <p>
+        空の地図を出す代わりに、この案内を出しています。
+        <strong>無いものを、あるように見せないためです。</strong>
+      </p>
+    </div>
+  </div>
+</main>
+
+
+<!--
+  **maplibre-gl は 5 系（UMD）を使う。** 経緯（2026-09-16 の実測）:
+
+  確かめたこと:
+  - 6.9.0 は **ESM のみ**で `dist/maplibre-gl.js`（UMD）を配っていない（HTTP 404）。
+    `exports` は `./dist/maplibre-gl.mjs` だけ。したがって元の `<script src=...>` は
+    必ず失敗し、コンソールに `maplibregl is not defined` が出ていた
+  - 6.9.0 の束ね版は worker を `new Worker(url, {type:"module"})` で起動する
+
+  **確かめられていないこと:** 6 系が CDN 配信で実際に動くかどうか。
+  検証しようとした環境でブラウザのタブが不可視（`visibilityState: hidden`）で、
+  requestAnimationFrame が発火せず、MapLibre は描画ループの中で style.load を出すため
+  **5 系でも 6 系でも同じ「無反応」になった**。つまり 6 系を落とした根拠は無い。
+
+  ここで 5 系にしているのは、**UMD が配られていて素の HTML から読める**という
+  一点だけが理由。6 系へ上げるなら、可視な環境で描画を確認してから。
+-->
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script>
+  const cfg = window.MMJ_CONFIG || {};
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    document.getElementById('notice').hidden = false;
+  } else {
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol('pmtiles', protocol.tile);
+
+    // スタイル JSON は手書きの正本で、配信先の URL を焼き込んでいない（D-002 / D-003）。
+    // 読み込む側が __TILES_URL__ を差し替える。**組み立てているのは URL だけで、色ではない。**
+    const start = async () => {
+      const res = await fetch(cfg.styleUrl);
+      if (!res.ok) throw new Error(`スタイルを取得できません: ${cfg.styleUrl} -> HTTP ${res.status}`);
+      const style = JSON.parse((await res.text()).replaceAll('__TILES_URL__', cfg.tilesUrl));
+
+      const map = new maplibregl.Map({
+        container: 'map',
+        style,
+        center: [135.5023, 34.6937],   // 大阪
+        zoom: 12,
+        // URL の # で場所を持つ（例: #14/34.7055/135.4959）。
+        // **手元を見られない人へ「ここを見て」と渡せる形にするため**に入れている。
+        // 指定が無ければ上の center / zoom から始まる。
+        hash: true,
+        // 漢字・かなは閲覧側のフォントで描く（decisions.md 未決・S1 はこの道で通す）。
+        // グリフ PBF を配らずに済むが、**字形は閲覧環境ごとに変わる**（DESIGN.md §3 と衝突）。
+        localIdeographFontFamily: "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif",
+        // 帰属表示は必須（LICENSES.md）。既定の control を消さないこと。
+        attributionControl: { compact: false },
+      });
+
+      map.addControl(new maplibregl.NavigationControl(), 'top-right');
+      map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
+
+      map.on('error', (e) => {
+        // グリフが 1 範囲でも 404 になると地図全体が真っ白になる。
+        // 黙って白くせず、何が落ちたかを出す。
+        console.error('[modern-map-japan] map error:', e && e.error ? e.error : e);
+      });
+    };
+
+    start().catch((error) => {
+      // 取得に失敗したら、白い地図ではなく「無い」と言う画面に戻す。
+      console.error('[modern-map-japan]', error);
+      document.getElementById('notice').hidden = false;
+    });
+  }
+</script>
+</body>
+</html>
