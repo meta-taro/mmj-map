@@ -66,6 +66,7 @@ Read [`LICENSES.md`](LICENSES.md) before you ship. Short version: keep
 - [`.claude/roadmap.md`](.claude/roadmap.md) — phases
 - [`.claude/decisions.md`](.claude/decisions.md) — decisions and the reasoning behind them
 - [`docs/origin/`](docs/origin/) — the original proposal, in Japanese, unedited
+- [`docs/install/`](docs/install/) — **how to put a map on your site** (English, 日本語, 繁體中文, 简体中文, Tiếng Việt)
 - [`README.ja.md`](README.ja.md) — 日本語
 
 ## Contributing
