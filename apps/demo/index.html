@@ -3,25 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>素の MapLibre で描く — MMJ</title>
-<meta name="description" content="日本の地図を、手書きのスタイルと PMTiles だけで描くデモ。地図サーバーを立てず、静的配信と HTTP Range で完結します。">
+<title>MMJ — 自分の地図を持つ</title>
+<meta name="description" content="API キーなし・従量課金なし・地図サーバーなし。手書きのスタイルと PMTiles だけで、自分の地図を静的配信します。">
 <meta property="og:type" content="website">
-<meta property="og:title" content="素の MapLibre で描く — MMJ">
-<meta property="og:description" content="日本の地図を、手書きのスタイルと PMTiles だけで描くデモ。地図サーバーを立てず、静的配信と HTTP Range で完結します。">
+<meta property="og:title" content="MMJ — 自分の地図を持つ">
+<meta property="og:description" content="API キーなし・従量課金なし・地図サーバーなし。手書きのスタイルと PMTiles だけで、自分の地図を静的配信します。">
 <link rel="icon" href="./favicon.svg">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
 <link rel="stylesheet" href="./demo.css">
 </head>
-<body>
+<body class="lp">
 
 <header class="site-header">
-  <h1>素の MapLibre で描く</h1>
+  <h1>MMJ — 自分の地図を持つ</h1>
   <p>
-    手書きのスタイル（<code>styles/modern-dark.json</code>）と PMTiles だけで描いています。
-    地図サーバーは立てていません。
+    <strong>API キーなし・従量課金なし・地図サーバーなし。</strong>
+    手書きのスタイルと 1 つの PMTiles ファイルだけで、静的配信のまま地図が出ます。
   </p>
-  <nav class="site-nav" aria-label="デモの一覧">
-    <a href="./index.html" aria-current="page">素の地図</a>
+  <nav class="site-nav" aria-label="ページの一覧">
+    <a href="./index.html" aria-current="page">はじめに</a>
+    <a href="./plain.html">素の地図</a>
     <a href="./elements.html">HTML だけで置く</a>
     <a href="./3d.html">建物を立てる</a>
     <a href="./cluster.html">点をまとめる</a>
@@ -33,96 +34,143 @@
   </nav>
 </header>
 
-<main class="map-area">
-  <div id="map"></div>
+<main class="lp-main">
 
-  <div id="notice" class="notice" hidden>
-    <div class="box">
-      <h2>まだタイルの配信元がありません</h2>
+  <section class="lp-hero">
+    <div class="lp-hero-map">
+      <mmj-map id="map" center="135.5023,34.6937" zoom="12" cooperative></mmj-map>
+      <div id="notice" class="notice" hidden>
+        <div class="box">
+          <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+        </div>
+      </div>
+    </div>
+    <div class="lp-hero-text">
       <p>
-        このデモは、ベースタイル（PMTiles）とグリフの配信元が決まると地図を描きます。
-        配信元は <code>apps/demo/config.js</code> に設定します。
+        この地図は <strong>HTML を 1 行</strong>書いただけです。
+        JavaScript は書いていません。
       </p>
-      <p>
-        自分でタイルをビルドして配信する手順は、リポジトリの
-        <a href="https://github.com/meta-taro/modern-map-japan">README</a> を見てください。
-      </p>
-      <p>
-        空の地図を出す代わりに、この案内を出しています。
-        <strong>無いものを、あるように見せないためです。</strong>
+      <pre><code>&lt;mmj-map tiles="./tiles/demo.pmtiles"
+         style-url="./styles/modern-dark.json"
+         center="135.5023,34.6937" zoom="12"&gt;&lt;/mmj-map&gt;</code></pre>
+      <p class="lp-note">
+        地図の操作は<strong>指 2 本 / Ctrl+ホイール</strong>です（この頁は読み物なので、
+        指 1 本ではページが送れるようにしてあります）。
       </p>
     </div>
-  </div>
+  </section>
+
+  <section class="lp-section">
+    <h2>なぜ</h2>
+    <p>
+      ウェブに出せる地図は、たいてい<strong>他人の地図を、他人の見た目で、他人のメーターで</strong>
+      使うことになります。商用 API は鍵と従量課金が要り、OSM の公式タイルサーバーは
+      <a href="https://operations.osmfoundation.org/policies/tiles/">利用方針</a>で商用と大量アクセスを認めていません。
+      自前でタイルサーバーを立てれば動きますが、<strong>今度はタイルサーバーの運用が仕事に加わります</strong>。
+    </p>
+    <p><strong>MMJ は、データは借りて、表現だけを持ちます。</strong></p>
+    <ul class="lp-list">
+      <li><strong>ベースタイル</strong>は <a href="https://protomaps.com/">Protomaps</a> の日次プラネットビルドから、
+        必要な範囲だけを切り出して <strong>1 つの PMTiles ファイル</strong>にします。
+        タイル生成パイプラインは自作しません</li>
+      <li><strong>スタイル</strong>は手書きです。生成物ではなく作品として扱います</li>
+      <li><strong>サーバーを立てません。</strong>静的配信と HTTP Range だけでデプロイが完結します</li>
+    </ul>
+  </section>
+
+  <section class="lp-section">
+    <h2>使い方</h2>
+    <p>要るものは 3 つだけです。<strong>そのうち 2 つは MMJ が配っています。</strong></p>
+
+    <ol class="lp-steps">
+      <li>
+        <h3>部品を入れる</h3>
+        <pre><code>pnpm add @mmj-map/elements</code></pre>
+        <p>素の ES モジュールで、<strong>ビルド工程はありません</strong>。コピーでも動きます。</p>
+      </li>
+      <li>
+        <h3>スタイルを選ぶ</h3>
+        <p><a href="./themes.html">6 枚</a>から 1 枚をページの隣へ置きます。
+          <a href="./brand.html">サイトのテーマカラー</a>を 1 色渡すだけでも変わります。</p>
+      </li>
+      <li>
+        <h3>タイルを用意する</h3>
+        <pre><code>pnpm tiles:extract -- demo</code></pre>
+        <p><strong>ここだけは自分で置きます。</strong>配信されたタイルはありません。
+          上流 138 GB のうち必要な範囲だけを HTTP Range で取るので、
+          1 地域あたり数十秒・数十 MB です。</p>
+      </li>
+    </ol>
+
+    <p class="lp-cta">
+      手順の詳細は <a href="https://github.com/meta-taro/modern-map-japan/tree/develop/docs/install">導入手順</a> に、
+      <strong>English / 日本語 / 繁體中文 / 简体中文 / Tiếng Việt</strong> で置いてあります。
+    </p>
+  </section>
+
+  <section class="lp-section">
+    <h2>できること</h2>
+    <p>どれも実際に動いている画面です。押すと開きます。</p>
+    <div class="lp-cards">
+      <a class="lp-card" href="./elements.html"><b>HTML だけで置く</b><span>属性を書くだけ。JavaScript は要りません</span></a>
+      <a class="lp-card" href="./3d.html"><b>建物を立てる</b><span>属性 1 つ。<strong>転送量は 1 バイトも増えません</strong></span></a>
+      <a class="lp-card" href="./cluster.html"><b>点をまとめる</b><span>多い点を、寄ると解けるまとまりに</span></a>
+      <a class="lp-card" href="./poi.html"><b>自前の POI</b><span>ベース地図に触らず、自分のデータを重ねる</span></a>
+      <a class="lp-card" href="./route.html"><b>経路と案内</b><span>渡された経路を描き、曲がる地点に吹き出し。<strong>写真も載ります</strong></span></a>
+      <a class="lp-card" href="./themes.html"><b>配色を見くらべる</b><span>同じタイル・同じ構成で、色だけ違う 6 枚</span></a>
+      <a class="lp-card" href="./brand.html"><b>サイトの色を当てる</b><span>テーマカラーを 1 色渡すだけ</span></a>
+      <a class="lp-card" href="./plain.html"><b>素の地図</b><span>部品を使わず、MapLibre と PMTiles だけ</span></a>
+    </div>
+  </section>
+
+  <section class="lp-section">
+    <h2>作らないもの</h2>
+    <ul class="lp-list">
+      <li>タイルサーバー。その fork も作りません</li>
+      <li>レンダリングエンジン。それは MapLibre の仕事です</li>
+      <li>ジオコーダ・<strong>経路探索</strong>・地点データベース。
+        <a href="./route.html">経路は描きますが、計算はしません</a></li>
+      <li><strong>地図の費用を下げる道具ではありません。</strong>
+        座標の取得元が「その提供者の地図の上に表示すること」を条件にしている場合、
+        ベース地図だけを差し替える自由はありません</li>
+    </ul>
+  </section>
+
+  <footer class="lp-footer">
+    <p>
+      <strong>ベースデータは OpenStreetMap（ODbL 1.0）です。</strong>
+      <code>© OpenStreetMap contributors</code> を画面から消さないでください。
+      コードとスタイルは MIT です。
+    </p>
+    <p>
+      <a href="https://github.com/meta-taro/modern-map-japan">リポジトリ</a> ·
+      <a href="https://www.npmjs.com/package/@mmj-map/elements">npm</a> ·
+      <a href="https://github.com/meta-taro/modern-map-japan/blob/develop/LICENSES.md">ライセンス</a>
+    </p>
+    <p class="lp-note">
+      <strong>この頁のデモは大阪のみ</strong>です（62.8 MB の切り出し 1 つ）。
+      台北・上海・ホーチミン・シンガポールでも動くことは確かめていますが、
+      <strong>まだここからは配っていません</strong>。
+    </p>
+  </footer>
+
 </main>
 
-
-<!--
-  **maplibre-gl は 5 系（UMD）を使う。** 経緯（2026-09-16 の実測）:
-
-  確かめたこと:
-  - 6.9.0 は **ESM のみ**で `dist/maplibre-gl.js`（UMD）を配っていない（HTTP 404）。
-    `exports` は `./dist/maplibre-gl.mjs` だけ。したがって元の `<script src=...>` は
-    必ず失敗し、コンソールに `maplibregl is not defined` が出ていた
-  - 6.9.0 の束ね版は worker を `new Worker(url, {type:"module"})` で起動する
-
-  **確かめられていないこと:** 6 系が CDN 配信で実際に動くかどうか。
-  検証しようとした環境でブラウザのタブが不可視（`visibilityState: hidden`）で、
-  requestAnimationFrame が発火せず、MapLibre は描画ループの中で style.load を出すため
-  **5 系でも 6 系でも同じ「無反応」になった**。つまり 6 系を落とした根拠は無い。
-
-  ここで 5 系にしているのは、**UMD が配られていて素の HTML から読める**という
-  一点だけが理由。6 系へ上げるなら、可視な環境で描画を確認してから。
--->
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
 <script src="./config.js"></script>
-<script>
-  const cfg = window.MMJ_CONFIG || {};
+<script type="module">
+  // **属性を入れてから部品を読み込む。**逆にすると connectedCallback が先に走る。
+  const cfg = window.MMJ_CONFIG ?? {};
+  const map = document.getElementById('map');
 
   if (!cfg.tilesUrl || !cfg.styleUrl) {
+    map.remove();
     document.getElementById('notice').hidden = false;
   } else {
-    const protocol = new pmtiles.Protocol();
-    maplibregl.addProtocol('pmtiles', protocol.tile);
-
-    // スタイル JSON は手書きの正本で、配信先の URL を焼き込んでいない（D-002 / D-003）。
-    // 読み込む側が __TILES_URL__ を差し替える。**組み立てているのは URL だけで、色ではない。**
-    const start = async () => {
-      const res = await fetch(cfg.styleUrl);
-      if (!res.ok) throw new Error(`スタイルを取得できません: ${cfg.styleUrl} -> HTTP ${res.status}`);
-      const style = JSON.parse((await res.text()).replaceAll('__TILES_URL__', cfg.tilesUrl));
-
-      const map = new maplibregl.Map({
-        container: 'map',
-        style,
-        center: [135.5023, 34.6937],   // 大阪
-        zoom: 12,
-        // URL の # で場所を持つ（例: #14/34.7055/135.4959）。
-        // **手元を見られない人へ「ここを見て」と渡せる形にするため**に入れている。
-        // 指定が無ければ上の center / zoom から始まる。
-        hash: true,
-        // 漢字・かなは閲覧側のフォントで描く（decisions.md 未決・S1 はこの道で通す）。
-        // グリフ PBF を配らずに済むが、**字形は閲覧環境ごとに変わる**（DESIGN.md §3 と衝突）。
-        localIdeographFontFamily: "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif",
-        // 帰属表示は必須（LICENSES.md）。既定の control を消さないこと。
-        attributionControl: { compact: false },
-      });
-
-      map.addControl(new maplibregl.NavigationControl(), 'top-right');
-      map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
-
-      map.on('error', (e) => {
-        // グリフが 1 範囲でも 404 になると地図全体が真っ白になる。
-        // 黙って白くせず、何が落ちたかを出す。
-        console.error('[modern-map-japan] map error:', e && e.error ? e.error : e);
-      });
-    };
-
-    start().catch((error) => {
-      // 取得に失敗したら、白い地図ではなく「無い」と言う画面に戻す。
-      console.error('[modern-map-japan]', error);
-      document.getElementById('notice').hidden = false;
-    });
+    map.setAttribute('tiles', cfg.tilesUrl);
+    map.setAttribute('style-url', cfg.styleUrl);
+    await import('./elements/index.js');
   }
 </script>
 </body>
