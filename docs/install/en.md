@@ -1,9 +1,14 @@
 # Install MMJ
 
-> **MMJ is not on npm yet.** The packages exist in this repository but are all
-> `private: true`, and the `@mmj-map` scope has not been registered.
-> `pnpm add @mmj-map/elements` **will not work today.**
-> What follows is what actually works right now: copy three things onto your site.
+> **The components are on npm.** Everything else you host yourself.
+>
+> ```bash
+> pnpm add @mmj-map/elements
+> ```
+>
+> **That gets you the components and nothing else.** There is no hosted tile endpoint and
+> no hosted style: you still supply a `.pmtiles` file and a style JSON. That is the point —
+> no API key, no per-view billing, no tile server to run.
 
 A map needs three things. MMJ gives you the last two and shows you how to make the first.
 
@@ -63,13 +68,21 @@ Copy one `.json` from [`styles/`](../../styles/) next to your page.
 Every style keeps `__TILES_URL__` as a placeholder. **Do not bake your tile URL into it** —
 the component substitutes it at load time, so the same style works in every environment.
 
-## 3. Copy the components
+## 3. Get the components
+
+```bash
+pnpm add @mmj-map/elements
+```
+
+Or copy them — they are plain ES modules and there is **no build step**, so either works:
 
 ```bash
 cp -r packages/elements/src/ your-site/elements/
 ```
 
-**No build step.** They are plain ES modules; your bundler is not involved unless you want it to be.
+The examples below use the copied path (`./elements/index.js`). If you installed from npm,
+point at `node_modules/@mmj-map/elements/src/index.js` or let your bundler resolve
+`@mmj-map/elements`.
 
 ## 4. The page
 
@@ -142,7 +155,6 @@ Read [`LICENSES.md`](../../LICENSES.md) before you ship.
 
 ## What is not ready
 
-- **npm packages.** Not published. Copy the files for now
 - **Hosted tiles.** There is no MMJ tile endpoint to point at. You host your own file
 - **Routing.** `<mmj-route>` *draws* a route you supply; it does not compute one
 - **Japanese glyph files.** CJK labels use the viewer's own fonts

@@ -7,10 +7,15 @@
 > **Machine-translated. No native speaker has reviewed this page.**
 > [`en.md`](en.md) is authoritative. Corrections welcome.
 
-> **MMJ chưa được phát hành lên npm.** Các package có trong kho này nhưng tất cả đều là
-> `private: true`, và scope `@mmj-map` cũng chưa được đăng ký.
-> **`pnpm add @mmj-map/elements` hiện chưa dùng được.**
-> Dưới đây là cách **thực sự hoạt động ngay bây giờ**: đặt ba thứ vào trang của bạn.
+> **Các component đã có trên npm.** Mọi thứ còn lại bạn tự host.
+>
+> ```bash
+> pnpm add @mmj-map/elements
+> ```
+>
+> **Lệnh đó chỉ cho bạn các component, không có gì khác.** Không có endpoint tile hay style
+> được lưu trữ sẵn: bạn vẫn phải tự cung cấp tệp `.pmtiles` và tệp style JSON.
+> **Đó chính là chủ đích** — không khoá API, không tính tiền theo lượt xem, không máy chủ tile.
 
 Một bản đồ cần ba thứ. MMJ cung cấp hai thứ sau, và chỉ cho bạn cách tạo thứ đầu tiên.
 
@@ -73,14 +78,21 @@ Sao chép một tệp `.json` từ [`styles/`](../../styles/) đặt cạnh tran
 Mọi style đều giữ `__TILES_URL__` làm chỗ giữ chỗ. **Đừng ghi cứng URL tile vào đó** —
 component sẽ thay thế khi tải, nhờ vậy cùng một style chạy được ở mọi môi trường.
 
-## 3. Sao chép components
+## 3. Lấy components
+
+```bash
+pnpm add @mmj-map/elements
+```
+
+Hoặc sao chép thủ công. Chúng là ES module thuần và **không có bước build**, nên cách nào cũng được:
 
 ```bash
 cp -r packages/elements/src/ your-site/elements/
 ```
 
-**Không có bước build.** Chúng là ES module thuần; bundler của bạn không tham gia,
-trừ khi bạn muốn.
+Ví dụ bên dưới dùng đường dẫn đã sao chép (`./elements/index.js`). Nếu cài từ npm,
+hãy trỏ tới `node_modules/@mmj-map/elements/src/index.js`, hoặc để bundler phân giải
+`@mmj-map/elements`.
 
 ## 4. Trang web
 
@@ -155,7 +167,6 @@ Hãy đọc [`LICENSES.md`](../../LICENSES.md) trước khi phát hành.
 
 ## Những thứ chưa sẵn sàng
 
-- **Package npm.** Chưa phát hành. Hiện hãy sao chép tệp
 - **Tiles được lưu trữ sẵn.** Không có endpoint tile nào của MMJ để trỏ tới. Bạn tự host tệp của mình
 - **Định tuyến.** `<mmj-route>` chỉ **vẽ** tuyến đường bạn cung cấp; nó không tính toán tuyến
 - **Tệp glyph cho chữ CJK.** Nhãn tiếng Nhật/Trung dùng phông của chính người xem

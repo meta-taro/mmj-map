@@ -262,6 +262,36 @@ Range に応える最小の配信で開いた。
 
 **地域のプリセットはまだ `japan` / `kansai` / `demo` の 3 つだけ。**S5 は着手していない。
 
+## npm へ公開した（2026-09-21）
+
+**`@mmj-map/elements@0.1.0` を公開。**https://www.npmjs.com/package/@mmj-map/elements
+
+```bash
+pnpm add @mmj-map/elements
+```
+
+- npm 組織 `mmj-map` を作成（owner: metataro）
+- **2FA はセキュリティキーのみ。**npm は TOTP（認証アプリの 6 桁）を提供していない。
+  この PC に `GAMEING-NOTE-PC-WIN` として登録した
+- **配ったのは `elements` 1 つだけ。**`tools/*` と `infra/*` は private のまま
+- 17 ファイル / 28.9 kB。テストも設定も入っていない
+
+### 踏んだこと
+
+- **`npm publish --workspaces=false` はルートを対象にする。**危うくリポジトリ全体
+  （218 ファイル / 7.7 MB・`.claude/` や CLAUDE.md 込み）を公開するところだった。
+  **ルートの `private: true` が止めた。**正しくは `npm publish ./packages/elements`
+- **publish は対話が要るのでこの会話からは通らない**（`npm login` と同じ）。人の端末で打つ
+- 公開直後は `npm view` が 404 を返す。**ウェブでは published と出ている**。反映待ち
+
+### 実物で確かめた
+
+リポジトリの外に素のサイトを作り、`npm install @mmj-map/elements` から動かした。
+**地図が描画され、目印も帰属表示も出た。**
+
+途中でタイルが出ず詰まったが、原因は**背景タブで MapLibre の描画が止まる**ことだった
+（既知）。前面にしたら出た。**パッケージの問題ではない。**
+
 ## 未完了の作業
 
 - 日本語グリフの方針（`localIdeographFontFamily` で逃げている・未決）
