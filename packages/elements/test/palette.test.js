@@ -5,6 +5,7 @@ import {
   ACCENT_ROLES,
   ROLE_LAYERS,
   applyPalette,
+  readDeclaredAccent,
   readTheme,
   themeClassName,
 } from "../src/palette.js";
@@ -127,5 +128,27 @@ describe("themeClassName", () => {
   it("CSS のクラス名として使える文字だけを返す", () => {
     const name = themeClassName({ background: "#1B1F24", text: "#D8DCE1", border: "#2E343B" });
     expect(name).toMatch(/^mmj-popup-[a-z0-9]+$/);
+  });
+});
+
+/**
+ * 生成したスタイル（`pnpm palette -- --style`）は、**作った元の指し値を持っている**。
+ * `accent` 属性を書かなくても、目印やまとまりがそのスタイルの色に揃うようにする。
+ */
+describe("readDeclaredAccent", () => {
+  it("生成スタイルが持っている accent を読む", () => {
+    const style = { metadata: { "mmj:anchors": { accent: "#0a5fff" } }, layers: [] };
+    expect(readDeclaredAccent(style)).toBe("#0a5fff");
+  });
+
+  it("手書きの 6 枚には無いので null（**勝手に高速道路の色を使わない**）", () => {
+    expect(readDeclaredAccent({ metadata: {}, layers: [] })).toBeNull();
+    expect(readDeclaredAccent({ layers: [] })).toBeNull();
+    expect(readDeclaredAccent(null)).toBeNull();
+  });
+
+  it("色でない値は読まない", () => {
+    expect(readDeclaredAccent({ metadata: { "mmj:anchors": { accent: 12 } } })).toBeNull();
+    expect(readDeclaredAccent({ metadata: { "mmj:anchors": "青" } })).toBeNull();
   });
 });

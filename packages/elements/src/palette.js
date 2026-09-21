@@ -161,6 +161,23 @@ export function readTheme(style) {
 }
 
 /**
+ * スタイル自身が名乗っているテーマカラーを読む。
+ *
+ * `pnpm palette -- --style` が作ったスタイルは、**作った元の指し値を metadata に持つ**。
+ * そこから読めば、`accent` 属性を書かなくても目印やまとまりが地図と揃う。
+ *
+ * **手書きの 6 枚にはこの欄が無いので null**。高速道路の色で代用しない
+ * （代用すると、テーマカラーを渡していない地図の目印が灰色になる）。
+ *
+ * @param {any} style
+ * @returns {string | null}
+ */
+export function readDeclaredAccent(style) {
+  const value = style?.metadata?.["mmj:anchors"]?.accent;
+  return typeof value === "string" ? value : null;
+}
+
+/**
  * 配色ごとの CSS クラス名。
  *
  * ポップアップの CSS は `<head>` に 1 枚入れる形なので、**名前が同じだと

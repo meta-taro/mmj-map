@@ -183,6 +183,26 @@ Node は **管理者権限なし**で入れてある。公式 zip を SHA256 で
   3 色から土台を作る案 ＝ **D-002 を覆す提案**として `.claude/proposals/2026-09-21-base-from-anchors.md`。
   **A / B / C の判断待ち**
 
+## 配色を自分で作る道具（D-021・2026-09-21）
+
+`tools/palette`。指し値（陸・水・文字・テーマカラー・任意で緑）から、
+24 役割の配色、または**そのまま配れるスタイル JSON** を作る。
+
+```bash
+pnpm palette -- --land=#f7f9fb --water=#bfd7e8 --ink=#16202b --accent=#0a5fff
+pnpm palette -- ... --style --base=modern-light --name="Acme Maps" --out=acme.json
+pnpm palette:mcp        # MCP（stdio）。道具 4 つ
+```
+
+- **`styles/` の 6 枚は手書きのまま**（D-002 は配る側で生きている）。
+  生成物には `mmj:generated: true` が入る。**`styles/` へ置かない**
+- 混ぜるのは Oklab。**依存は足していない**（式だけ）
+- **MCP の SDK は入れていない。**99 パッケージ増えて stdio 1 本に釣り合わないため。
+  代わりに**本物のプロセスを起動して JSON-RPC を流すテスト**で縛っている
+- 実物で確認済み: 生成したスタイルが `style:check` を通り、ブラウザで描画され、
+  目印が `metadata["mmj:anchors"].accent` から色を拾う
+- **デモページには載せていない**（`apps/demo/brand.html` は 6 枚 ＋ accent のまま）
+
 ## 未完了の作業
 
 - 日本語グリフの方針（`localIdeographFontFamily` で逃げている・未決）
