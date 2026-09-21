@@ -72,6 +72,10 @@ export const ACCENT_ROLES = ["highway", "station"];
 /** 枠（ポップアップなど）が借りる色を、スタイルのどこから読むか */
 const THEME_SOURCES = {
   background: { layer: "background", prop: "background-color" },
+  // **地図に対して読める色。**ラベルの縁取りは、まさにそのために選ばれている。
+  // 吹き出しの背景に地色を使うと、**明るい土台で箱が地図に溶ける**
+  // （公開先で実測: modern-light は地色も吹き出しも #EDF0F3・2026-09-21）
+  surface: { layer: "label-place-city", prop: "text-halo-color" },
   text: { layer: "label-place-city", prop: "text-color" },
   muted: { layer: "label-place-neighbourhood", prop: "text-color" },
   border: { layer: "roads-minor", prop: "line-color" },
@@ -154,6 +158,7 @@ export function accentPalette(color) {
 export function readTheme(style) {
   return {
     background: readColor(style, THEME_SOURCES.background),
+    surface: readColor(style, THEME_SOURCES.surface),
     text: readColor(style, THEME_SOURCES.text),
     muted: readColor(style, THEME_SOURCES.muted),
     border: readColor(style, THEME_SOURCES.border),

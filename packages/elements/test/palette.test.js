@@ -101,9 +101,35 @@ describe("readTheme", () => {
     expect(light.background).toBe("#EDF0F3");
   });
 
+  /**
+   * **吹き出しの背景に地色を使うと、明るい土台で箱が消える。**
+   * 公開先で実測した（2026-09-21）: modern-light は地色も吹き出しも `#EDF0F3` で、
+   * 枠線も `#FFFFFF`。**影だけで浮いている状態で、輪郭が見えなかった。**
+   *
+   * ラベルの縁取り（halo）は「地図に対して読める色」そのものなので、そこから取る。
+   */
+  it("**surface は地図に対して読める色**（ラベルの縁取りから取る）", () => {
+    expect(readTheme(loadStyle("modern-dark")).surface).toBe("#111418");
+    expect(readTheme(loadStyle("modern-light")).surface).toBe("#FFFFFF");
+  });
+
+  it("**明るい土台で、surface が地色と違う**（ここが同じだと箱が消える）", () => {
+    for (const name of ["modern-light", "modern-sand", "modern-candy", "modern-dark", "modern-neon"]) {
+      const theme = readTheme(loadStyle(name));
+      expect(theme.surface, name).not.toBe(theme.background);
+    }
+  });
+
+  it("surface と地色が同じスタイルでは、枠線が輪郭を持つ（modern-ink）", () => {
+    const theme = readTheme(loadStyle("modern-ink"));
+    expect(theme.surface).toBe(theme.background);
+    expect(theme.border).not.toBe(theme.surface);
+  });
+
   it("読めない値は null（**勝手に色を作らない**・baseline §11）", () => {
     const theme = readTheme({ layers: [] });
     expect(theme.background).toBeNull();
+    expect(theme.surface).toBeNull();
     expect(theme.border).toBeNull();
   });
 
