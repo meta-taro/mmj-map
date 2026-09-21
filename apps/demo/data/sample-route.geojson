@@ -1,0 +1,39 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "サンプル経路（合成）" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [135.4959, 34.7024],
+          [135.4961, 34.6997],
+          [135.4966, 34.6968],
+          [135.4972, 34.6941],
+          [135.4989, 34.6935],
+          [135.5012, 34.6931],
+          [135.5023, 34.6937]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "instruction": "大阪梅田から南へ。ここが出発点です" },
+      "geometry": { "type": "Point", "coordinates": [135.4959, 34.7024] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "instruction": "コンビニを左折",
+        "image": "./data/sample-corner.svg"
+      },
+      "geometry": { "type": "Point", "coordinates": [135.4972, 34.6941] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "instruction": "橋を渡って右手が目的地" },
+      "geometry": { "type": "Point", "coordinates": [135.5023, 34.6937] }
+    }
+  ]
+}

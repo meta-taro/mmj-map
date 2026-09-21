@@ -187,9 +187,17 @@ export function buildPopupStyle(colors = POPUP_COLORS, className = DEFAULT_POPUP
     "padding:6px 10px;" +
     "box-shadow:0 2px 8px rgba(0,0,0,.45);" +
     "font:13px/1.5 system-ui,-apple-system,'Segoe UI','Hiragino Sans','Noto Sans JP',sans-serif;" +
-    // 「大阪梅田」の 4 文字が 2 行に割れると、箱が縦長になって読みにくい
-    "white-space:nowrap;" +
     "}" +
+    // 「大阪梅田」の 4 文字が 2 行に割れると、箱が縦長になって読みにくい。
+    // **箱ごとではなく文字の行だけに掛ける**（写真の下の説明が 1 行に伸びて溢れるため）
+    `.${className} .mmj-popup-text{white-space:nowrap;}` +
+    // 写真は原寸で来る。**抑えないと画面が埋まる**
+    `.${className} .mmj-popup-body img{` +
+    "display:block;max-width:220px;max-height:160px;width:100%;height:auto;" +
+    "object-fit:cover;border-radius:3px;margin:0 0 6px;" +
+    "}" +
+    // 写真があるときは 1 行に縛らない（説明が長いことがある）
+    `.${className} .mmj-popup-body:has(img) .mmj-popup-text{white-space:normal;max-width:220px;}` +
     tip
   );
 }

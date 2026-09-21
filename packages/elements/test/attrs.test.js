@@ -143,6 +143,21 @@ describe("buildPopupStyle", () => {
   it("折り返しを止める（短い名前が 2 行に割れない）", () => {
     expect(css).toContain("white-space:nowrap");
   });
+
+  /**
+   * 吹き出しに写真を載せられるようにしたので、**箱の作りが変わる**。
+   * 折り返し止めを箱ごとに掛けたままだと、写真の下の説明が 1 行に伸びて溢れる。
+   */
+  it("**折り返し止めは文字の行だけに掛ける**（写真の下の説明が溢れないように）", () => {
+    expect(css).toContain(".mmj-popup-text");
+    const contentRule = css.split("}").find((r) => r.includes("maplibregl-popup-content"));
+    expect(contentRule).not.toContain("white-space");
+  });
+
+  it("**写真の大きさを抑える。**原寸のまま出すと画面が埋まる", () => {
+    expect(css).toContain(".mmj-popup-body img");
+    expect(css).toContain("max-width");
+  });
 });
 
 describe("parsePitch", () => {

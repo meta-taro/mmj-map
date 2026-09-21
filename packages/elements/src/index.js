@@ -13,6 +13,7 @@ import { MmjCluster } from "./mmj-cluster.js";
 import { MmjMap } from "./mmj-map.js";
 import { MmjMarker } from "./mmj-marker.js";
 import { MmjPoi } from "./mmj-poi.js";
+import { MmjRoute } from "./mmj-route.js";
 
 /**
  * @param {string} name
@@ -26,5 +27,6 @@ define("mmj-map", MmjMap);
 define("mmj-marker", MmjMarker);
 define("mmj-cluster", MmjCluster);
 define("mmj-poi", MmjPoi);
+define("mmj-route", MmjRoute);
 
-export { MmjCluster, MmjMap, MmjMarker, MmjPoi };
+export { MmjCluster, MmjMap, MmjMarker, MmjPoi, MmjRoute };
