@@ -141,6 +141,8 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 |---|---|
 | `lnglat` | `経度,緯度`（必須） |
 | `popup` | 押したときに出す文字 |
+| `image` | 吹き出しに載せる写真の URL（**http / https と相対パスだけ**） |
+| `image-alt` | 写真の代替テキスト。省くと `popup` の文字を使う |
 | `popup-open` | 最初から開いておく |
 | `color` | 目印の色 |
 
@@ -173,6 +175,74 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
   凡例が無いまま出すと読む人ごとに違う意味に読まれます（baseline §11 / D-011）。
   既定の 2 色は**新しく作った色ではなく**、MapLibre の既定値と
   `styles/modern-dark.json` に既にある値です。**DESIGN.md が埋まるまでの仮置きです。**
+
+### `<mmj-route>` — 経路と案内の吹き出し
+
+```html
+<mmj-map tiles="..." style-url="...">
+  <mmj-route src="/data/route.geojson" fit></mmj-route>
+</mmj-map>
+```
+
+| 属性 | 意味 |
+| --- | --- |
+| `src` | 経路の GeoJSON の URL（**必須**） |
+| `fit` | 付けると、経路ぜんぶが入るところまで寄せる |
+| `color` | 線の色。既定は `<mmj-map accent>`、無ければ `#3FB1CE` |
+| `casing-color` | 縁取りの色。既定は地図の地色 |
+| `width` | 線の太さ（px）。既定 6。縁取りは +4 |
+| `step-key` | 案内文を読む属性名。既定 `instruction`（媒体ごとに違うため） |
+| `step-color` | 案内の目印の色。既定は `<mmj-map accent>` |
+| `layer-id` | source / layer の名前。既定は自動（同じページに複数置ける） |
+
+渡す GeoJSON はこの形です。
+
+```json
+{
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": {},
+      "geometry": { "type": "LineString", "coordinates": [[135.49,34.70],[135.50,34.69]] } },
+    { "type": "Feature", "properties": { "instruction": "コンビニを左折" },
+      "geometry": { "type": "Point", "coordinates": [135.495,34.695] } },
+    { "type": "Feature", "properties": { "instruction": "橋を渡って右手", "image": "./corner.jpg" },
+      "geometry": { "type": "Point", "coordinates": [135.50,34.69] } }
+  ]
+}
+```
+
+**後から足せます。**案内の点だけ増やした GeoJSON を渡せば、そのぶんだけ吹き出しが増えます。
+AI に経路と案内文を作らせて、この形で渡す使い方を想定しています。
+
+置き終わると `mmj-route-ready` が飛びます（`detail.steps` が案内の件数）。
+**0 件でも気づけるように**、件数を画面へ出すことを勧めます。
+
+#### **経路は計算しません**
+
+計算には道路グラフとルーティングエンジンが要り、それは D-003（地図サーバーを立てない）の
+外側です。**作るのは外**（ルーティング API でも、AI でも）で、ここは描くだけです。
+「データを持たない。表現を持つ」の形そのものです。
+
+### 吹き出しに写真を載せる
+
+`<mmj-marker>` と `<mmj-route>` の案内、どちらにも載ります。
+
+```html
+<mmj-marker lnglat="135.5023,34.6937" popup="北浜の店" image="./shop.jpg" image-alt="店の外観"></mmj-marker>
+```
+
+| 属性 | 意味 |
+| --- | --- |
+| `image` | 写真の URL。**http / https と相対パスだけ** |
+| `image-alt` | 代替テキスト。省くと `popup` の文字を使う |
+
+**`setHTML` を使っていません。**媒体が登録した文字列をそのまま HTML として実行すると、
+`<img onerror=...>` の 1 行で、その地図を置いたページ全体が乗っ取られます。
+`createElement` と `textContent` だけで組むので、**文字が HTML として解釈される経路が
+そもそも存在しません**（baseline §21）。
+
+同じ理由で、`javascript:` と `data:` の画像は**黙って落とします**。
+`data:` は「画像に見せかけた SVG」からスクリプトが走る経路があるためです。
 
 ### `<mmj-poi>`
 

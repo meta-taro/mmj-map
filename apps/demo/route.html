@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>建物を立てる — modern-map-japan</title>
-<meta name="description" content="属性を 1 つ付けるだけで建物が立つデモ。タイルは 2D と同じもので、転送量は 1 バイトも増えません。">
+<title>経路と案内の吹き出し — modern-map-japan</title>
+<meta name="description" content="渡された経路を描き、曲がる地点に吹き出しを置きます。写真も載ります。経路の計算はしません。">
 <meta property="og:type" content="website">
-<meta property="og:title" content="建物を立てる — modern-map-japan">
-<meta property="og:description" content="属性を 1 つ付けるだけで建物が立つデモ。タイルは 2D と同じもので、転送量は 1 バイトも増えません。">
+<meta property="og:title" content="経路と案内の吹き出し — modern-map-japan">
+<meta property="og:description" content="渡された経路を描き、曲がる地点に吹き出しを置きます。写真も載ります。">
 <link rel="icon" href="./favicon.svg">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
 <link rel="stylesheet" href="./demo.css">
@@ -15,19 +15,21 @@
 <body>
 
 <header class="site-header">
-  <h1>建物を立てる</h1>
+  <h1>経路と案内の吹き出し</h1>
   <p>
-    <code>&lt;mmj-map&gt;</code> に <code>3d</code> を付けただけです。
-    <strong>タイルは 2D と同じもので、転送量は 1 バイトも増えません</strong>（実測 17 リクエスト / 735,015 B）。
-    <strong>高さを持たない建物は平らなまま残ります</strong>（梅田で約 3 割）。データに無い高さを作っていません。
+    <code>&lt;mmj-route&gt;</code> に GeoJSON を渡すだけ。線を描き、
+    <code>instruction</code> を持つ点に<strong>押すと開く吹き出し</strong>を置きます。
+    <strong>写真も載ります</strong>（1 つ目の角が写真つきです）。
+    <strong>経路は計算しません</strong>——作るのは外（API でも AI でも）で、ここは描くだけです。
+    この経路は<strong>合成データで、実在の経路ではありません</strong>（<code>data/README.md</code>）。
   </p>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">素の地図</a>
     <a href="./elements.html">HTML だけで置く</a>
-    <a href="./3d.html" aria-current="page">建物を立てる</a>
+    <a href="./3d.html">建物を立てる</a>
     <a href="./cluster.html">点をまとめる</a>
     <a href="./poi.html">自前の POI</a>
-    <a href="./route.html">経路と案内</a>
+    <a href="./route.html" aria-current="page">経路と案内</a>
     <a href="./themes.html">配色を見くらべる</a>
     <a href="./brand.html">サイトの色を当てる</a>
     <a href="https://github.com/meta-taro/modern-map-japan">リポジトリ</a>
@@ -35,7 +37,11 @@
 </header>
 
 <main class="map-area">
-  <mmj-map id="map" center="135.4959,34.7024" zoom="16" pitch="60" hash 3d></mmj-map>
+  <mmj-map id="map" center="135.4991,34.6980" zoom="15" hash>
+    <mmj-route id="route" src="./data/sample-route.geojson" fit></mmj-route>
+  </mmj-map>
+
+  <div id="picked" class="picked" hidden></div>
 
   <div id="notice" class="notice" hidden>
     <div class="box">
@@ -58,6 +64,14 @@
   } else {
     map.setAttribute('tiles', cfg.tilesUrl);
     map.setAttribute('style-url', cfg.styleUrl);
+
+    // 何件の案内が置かれたかを画面に出す。**出さないと、0 件でも気づけない**
+    document.getElementById('route').addEventListener('mmj-route-ready', (event) => {
+      const box = document.getElementById('picked');
+      box.textContent = `案内 ${event.detail.steps} 件。押すと開きます`;
+      box.hidden = false;
+    });
+
     await import('./elements/index.js');
   }
 </script>

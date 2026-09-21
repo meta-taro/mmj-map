@@ -203,6 +203,18 @@ pnpm palette:mcp        # MCP（stdio）。道具 4 つ
   目印が `metadata["mmj:anchors"].accent` から色を拾う
 - **デモページには載せていない**（`apps/demo/brand.html` は 6 枚 ＋ accent のまま）
 
+## 経路と写真つき吹き出し（D-022・2026-09-21）
+
+`<mmj-route src="route.geojson" fit>` … 渡された経路を描き、`instruction` を持つ点に
+押すと開く吹き出しを置く。`image` があれば写真も載る。
+`<mmj-marker image image-alt>` … 目印の吹き出しにも写真。
+
+- **経路は計算しない。**D-003 の外側。作るのは外（ルーティング API でも AI でも）
+- **`setHTML` を使っていない。**`createElement` と `textContent` だけで組む（baseline §21）。
+  `javascript:` と `data:` の画像は落とす
+- デモ `apps/demo/route.html`。実物 `docs/screenshots/2026-09-21-route-steps.jpg`
+- **案内の見た目は既定の目印のまま**（番号も矢印も無い）。そこは `DESIGN.md` の領域
+
 ## 未完了の作業
 
 - 日本語グリフの方針（`localIdeographFontFamily` で逃げている・未決）
