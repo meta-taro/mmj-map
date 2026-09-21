@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { extractReferences, resolveReference, type Mount } from "../src/refs.js";
+import { extractReferences, findBasePathHazards, resolveReference, type Mount } from "../src/refs.js";
 
 const MOUNTS: Mount[] = [
   { prefix: "/elements", dir: "packages/elements/src" },
@@ -91,5 +91,42 @@ describe("resolveReference", () => {
   it("フラグメントだけ・空は null", () => {
     expect(resolveReference("#top", "apps/demo", MOUNTS)).toBeNull();
     expect(resolveReference("", "apps/demo", MOUNTS)).toBeNull();
+  });
+});
+
+/**
+ * **絶対パスは、公開先に base path があると壊れる。**
+ *
+ * GitHub Pages は `https://<user>.github.io/<repo>/` の下に置かれる。
+ * `/elements/index.js` は `https://<user>.github.io/elements/index.js` を見に行き、404 になる。
+ *
+ * 手元の `pnpm serve` は `/` 直下で配るので**通ってしまう**。
+ * **公開先でしか出ない壊れ方**で、実際に 4 枚のデモが地図を出せなくなっていた
+ * （2026-09-21・人が公開サイトを開いて気づいた。こちらは 1 枚しか撮っていなかった）。
+ */
+describe("findBasePathHazards", () => {
+  it("**先頭が `/` の参照を危険として挙げる**", () => {
+    const refs = [
+      { raw: "/elements/index.js", line: 66 },
+      { raw: "./config.js", line: 48 },
+    ];
+    expect(findBasePathHazards(refs).map((r) => r.raw)).toEqual(["/elements/index.js"]);
+  });
+
+  it("相対パスは安全（base path があっても無くても通る）", () => {
+    const refs = [
+      { raw: "./demo.css", line: 12 },
+      { raw: "../styles/a.json", line: 13 },
+      { raw: "favicon.svg", line: 14 },
+    ];
+    expect(findBasePathHazards(refs)).toEqual([]);
+  });
+
+  it("`//` で始まるものは対象外（プロトコル相対の外部 URL）", () => {
+    expect(findBasePathHazards([{ raw: "//cdn.example.com/a.js", line: 1 }])).toEqual([]);
+  });
+
+  it("行番号を保つ（どこを直すか分からない指摘は役に立たない）", () => {
+    expect(findBasePathHazards([{ raw: "/a.js", line: 42 }])[0]?.line).toBe(42);
   });
 });

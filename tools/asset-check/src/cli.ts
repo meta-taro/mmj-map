@@ -14,7 +14,7 @@ import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, relative, sep } from "node:path";
 
-import { extractReferences, resolveReference, type Mount } from "./refs.js";
+import { extractReferences, findBasePathHazards, resolveReference, type Mount } from "./refs.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -29,6 +29,35 @@ const MOUNTS: Mount[] = [
   { prefix: "/styles", dir: "styles" },
   { prefix: "/", dir: "apps/demo" },
 ];
+
+/**
+ * **deploy が成果物の中に作るディレクトリ。**リポジトリには存在しない。
+ *
+ * `deploy.yml` が `packages/elements/src/*.js` と `styles/*.json` をここへコピーし、
+ * タイルは Release から降ろす。**参照先を「無い」と言わないために、真の出どころへ読み替える。**
+ *
+ * **ここが `deploy.yml` とずれたら、この検査は嘘をつく。**片方を変えたら両方直すこと。
+ */
+const PRODUCED_AT_DEPLOY: Readonly<Record<string, string | null>> = {
+  "apps/demo/elements": "packages/elements/src",
+  "apps/demo/styles": "styles",
+  // Release から降ろすので、リポジトリにも他のどこにも無い。**存在検査の対象外**
+  "apps/demo/tiles": null,
+};
+
+/**
+ * deploy が作るパスを、リポジトリの中の本当の場所へ読み替える。
+ * 読み替え先が `null`（Release から来るもの）なら `undefined` を返し、検査しない。
+ * @param target リポジトリ相対のパス
+ */
+function resolveProduced(target: string): string | undefined {
+  for (const [produced, source] of Object.entries(PRODUCED_AT_DEPLOY)) {
+    if (target !== produced && !target.startsWith(`${produced}/`)) continue;
+    if (source === null) return undefined;
+    return source + target.slice(produced.length);
+  }
+  return target;
+}
 
 /** 検査する HTML の置き場所 */
 const SCAN_DIR = "apps/demo";
@@ -62,9 +91,24 @@ for (const file of files) {
   const html = readFileSync(resolve(repoRoot, file), "utf8");
   const fromDir = posix(relative(repoRoot, dirname(resolve(repoRoot, file))));
 
-  for (const reference of extractReferences(html)) {
+  const references = extractReferences(html);
+
+  // **公開先の base path で壊れる参照を止める。**
+  // 手元の配信は `/` 直下なので、絶対パスでも通ってしまう。
+  // 実際にこれで 4 枚のデモが公開先だけ地図を出せなくなった（2026-09-21）。
+  for (const hazard of findBasePathHazards(references)) {
+    console.error(`NG ${file}:${hazard.line} ${hazard.raw}`);
+    console.error("   先頭の / は公開先の base path で壊れます。相対パスにしてください");
+    console.error("   （GitHub Pages は /<repo>/ の下に置かれるため、/x は https://host/x を指す）");
+    failed++;
+  }
+
+  for (const reference of references) {
     checked++;
-    const target = resolveReference(reference.raw, fromDir, MOUNTS);
+    const resolved = resolveReference(reference.raw, fromDir, MOUNTS);
+    // deploy が作るものは、真の出どころへ読み替えてから存在を見る
+    const target = resolved === null ? null : (resolveProduced(resolved) ?? null);
+    if (resolved !== null && target === null) continue; // Release から来るもの。検査しない
 
     if (target === null) {
       console.error(`NG ${file}:${reference.line} ${reference.raw}`);
