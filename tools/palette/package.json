@@ -1,0 +1,22 @@
+{
+  "name": "@modern-map-japan/palette",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "配色の指し値から、導入者が持つスタイルを作る道具（D-021）。MMJ が配る 6 枚は手書きのまま",
+  "scripts": {
+    "make": "tsx src/cli.ts",
+    "mcp": "tsx src/mcp.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@modern-map-japan/elements": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}

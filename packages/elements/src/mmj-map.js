@@ -27,7 +27,7 @@
  */
 import { applyTilesUrl, buildMapOptions, parseLngLat, parsePitch, parseZoom, hashOverridesPitch } from "./attrs.js";
 import { addExtrusion } from "./extrude.js";
-import { accentPalette, applyPalette, readTheme } from "./palette.js";
+import { accentPalette, applyPalette, readDeclaredAccent, readTheme } from "./palette.js";
 
 /** pmtiles プロトコルは 1 回だけ登録する（2 度目は MapLibre が投げる） */
 let protocolRegistered = false;
@@ -102,6 +102,9 @@ export class MmjMap extends HTMLElement {
     // **部品が色を持たないようにするため**、読み込んだスタイルから読む。
     // `map` を入れる前に用意する（子は `map` が入った瞬間に付きに来る）。
     this.theme = readTheme(style);
+    // 生成されたスタイルは自分の指し値を持っている。**属性が無いときはそこから拾う**
+    // （手書きの 6 枚には無いので null のまま＝子要素は自分の既定を使う）
+    this.accent ??= readDeclaredAccent(style);
 
     this.map = new maplibregl.Map(
       buildMapOptions({
