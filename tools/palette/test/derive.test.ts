@@ -23,7 +23,7 @@ function level(hex: string): number {
 
 describe("ROLE_ORDER", () => {
   it("部品が知っている役割と、過不足なく一致する", async () => {
-    const { ROLE_LAYERS } = await import("@modern-map-japan/elements/palette");
+    const { ROLE_LAYERS } = await import("@mmj-map/elements/palette");
     expect([...ROLE_ORDER].sort()).toEqual(Object.keys(ROLE_LAYERS).sort());
   });
 });
@@ -119,7 +119,7 @@ describe("deriveRoles", () => {
 
 describe("実物のスタイルに当たる", () => {
   it("作った 24 色が、配っている 6 枚すべてに当たる", async () => {
-    const { applyPalette } = await import("@modern-map-japan/elements/palette");
+    const { applyPalette } = await import("@mmj-map/elements/palette");
     const roles = deriveRoles(LIGHT);
     for (const name of ["modern-dark", "modern-light", "modern-ink", "modern-sand", "modern-neon", "modern-candy"]) {
       const style = JSON.parse(

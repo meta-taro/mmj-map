@@ -1,5 +1,10 @@
 # 提案 — pnpm 配布を第一ゴールに置いたときのリリース計画（2026-09-16）
 
+> **スコープは後から確定した。**この文書は `@modern-map-japan/*` を前提に書かれていたが、
+> D-018（2026-09-21）で正式名称が MMJ になり、npm スコープは **`@mmj-map`** に決まった。
+> **古い名前で案内しないよう、本文の名前を置き換えてある**（決定そのものは D-018 / D-020 を見ること）。
+
+
 **これは提案です。決定ではありません。**
 `.claude/roadmap.md` にも `.claude/decisions.md` にも手を入れていません。
 
@@ -44,7 +49,7 @@
 **中身を作ってから publish すると、経路の問題が一番まずい時に出ます。**
 
 - **スコープ名は早い者勝ちで、取られたら変えられません。**
-  2026-09-16 時点で `@modern-map-japan/{style,elements,tiles,react,vue}` は
+  2026-09-16 時点で `@mmj-map/{style,elements,tiles,react,vue}` は
   **5 つとも空いています**（registry が 404 を返す）。
   **空いていることは、押さえたことではありません。**
 - publish の CI（トークン・権限・`access: public`・provenance）は、
@@ -56,7 +61,7 @@
 ### `0.1.0` — スタイルが使える
 
 ```
-@modern-map-japan/style
+@mmj-map/style
 ```
 
 `modernDark({ tilesUrl })` が MapLibre のスタイルオブジェクトを返す。
@@ -73,7 +78,7 @@
 
 ### `0.2.0` — 自分でタイルを作れる
 
-`tools/tiles` をそのまま `@modern-map-japan/tiles` として配る。
+`tools/tiles` をそのまま `@mmj-map/tiles` として配る。
 **中身はもう動いています**（日本全国 3.6GB・`pmtiles verify` 通過）。
 必要なのは package として切り出す作業だけ。
 

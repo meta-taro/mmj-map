@@ -7,7 +7,7 @@
  * 出したものには **`mmj:generated: true`** を残す。
  * 残さないと、**MMJ が手書きしている 6 枚と見分けが付かなくなる**（D-002 / D-021）。
  */
-import { applyPalette } from "@modern-map-japan/elements/palette";
+import { applyPalette } from "@mmj-map/elements/palette";
 
 import type { Anchors } from "./derive.js";
 

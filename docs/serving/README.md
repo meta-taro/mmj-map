@@ -54,7 +54,7 @@ pnpm tiles:check-range -- https://<配信先>/kansai.pmtiles
 
 ## Worker が守っていること
 
-- **Range に 206 で応える**（解釈は `@modern-map-japan/http-range`。
+- **Range に 206 で応える**（解釈は `@mmj-map/http-range`。
   手元の配信（`pnpm serve`）と**同じ実装**を使っています）
 - **CORS で `Content-Range` を expose する。** これが無いと、別オリジンのデモから
   範囲を読めません（地図は出ず、原因も分かりにくい）
@@ -62,7 +62,7 @@ pnpm tiles:check-range -- https://<配信先>/kansai.pmtiles
 - **`immutable` を付けない。** 上流の版を上げて同じ名前で差し替えたとき、
   古いタイルを掴んだまま直らなくなるため
 
-テストは `pnpm --filter @modern-map-japan/pmtiles-worker test`（14 件）。
+テストは `pnpm --filter @mmj-map/pmtiles-worker test`（14 件）。
 R2 を差し替え可能な形にしてあるので、**Cloudflare へ繋がらない環境でも走ります**（§4）。
 
 ## まだ決めていないこと

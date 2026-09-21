@@ -1,5 +1,5 @@
 {
-  "name": "@modern-map-japan/pmtiles-worker",
+  "name": "@mmj-map/pmtiles-worker",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@modern-map-japan/http-range": "workspace:*"
+    "@mmj-map/http-range": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

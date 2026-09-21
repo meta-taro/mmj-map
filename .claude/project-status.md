@@ -218,6 +218,16 @@ pnpm palette:mcp        # MCP（stdio）。道具 4 つ
   座標を取り出すため `tile:inspect` に `--geo` を足し、MVT デコーダが幾何も読むようにした
 - **案内の見た目は既定の目印のまま**（番号も矢印も無い）。そこは `DESIGN.md` の領域
 
+## パッケージ名を @mmj-map へ（D-018・2026-09-21）
+
+12 パッケージすべてを `@modern-map-japan/*` → `@mmj-map/*` に改名。
+参照 42 箇所（package.json・ルートの --filter・import 2 か所・文書・コメント）も同時に直した。
+**残り 0 件**（`grep -rn "@modern-map-japan/"` で確認）。
+
+- **npm へは何も出ていない。**全パッケージ `private: true` のまま
+- **npm スコープ `@mmj-map` の取得はまだ**（組織アカウントが要る・§14）
+- 古い提案 2 本にも、スコープが後から確定した旨の注記を入れた
+
 ## 未完了の作業
 
 - 日本語グリフの方針（`localIdeographFontFamily` で逃げている・未決）

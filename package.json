@@ -14,16 +14,16 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "oxlint --config .oxlintrc.json --deny-warnings .",
     "gate": "pnpm lint && pnpm -r typecheck && pnpm -r test && pnpm asset:check && pnpm style:check",
-    "tiles:resolve": "pnpm --filter @modern-map-japan/tiles-build run resolve",
-    "tiles:extract": "pnpm --filter @modern-map-japan/tiles-build run extract",
-    "tiles:check-range": "pnpm --filter @modern-map-japan/tiles-build run check-range",
-    "serve": "pnpm --filter @modern-map-japan/serve run dev",
-    "style:check": "pnpm --filter @modern-map-japan/style-check run check",
-    "shot": "pnpm --filter @modern-map-japan/shot run shot",
-    "asset:check": "pnpm --filter @modern-map-japan/asset-check run check",
-    "tile:inspect": "pnpm --filter @modern-map-japan/tile-inspect run inspect",
-    "palette": "pnpm --filter @modern-map-japan/palette run make",
-    "palette:mcp": "pnpm --filter @modern-map-japan/palette run mcp"
+    "tiles:resolve": "pnpm --filter @mmj-map/tiles-build run resolve",
+    "tiles:extract": "pnpm --filter @mmj-map/tiles-build run extract",
+    "tiles:check-range": "pnpm --filter @mmj-map/tiles-build run check-range",
+    "serve": "pnpm --filter @mmj-map/serve run dev",
+    "style:check": "pnpm --filter @mmj-map/style-check run check",
+    "shot": "pnpm --filter @mmj-map/shot run shot",
+    "asset:check": "pnpm --filter @mmj-map/asset-check run check",
+    "tile:inspect": "pnpm --filter @mmj-map/tile-inspect run inspect",
+    "palette": "pnpm --filter @mmj-map/palette run make",
+    "palette:mcp": "pnpm --filter @mmj-map/palette run mcp"
   },
   "devDependencies": {
     "oxlint": "^1.83.0"
