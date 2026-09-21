@@ -1,6 +1,10 @@
-# modern-map-japan
+# MMJ
 
-A modern map for Japan — no API key, no per-view billing, no tile server to run.
+**M**odern **M**ap — a map you own. No API key, no per-view billing, no tile server to run.
+
+> **The repository is still called `modern-map-japan`.** MMJ is the name of the product;
+> the repository name is staying put because it is public and every URL, Pages deploy and
+> CI run already points at it (D-018).
 
 > **Status: early.** The design is written down and the approach has been proven in a
 > production site, but this repository is still being assembled. See
@@ -26,15 +30,25 @@ look, on someone else's meter.
 
 **Data we borrow. Presentation we own.**
 
-- **Base tiles** come from [Protomaps](https://protomaps.com/) daily planet builds,
-  cut to Japan and served as a single [PMTiles](https://github.com/protomaps/PMTiles)
-  archive. We do not build a tile pipeline of our own.
-- **Styles** are hand-written [MapLibre](https://maplibre.org/) styles designed for
-  Japanese cartography — dense place names, mixed scripts, rail lines that carry their
-  operator's own colours.
-- **UI parts** (marker, popup, cluster, persistent layout) ship as Web Components, with
-  thin React and Vue wrappers.
+- **Base tiles** come from [Protomaps](https://protomaps.com/) daily **planet** builds,
+  cut to whatever area you need and served as a single
+  [PMTiles](https://github.com/protomaps/PMTiles) archive.
+  We do not build a tile pipeline of our own.
+- **Styles** are hand-written [MapLibre](https://maplibre.org/) styles, and they are
+  **per region**. The first set is written for Japanese cartography — dense place names,
+  mixed scripts, rail lines that carry their operator's own colours.
+  **The tools are global; the styling is local.** That distinction is the whole design.
+- **UI parts** (marker, popup, cluster, your own POIs, routes) ship as Web Components.
+  React and Vue wrappers are planned, not written.
 - **No server.** Static hosting plus HTTP Range requests is the whole deployment story.
+
+## Where it works
+
+**Anywhere Protomaps covers, which is the planet.** Nothing in the tooling is
+Japan-specific: point the extractor at a bounding box or a polygon and you get tiles.
+
+Japan is simply the region whose styling is furthest along. Taiwan, Shanghai, Vietnam and
+Singapore are next (D-018). **What is per-region is the style, not the code.**
 
 ## What this is not
 
