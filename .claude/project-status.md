@@ -319,6 +319,24 @@ pnpm coverage
 - **閾値が実際に落ちることを確かめた**（一時的に 99% にして ERROR を見た）
 - 依存は `@vitest/coverage-v8` 1 つだけ。**版は vitest と完全一致で固定**
 
+## S5 地域を広げる — 着手（D-024・2026-09-21）
+
+**地域ごとにスタイルを増やさない。**`<mmj-map lang="zh-Hant">` で、読み込んだあとに
+`text-field` を差し替える（色に対する `applyPalette` と同じ仕組み）。
+配色 6 枚 × 地域でスタイルを持つと **24 枚 48 枚と増えて破綻する**ため。
+
+- `<mmj-map lang>` と `<mmj-map ideograph-fonts>` を追加。**当たらなければ投げる**
+- 地域プリセット 4 つ（`taipei` / `shanghai` / `hochiminh` / `singapore`）。
+  **bbox を書いただけで、タイルはまだ切り出していない**
+- roadmap に `name:zh` と書いてあったが、**上流の実際のキーは `zh-Hant` / `zh-Hans`**。
+  推測で書いていた（大阪のタイルで数えて判明）
+
+### 実物で確かめたこと
+
+`lang="en"` は効いた（尼崎市→Amagasaki / 東大阪市→Higashiosaka / JR難波→JR Namba）。
+**`lang="zh-Hant"` は大阪ではほとんど変わらない**（`name:zh-Hant` が 20 件しか無いため）。
+**台湾のタイルで効くかは未確認。**切り出していないので確かめようがない。
+
 ## 未完了の作業
 
 - 日本語グリフの方針（`localIdeographFontFamily` で逃げている・未決）
