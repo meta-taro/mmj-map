@@ -74,7 +74,10 @@
   大阪中心部 z10-15 の街路 31 MB を merge）。
   **GitHub Pages の 1 ファイル 100 MB に収まる。**
   `regions/demo-osaka.geojson` と `manifest.json` の `demo` 区画。
-  **まだ Pages へは載せていない**（下の「次のタスク」）
+  **2026-09-21 に Pages へ載せた。**Release `demo-tiles-20260915` に上げ、
+  `deploy.yml` が取ってきて同梱する。**リポジトリには置かない**（62.8 MB を
+  git history に入れると以後すべての clone が払う）。成果物の中の `config.js` だけを
+  同梱したタイルへ向ける（**リポジトリの config.js は null のまま**）
 - **タイルを開いて数える道具（`tools/tile-inspect`・2026-09-17）** — `pnpm tile:inspect`。
   推測で地図を作らないため（D-012）。**依存は足していない**（MVT を自前で読む・幾何は読まない）。
   手順は `docs/tiles/inspect.md`

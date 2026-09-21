@@ -55,6 +55,49 @@ jobs:
           mkdir -p apps/demo/elements
           cp packages/elements/src/*.js apps/demo/elements/
 
+      # デモが読むタイルを Release から取って同梱する。
+      #
+      # **タイルをリポジトリに置かない。**62.8 MB を git history へ入れると、
+      # 以後すべての clone がその重さを払う。Release なら成果物にだけ入る。
+      #
+      # **GitHub Pages は Range を返す**（実測 206 / Accept-Ranges: bytes）。
+      # だめだったのは Range ではなくサイズで、1 ファイル 100 MB / サイト 1 GB が上限。
+      # このファイルは 62.8 MB なので収まる（`pnpm tiles:extract -- demo` で再現できる）。
+      #
+      # **取れなければ deploy を落とす。**黙って案内画面のままにしない。
+      - name: Bundle the demo tiles from the release
+        env:
+          TILES_TAG: demo-tiles-20260915
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p apps/demo/tiles
+          gh release download "$TILES_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'demo.pmtiles' \
+            --output apps/demo/tiles/demo.pmtiles
+          size=$(stat -c%s apps/demo/tiles/demo.pmtiles)
+          echo "demo.pmtiles: $size バイト"
+          # 100 MB を越えたら Pages に載らない。**載らないものを黙って出さない**
+          test "$size" -lt 104857600
+          test "$size" -gt 1000000
+
+      # 成果物の中の config.js だけを、同梱したタイルへ向ける。
+      # **リポジトリの apps/demo/config.js は null のまま。**手元に配信が無いのは事実なので、
+      # そこを書き換えると「動くはずなのに動かない」という誤解を生む
+      # （`pnpm serve` も同じやり方で、手元用の config を差し込んでいる）。
+      - name: Point the bundled config at the bundled tiles
+        run: |
+          cat > apps/demo/config.js <<'JS'
+          // **このファイルは deploy が生成したもの。**リポジトリの config.js は null のまま。
+          // タイルは同じオリジンに置いてあるので、CORS も鍵も要らない。
+          window.MMJ_CONFIG = {
+            tilesUrl: new URL('tiles/demo.pmtiles', document.baseURI).href,
+            glyphsUrl: null,
+            styleUrl: new URL('styles/modern-dark.json', document.baseURI).href,
+          };
+          JS
+          cat apps/demo/config.js
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
