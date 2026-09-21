@@ -118,3 +118,77 @@ describe("visibleAt", () => {
     expect(visibleAt(noMinZoom, 5)).toHaveLength(1);
   });
 });
+
+/**
+ * **座標も読む。**
+ *
+ * 「何が何件あるか」だけでは、**デモに置く経路を実際の道の上に乗せられない**。
+ * 手で折れ線を書くと道を無視した線になり、地図として嘘になる
+ * （2026-09-21・人の指摘「道を無視して、線がひかれているのがきになります」）。
+ *
+ * 描くのは MapLibre の仕事のままで、ここは**中の座標を見る**ための読み出し。
+ */
+/** MVT のコマンド: MoveTo=1 / LineTo=2 / ClosePath=7。パラメータは zigzag */
+const zig = (n: number) => (n << 1) ^ (n >> 31);
+const cmd = (id: number, count: number) => (count << 3) | id;
+const geom = (...values: number[]) => Buffer.from(values.map((v) => v & 0x7f));
+
+describe("幾何を読む", () => {
+
+  it("線の座標を返す（MoveTo ＋ LineTo）", () => {
+    // MoveTo 1 個 (5,7) → LineTo 2 個 (+3,+0) (+0,+4)
+    const raw = geom(cmd(1, 1), zig(5), zig(7), cmd(2, 2), zig(3), zig(0), zig(0), zig(4));
+    const buf = encodeTile([
+      { name: "roads", features: [{ props: { kind: "minor_road" }, type: 2, geometryRaw: raw }] },
+    ]);
+    expect(decodeTile(buf)[0]?.features[0]?.geometry).toEqual([
+      [
+        [5, 7],
+        [8, 7],
+        [8, 11],
+      ],
+    ]);
+  });
+
+  it("負の差分も読む（zigzag）", () => {
+    const raw = geom(cmd(1, 1), zig(10), zig(10), cmd(2, 1), zig(-4), zig(-6));
+    const buf = encodeTile([
+      { name: "roads", features: [{ props: { kind: "x" }, type: 2, geometryRaw: raw }] },
+    ]);
+    expect(decodeTile(buf)[0]?.features[0]?.geometry).toEqual([
+      [
+        [10, 10],
+        [6, 4],
+      ],
+    ]);
+  });
+
+  it("**MoveTo が来るたびに別の線になる**（1 地物に線が何本も入る）", () => {
+    const raw = geom(cmd(1, 1), zig(0), zig(0), cmd(2, 1), zig(1), zig(0), cmd(1, 1), zig(5), zig(5));
+    const buf = encodeTile([
+      { name: "roads", features: [{ props: { kind: "x" }, type: 2, geometryRaw: raw }] },
+    ]);
+    expect(decodeTile(buf)[0]?.features[0]?.geometry).toEqual([
+      [
+        [0, 0],
+        [1, 0],
+      ],
+      [[6, 5]],
+    ]);
+  });
+
+  it("**読めないコマンドが来たら、そこで止めて読めたぶんを返す**（投げない）", () => {
+    // 0x0c は「コマンド 4」で存在しない。既存のテストがこの埋め方をしている
+    const raw = Buffer.from([cmd(1, 1), zig(2), zig(3), 0x0c, 0x0c]);
+    const buf = encodeTile([
+      { name: "roads", features: [{ props: { kind: "x" }, type: 2, geometryRaw: raw }] },
+    ]);
+    expect(decodeTile(buf)[0]?.features[0]?.geometry).toEqual([[[2, 3]]]);
+    expect(decodeTile(buf)[0]?.unreadable).toBe(0);
+  });
+
+  it("幾何が無ければ空（**無いことと読めないことを混ぜない**）", () => {
+    const buf = encodeTile([{ name: "roads", features: [{ props: { kind: "x" }, type: 2 }] }]);
+    expect(decodeTile(buf)[0]?.features[0]?.geometry).toEqual([]);
+  });
+});

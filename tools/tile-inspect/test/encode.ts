@@ -49,6 +49,8 @@ export interface TestFeature {
    * ここを出さないテストは、**末尾の読み飛ばしがずれていても通る**（実際に通した）。
    */
   readonly geometryBytes?: number;
+  /** 幾何の中身そのもの。**座標を読めることを確かめるときに使う** */
+  readonly geometryRaw?: Buffer;
   /** 知らないフィールド（上流が足したもの）を 1 つ混ぜる */
   readonly unknownField?: { readonly tag: number; readonly value: number };
 }
@@ -78,7 +80,9 @@ function encodeLayer(layer: TestLayer): Buffer {
     if (feature.unknownField !== undefined) {
       parts.push(uint(feature.unknownField.tag, feature.unknownField.value));
     }
-    if (feature.geometryBytes !== undefined) {
+    if (feature.geometryRaw !== undefined) {
+      parts.push(delimited(4, feature.geometryRaw));
+    } else if (feature.geometryBytes !== undefined) {
       // **0 埋めにしない。**0x00 は「tag 0 / wire 0」として無害に読み飛ばせてしまうため、
       // 読み飛ばしが 1 バイトずれていてもテストが通る（実際に通してしまった）。
       // 0x0C は「tag 1 / wire 4」で、**ずれて読まれたら必ず例外になる**。

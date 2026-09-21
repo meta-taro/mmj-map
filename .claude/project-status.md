@@ -213,6 +213,9 @@ pnpm palette:mcp        # MCP（stdio）。道具 4 つ
 - **`setHTML` を使っていない。**`createElement` と `textContent` だけで組む（baseline §21）。
   `javascript:` と `data:` の画像は落とす
 - デモ `apps/demo/route.html`。実物 `docs/screenshots/2026-09-21-route-steps.jpg`
+- **デモの線は、タイルの中の実際の道路の座標**（御堂筋 → 曽根崎通・約 896 m）。
+  最初の版は手書きの折れ線で**道を無視していた**（人の指摘で判明）。
+  座標を取り出すため `tile:inspect` に `--geo` を足し、MVT デコーダが幾何も読むようにした
 - **案内の見た目は既定の目印のまま**（番号も矢印も無い）。そこは `DESIGN.md` の領域
 
 ## 未完了の作業

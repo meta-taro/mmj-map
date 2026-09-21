@@ -105,6 +105,63 @@ const wantLayer = flag("layer");
 const by = flag("by") ?? "kind";
 const at = flag("at");
 
+/** 経度緯度を 6 桁に丸める。**元のタイル座標より細かい桁は意味が無い** */
+function round(lon: number, lat: number): [number, number] {
+  return [Number(lon.toFixed(6)), Number(lat.toFixed(6))];
+}
+
+/**
+ * 幾何を GeoJSON で出す。**数える道具に、座標を見る出口を付けたもの。**
+ *
+ * デモに置く経路を**実際の道の上に乗せる**ために要る。
+ * 手で折れ線を書くと道を無視した線になり、地図として嘘になる
+ * （2026-09-21・人の指摘「道を無視して、線がひかれているのがきになります」）。
+ *
+ *   pnpm tile:inspect -- dist/tiles/demo.pmtiles 15 28717 13012 --layer=roads --geo --name=御堂筋
+ */
+if (has("geo")) {
+  const wantName = flag("name");
+  const n = 2 ** Number(z);
+  const features: unknown[] = [];
+
+  for (const layer of layers) {
+    if (wantLayer !== undefined && layer.name !== wantLayer) continue;
+
+    const toLon = (px: number) => ((Number(x) + px / layer.extent) / n) * 360 - 180;
+    const toLat = (py: number) => {
+      const t = Math.PI - 2 * Math.PI * ((Number(y) + py / layer.extent) / n);
+      return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(t) - Math.exp(-t)));
+    };
+
+    for (const feature of layer.features) {
+      const name = String(feature.props["name"] ?? "");
+      if (wantName !== undefined && !name.includes(wantName)) continue;
+      for (const line of feature.geometry) {
+        features.push({
+          type: "Feature",
+          properties: { ...feature.props, "mmj:layer": layer.name },
+          geometry: {
+            // 点が 1 つだけの線は Point として出す（MVT では同じ形で入っている）
+            type: line.length === 1 ? "Point" : "LineString",
+            coordinates:
+              line.length === 1
+                ? round(toLon(line[0]![0]!), toLat(line[0]![1]!))
+                : line.map((p) => round(toLon(p[0]!), toLat(p[1]!))),
+          },
+        });
+      }
+    }
+  }
+
+  // **件数を stderr へ出す。**0 件のとき、空の FeatureCollection だけ見ても
+  // 「そういうデータ」なのか絞り込みの間違いなのか分からない
+  console.error(
+    `幾何 ${features.length} 件（--layer=${wantLayer ?? "全部"} --name=${wantName ?? "(絞らない)"}）`,
+  );
+  console.log(JSON.stringify({ type: "FeatureCollection", features }));
+  process.exit(0);
+}
+
 for (const layer of layers) {
   if (wantLayer !== undefined && layer.name !== wantLayer) continue;
 
