@@ -68,7 +68,7 @@ export function parsePitch(value, fallback) {
 /**
  * MapLibre の Map へ渡す設定。
  * **帰属表示と CJK の扱いを、呼ぶ側が忘れられない場所に置く**のがこの関数の役目。
- * @param {{ container: unknown, style: unknown, center: [number, number], zoom: number, hash: boolean, pitch?: number, cooperative?: boolean }} input
+ * @param {{ container: unknown, style: unknown, center: [number, number], zoom: number, hash: boolean, pitch?: number, cooperative?: boolean, ideographFonts?: string }} input
  */
 export function buildMapOptions(input) {
   return {
@@ -78,8 +78,14 @@ export function buildMapOptions(input) {
     zoom: input.zoom,
     hash: input.hash,
     pitch: input.pitch ?? 0,
-    // グリフに CJK が無いため、漢字かなは閲覧側のフォントで描く（decisions.md 未決）
-    localIdeographFontFamily: "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif",
+    // グリフに CJK が無いため、漢字かなは閲覧側のフォントで描く（decisions.md 未決）。
+    // **既定は日本語向け。**中国語や韓国語の地図では字形が合わないので、
+    // 置く側が `ideograph-fonts` で差し替えられる（同じ符号でも国ごとに字体が違う）。
+    // **空文字では上書きしない。**空のフォント指定は字を消す
+    localIdeographFontFamily:
+      input.ideographFonts !== undefined && input.ideographFonts !== ""
+        ? input.ideographFonts
+        : "'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', sans-serif",
     // 帰属表示は必須。**消せる形で渡さない**（LICENSES.md・ODbL）
     attributionControl: { compact: false },
     // 1 本指をページへ返し、2 本指だけを地図が取る。

@@ -67,6 +67,50 @@
       "maxzoom": 15,
       "output": "demo.pmtiles",
       "note": "公開デモ用。GitHub Pages は 1 ファイル 100 MB までなので、全国は z9 までの俯瞰だけ持ち、街路まで持つのは大阪中心部だけにする（合計 62.8 MB 実測）。z0-9 全国 35 MB ＋ z10-15 大阪 31 MB を merge する。**これを大きくするときは 100 MB を越えないこと。**"
+    },
+    "taipei": {
+      "bbox": [
+        121.3,
+        24.9,
+        121.72,
+        25.21
+      ],
+      "maxzoom": 15,
+      "output": "taipei.pmtiles",
+      "note": "台北。**D-018 で地域を広げると決めた 1 つ目。**ラベルは name:zh-Hant（実測でキーが zh-Hant / zh-Hans に分かれていた。zh は無い）。"
+    },
+    "shanghai": {
+      "bbox": [
+        121.2,
+        30.95,
+        121.83,
+        31.43
+      ],
+      "maxzoom": 15,
+      "output": "shanghai.pmtiles",
+      "note": "上海の中心部。ラベルは name:zh-Hans。**市域全体ではなく内環〜中環の範囲**（全域は 1 ファイルに収まらない）。"
+    },
+    "hochiminh": {
+      "bbox": [
+        106.58,
+        10.68,
+        106.8,
+        10.87
+      ],
+      "maxzoom": 15,
+      "output": "hochiminh.pmtiles",
+      "note": "ホーチミン市の中心部。ラベルは name:vi。**上流に name:vi がどれだけ入っているかは未確認**（大阪では 2 件しか無かった）。"
+    },
+    "singapore": {
+      "bbox": [
+        103.6,
+        1.21,
+        104.05,
+        1.48
+      ],
+      "maxzoom": 15,
+      "output": "singapore.pmtiles",
+      "note": "シンガポール全域。ラベルは name:en で足りる（公用語に英語が入る）。"
     }
   },
   "attribution": "© OpenStreetMap contributors"

@@ -284,3 +284,25 @@ describe("buildPopupOptions のクラス名", () => {
     expect(buildPopupOptions("mmj-popup-abc").className).toBe("mmj-popup-abc");
   });
 });
+
+/**
+ * **CJK のグリフは配っていない**ので、漢字かなは閲覧側のフォントで描く。
+ * 既定は日本語向けだが、**中国語や韓国語の地図では字形が合わない**
+ * （同じ符号でも国ごとに字体が違う）。置く側が差し替えられるようにする。
+ */
+describe("buildMapOptions の ideographFonts", () => {
+  const base = { container: {}, style: {}, center: /** @type {[number, number]} */ ([135, 34]), zoom: 12, hash: false };
+
+  it("渡さなければ、これまでと同じ既定（日本語向け）", () => {
+    expect(buildMapOptions(base).localIdeographFontFamily).toContain("Noto Sans JP");
+  });
+
+  it("渡せば差し替わる（繁体中文なら Noto Sans TC など）", () => {
+    const options = buildMapOptions({ ...base, ideographFonts: "'Noto Sans TC', sans-serif" });
+    expect(options.localIdeographFontFamily).toBe("'Noto Sans TC', sans-serif");
+  });
+
+  it("空文字は既定のまま（**空のフォント指定で字を消さない**）", () => {
+    expect(buildMapOptions({ ...base, ideographFonts: "" }).localIdeographFontFamily).toContain("Noto Sans JP");
+  });
+});

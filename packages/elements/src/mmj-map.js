@@ -28,6 +28,7 @@
 import { applyTilesUrl, buildMapOptions, parseLngLat, parsePitch, parseZoom, hashOverridesPitch } from "./attrs.js";
 import { addExtrusion } from "./extrude.js";
 import { accentPalette, applyPalette, readDeclaredAccent, readTheme } from "./palette.js";
+import { applyLanguage, readLanguage } from "./lang.js";
 
 /** pmtiles プロトコルは 1 回だけ登録する（2 度目は MapLibre が投げる） */
 let protocolRegistered = false;
@@ -96,7 +97,7 @@ export class MmjMap extends HTMLElement {
     // （実測: 梅田 z16 で 17 リクエスト / 735,015 バイト。2D と 1 バイトも変わらない）。
     // 手書きスタイルは書き換えず、読み込んだ後のオブジェクトへ 1 枚足すだけ。
     const wants3d = this.hasAttribute("3d");
-    const style = await this.#recolor(JSON.parse(applied.text));
+    const style = this.#relabel(await this.#recolor(JSON.parse(applied.text)));
 
     // 子要素（目印・まとまり・自前 POI・ポップアップ）が借りる色。
     // **部品が色を持たないようにするため**、読み込んだスタイルから読む。
@@ -118,6 +119,9 @@ export class MmjMap extends HTMLElement {
         pitch: parsePitch(this.getAttribute("pitch"), wants3d ? 45 : 0),
         // 1 ページに何枚も置くときに付ける。**指でページを送れなくなるのを防ぐ**
         cooperative: this.hasAttribute("cooperative"),
+        // 漢字かなは閲覧側のフォントで描く。**既定は日本語向け**なので、
+        // 中国語や韓国語の地図では置く側が差し替える（同じ符号でも字体が違う）
+        ideographFonts: this.getAttribute("ideograph-fonts") ?? undefined,
       }),
     );
 
@@ -177,6 +181,28 @@ export class MmjMap extends HTMLElement {
         `渡した色がどのレイヤにも当たりませんでした（役割: ${Object.keys(colors).join(", ")}）。` +
           "スタイルのレイヤ id が MMJ の 6 枚と違う可能性があります",
       );
+    }
+    return result.style;
+  }
+
+  /**
+   * ラベルを出す言語を決める。**地域ごとにスタイルを増やさない**（`lang.js` の頭に理由）。
+   *
+   *   <mmj-map lang="zh-Hant">
+   *
+   * **当たらなかったら投げる。**言語を指定したのに日本語のままの地図を黙って出すと、
+   * 「指定したのに変わらない」という気づきにくい壊れ方になる。
+   *
+   * @param {any} style
+   * @returns {any}
+   */
+  #relabel(style) {
+    const lang = readLanguage(this.getAttribute("lang"));
+    if (lang === null) return style;
+
+    const result = applyLanguage(style, lang);
+    if (result.applied === 0) {
+      throw new Error(`lang="${lang}" がどのラベルにも当たりませんでした（text-field に name:… がありません）`);
     }
     return result.style;
   }
