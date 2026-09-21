@@ -141,6 +141,33 @@ Node は **管理者権限なし**で入れてある。公式 zip を SHA256 で
 - **pnpm 12 は `package.json` の `pnpm` 欄を読まない**（警告を出して無視する）。
   二重に書いてあった設定を `pnpm-workspace.yaml` の 1 か所へ寄せた。
 
+## 公開デモの状態（2026-09-21 夜）
+
+**公開先で 5 枚中 4 枚が地図を出せていませんでした。**人が開いて気づきました
+（「謎画面。自分でみてないの？」）。こちらは公開後に `/` の 1 枚しか見ていません。
+
+- 原因: `await import('/elements/index.js')` の先頭の `/`。
+  Pages は `/<repo>/` の下に置かれるので、`https://<user>.github.io/elements/index.js` を見に行って 404。
+  `index.html` だけ無事だったのは、そこだけ `import()` を使っていないため
+- 直した: 参照を相対へ（4 枚）／`asset:check` が先頭 `/` を落とす／
+  `pnpm serve -- --base=/modern-map-japan` で**公開先と同じ 404 を手元で再現できる**ように
+- **手元で再現できない壊れ方を放置していたのが本体**でした。`--base` が無いと、
+  絶対パスでも手元では通ってしまいます
+
+**確認済み（手元・base path 付き）**: 6 枚すべて開いて地図が描画され、console に error / warn なし。
+**公開先での再確認は push 後（人の工程）。**
+
+## 配色（D-019・2026-09-21）
+
+`styles/` に 6 枚。dark / light / ink / sand / neon / candy。
+**レイヤ構成は 6 枚とも同一で、違うのは色だけ**（parity テストが一致を見ている）。
+`apps/demo/themes.html` で並べて連動表示。実物は `docs/screenshots/2026-09-21-themes.jpg`。
+
+- **6 枚とも提案です。**`DESIGN.md` の配色欄は空のまま。既定は D-016 のまま dark
+- `pnpm style:check` は**既定で `styles/` の全部**を見る（登録作業は無い）
+- `<mmj-map cooperative>` を足した。1 ページに何枚も置くと、
+  **指でなぞっても地図が動くだけでページが送れなくなる**ため
+
 ## 未完了の作業
 
 - 日本語グリフの方針（`localIdeographFontFamily` で逃げている・未決）

@@ -86,6 +86,8 @@ export class MmjMap extends HTMLElement {
         // 押し出しは傾けて初めて見える。`3d` なのに真上から見た絵にならないよう、
         // pitch の指定が無いときだけ既定で倒す。**角度は仮置き**（DESIGN.md に規定が無い）
         pitch: parsePitch(this.getAttribute("pitch"), wants3d ? 45 : 0),
+        // 1 ページに何枚も置くときに付ける。**指でページを送れなくなるのを防ぐ**
+        cooperative: this.hasAttribute("cooperative"),
       }),
     );
 

@@ -1,5 +1,5 @@
 /*
- * デモ 4 枚で共有する画面の枠。**地図のスタイルではない。**
+ * デモ 6 枚で共有する画面の枠。**地図のスタイルではない。**
  *
  * `DESIGN.md` §1 が「決めない」と書いている領域（デモサイトの装飾）なので、
  * ここは AI が決めてよい。**地図の配色には触らない。**
@@ -73,8 +73,8 @@ body {
 
 /* --- ページ間の行き来 --------------------------------------------------- */
 
-/* **4 枚が相互にリンクしていなかった。**公開サイトの訪問者は index しか辿れず、
- * 他の 3 枚があることを知る手段が無かった。 */
+/* **各ページが相互にリンクしていなかった。**公開サイトの訪問者は index しか辿れず、
+ * 他のページがあることを知る手段が無かった。 */
 .site-nav {
   display: flex;
   flex-wrap: wrap;
@@ -177,4 +177,69 @@ mmj-map,
 
 .picked[hidden] {
   display: none;
+}
+
+/* --- 配色を見くらべる（themes.html） -------------------------------------- */
+
+/* 全部を同時に出す。**並べないと比べられない。**
+ * 1 枚ずつ切り替える作りにすると、前の色を記憶で比べることになる。 */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* 枠線ではなく隙間の地色で区切る。線を引くと 1 枚ずつに額縁が付いて見える */
+  gap: 1px;
+  background: var(--line);
+  height: 100%;
+  min-height: 0;
+  /* 列が減ると行が増える。**1 枚が潰れるくらいなら縦に溢れさせて送る** */
+  grid-auto-rows: minmax(14rem, 1fr);
+  overflow-y: auto;
+}
+
+.theme-cell {
+  position: relative;
+  margin: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 名前は地図の上に重ねる。行を分けると、地図の高さが 4 枚バラバラになる */
+.theme-cell figcaption {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  z-index: 1;
+  display: grid;
+  gap: 0.1rem;
+  max-width: calc(100% - 4.5rem);
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  /* 下の地図は 4 枚とも色が違う。**どの色の上でも読めるよう、枠側は固定の暗色**
+   * （地図の色を借りると、light の上で白文字が消える） */
+  background: rgb(20 22 26 / 88%);
+  color: #d8dce1;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.theme-cell figcaption span {
+  color: var(--muted);
+}
+
+.theme-cell figcaption code {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* 横に 2 枚ずつ置くと、狭い画面では 1 枚が指の幅ほどになる */
+@media (max-width: 1100px) {
+  .theme-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .theme-grid {
+    grid-template-columns: 1fr;
+  }
 }

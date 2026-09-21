@@ -1,24 +1,27 @@
 /**
  * スタイルを検査する入口。
  *
- *   pnpm style:check                       # styles/modern-dark.json
+ *   pnpm style:check                       # styles/ の全部
  *   pnpm style:check -- styles/other.json
  *
  * **指摘があれば 1 で落ちる。**同じ判定が `test/modern-dark.test.ts` からも走るので、
  * CI は人が思い出さなくても止まる。
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadSnapshot } from "./basemap.js";
 import { checkStyle, describeFinding, type MapStyle } from "./style.js";
+import { STYLE_DIR, pickStyleFiles } from "./targets.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 function main(argv: readonly string[]): number {
   const targets = argv.filter((arg) => !arg.startsWith("--"));
-  const files = targets.length > 0 ? targets : ["styles/modern-dark.json"];
+  // 既定は styles/ の全部。**1 枚に固定すると、足した人が入れ忘れても CI が緑になる**
+  const files =
+    targets.length > 0 ? targets : pickStyleFiles(readdirSync(resolve(repoRoot, STYLE_DIR)));
 
   const snapshot = loadSnapshot();
   console.log(
