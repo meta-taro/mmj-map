@@ -4,8 +4,9 @@
  * 依存を足していない。**数えるためだけに geojson-vt / vector-tile を入れない**
  * （形式は固まっていて、読むだけなら短い）。
  *
- * 幾何は読まない。**この道具の目的は「何が何件あるか」**で、
- * 形を描くことではない（描くのは MapLibre の仕事）。
+ * 幾何も読む。**描くのは MapLibre の仕事**のままで、ここは中の座標を見るためのもの。
+ * 「何が何件あるか」だけでは、**デモに置く経路を実際の道の上に乗せられない**
+ * （2026-09-21・人の指摘「道を無視して、線がひかれているのがきになります」）。
  */
 import { gunzipSync } from "node:zlib";
 
@@ -15,6 +16,14 @@ export interface Feature {
   readonly props: Record<string, PropertyValue>;
   /** 1=Point, 2=LineString, 3=Polygon */
   readonly type: number;
+  /**
+   * タイル座標の線／環。`[[ [x,y], [x,y], … ], …]`。
+   * 0 〜 `Layer.extent` の範囲で、**経度緯度ではない**（変換は呼ぶ側）。
+   *
+   * **幾何が無ければ空配列。**読めないコマンドが来たらそこで止め、
+   * 読めたぶんだけ返す（投げない）。**無いことと読めないことを混ぜない。**
+   */
+  readonly geometry: number[][][];
 }
 
 export interface Layer {
@@ -98,12 +107,77 @@ function decodeValue(buf: Buffer): PropertyValue | null {
   return null;
 }
 
+/**
+ * 幾何を読む。**投げない。**
+ *
+ * コマンドは `(count << 3) | id` の 1 語で、`id` は MoveTo=1 / LineTo=2 / ClosePath=7。
+ * パラメータは前の点からの差分を zigzag で符号化したもの。
+ *
+ * **MoveTo が来るたびに別の線として区切る。**1 つの地物に線が何本も入ることがあり、
+ * 繋げてしまうと**通っていない場所を通る線**ができる。
+ *
+ * 知らないコマンドではそこで止めて、読めたぶんを返す。
+ * 既存のテストは幾何を `0x0c`（存在しないコマンド）で埋めており、
+ * **そこで投げると「幾何を読まない」時代の検査が全部落ちる。**
+ */
+function decodeGeometry(buf: Buffer): number[][][] {
+  const parts: number[][][] = [];
+  /** いま組み立て中の線 */
+  let current: number[][] = [];
+  let x = 0;
+  let y = 0;
+
+  const c: Cursor = { buf, pos: 0 };
+  while (c.pos < buf.length) {
+    const header = varint(c);
+    const id = header & 0x7;
+    const count = header >> 3;
+
+    if (id === 7) {
+      // ClosePath。**座標は増えない**（環を閉じるだけ）
+      continue;
+    }
+    if (id !== 1 && id !== 2) break; // 知らないコマンド。読めたぶんで止める
+    if (count === 0) continue;
+
+    for (let i = 0; i < count; i += 1) {
+      if (c.pos >= buf.length) return flush(parts, current);
+      const dx = zigzag(varint(c));
+      if (c.pos >= buf.length) return flush(parts, current);
+      const dy = zigzag(varint(c));
+      x += dx;
+      y += dy;
+
+      // MoveTo は新しい線の始まり。**前の線をここで閉じる**
+      if (id === 1) {
+        if (current.length > 0) parts.push(current);
+        current = [];
+      }
+      current.push([x, y]);
+    }
+  }
+  return flush(parts, current);
+}
+
+function flush(parts: number[][][], current: number[][]): number[][][] {
+  if (current.length > 0) parts.push(current);
+  return parts;
+}
+
+/** zigzag を元の符号付き整数に戻す */
+function zigzag(raw: number): number {
+  return (raw >>> 1) ^ -(raw & 1);
+}
+
 function decodeFeature(buf: Buffer, keys: string[], values: PropertyValue[]): Feature {
   const props: Record<string, PropertyValue> = {};
   let type = 0;
+  let geometry: number[][][] = [];
 
   for (const { tag, wire, c } of fields(buf)) {
-    if (tag === 2 && wire === 2) {
+    if (tag === 4 && wire === 2) {
+      geometry = decodeGeometry(bytes(c));
+    } else if (tag === 2 && wire === 2) {
       const pairs = bytes(c);
       const pc: Cursor = { buf: pairs, pos: 0 };
       while (pc.pos < pairs.length) {
@@ -114,7 +188,7 @@ function decodeFeature(buf: Buffer, keys: string[], values: PropertyValue[]): Fe
     } else if (tag === 3) type = varint(c);
     else skip(c, wire);
   }
-  return { props, type };
+  return { props, type, geometry };
 }
 
 function decodeLayer(buf: Buffer): Layer {
