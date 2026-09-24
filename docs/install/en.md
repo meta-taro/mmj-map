@@ -26,7 +26,7 @@ A map needs three things. MMJ gives you the last two and shows you how to make t
 
 ```bash
 gh release download demo-tiles-20260915 \
-  --repo meta-taro/modern-map-japan \
+  --repo meta-taro/mmj-map \
   --pattern demo.pmtiles --output tiles/demo.pmtiles
 ```
 
@@ -39,8 +39,8 @@ Cut any area of the planet out of a [Protomaps](https://protomaps.com/) daily bu
 You need [go-pmtiles](https://github.com/protomaps/go-pmtiles) and disk space.
 
 ```bash
-git clone https://github.com/meta-taro/modern-map-japan
-cd modern-map-japan && pnpm install
+git clone https://github.com/meta-taro/mmj-map
+cd mmj-map && pnpm install
 pnpm tiles:extract -- demo        # or japan / kansai, or add your own region
 ```
 
@@ -165,4 +165,4 @@ Read [`LICENSES.md`](../../LICENSES.md) before you ship.
 - [`docs/elements/README.md`](../elements/README.md) — every attribute of every component
 - [`docs/styles/README.md`](../styles/README.md) — how the styles are checked against the tiles
 - [`docs/serving/README.md`](../serving/README.md) — hosting and HTTP Range
-- Live demo: https://meta-taro.github.io/modern-map-japan/
+- Live demo: https://meta-taro.github.io/mmj-map/

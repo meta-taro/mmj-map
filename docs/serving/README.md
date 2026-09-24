@@ -21,7 +21,7 @@
 ### 1. バケツを作って、タイルを上げる（人）
 
 ```bash
-wrangler r2 bucket create modern-map-japan-tiles
+wrangler r2 bucket create mmj-map-tiles
 ```
 
 **大きいファイルは wrangler の単発 put では上がりません**（版によって上限が違います）。

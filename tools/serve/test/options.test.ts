@@ -31,12 +31,12 @@ describe("readBase", () => {
   });
 
   it("--base= を読む", () => {
-    expect(readBase(["--base=/modern-map-japan"])).toBe("/modern-map-japan");
+    expect(readBase(["--base=/mmj-map"])).toBe("/mmj-map");
   });
 
   it("先頭の / を補い、末尾の / を落とす（`/x/` と `/x` で挙動が変わらないように）", () => {
-    expect(readBase(["--base=modern-map-japan"])).toBe("/modern-map-japan");
-    expect(readBase(["--base=/modern-map-japan/"])).toBe("/modern-map-japan");
+    expect(readBase(["--base=mmj-map"])).toBe("/mmj-map");
+    expect(readBase(["--base=/mmj-map/"])).toBe("/mmj-map");
   });
 
   it("`--base=/` は「base 無し」と同じ", () => {

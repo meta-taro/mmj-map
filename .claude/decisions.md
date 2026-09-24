@@ -613,6 +613,31 @@
 
 ---
 
+## D-025 リポジトリ名を `mmj-map` にする（2026-09-24）
+
+- **背景**: D-018 で製品名を MMJ に、npm の scope を `@mmj-map` に決めたが、
+  **リポジトリ名だけ `modern-map-japan` のまま残っていた**。D-018 では
+  「公開済みで URL・Pages・CI が全部そこを指しているので動かさない」と書いていた。
+- **覆した理由**: 名前が 3 つに割れていた（製品 MMJ / パッケージ `@mmj-map` /
+  リポジトリ `modern-map-japan`）。加えて **`japan` が実態と合っていない**——
+  台北・上海・ホーチミン・シンガポールで動くことを 2026-09-21 に実測済みで、
+  ラベルの言語も属性で切り替わる（D-024）。**名前が製品より狭い。**
+- **決めたこと**: `meta-taro/modern-map-japan` → **`meta-taro/mmj-map`**。
+  - 公開 URL は <https://meta-taro.github.io/mmj-map/>。
+    **旧 URL は GitHub がリダイレクトする**ので、外から来た人は迷わない
+  - `git remote` / README 2 枚 / PRD / `docs/install` 5 言語 / デモ 9 枚 /
+    `packages/elements/package.json`（repository・homepage・bugs）/
+    `tools/serve` の `--base` の例と、それを縛るテストを揃えた
+  - R2 バケット名も `mmj-map-tiles` へ。**まだ作成していない**ので実資源は壊れない
+- **触らなかったもの**:
+  - `docs/origin/` — **受領した原案の原文**。当時の名前のまま残す
+  - `.claude/proposals/` と、決定・状況の**履歴として名前に言及している行**。
+    後から書き換えると、**そのとき何を前提に書いたかが読めなくなる**（§24 と同じ理由）
+  - **`DESIGN.md`** — AI が手を入れない文書（CLAUDE.md の特例表）。
+    1 行目が `# DESIGN.md — modern-map-japan` のまま残っている。**人が直す**
+- **止めるべき条件**: 外部から旧 URL を直に叩いている経路があり、
+  リダイレクトでは足りないと分かったとき。**Settings から元に戻せる。**
+
 ## 未決
 
 - **npm パッケージの分け方**（スタイル / 部品 / タイル取得を別パッケージにするか）。
