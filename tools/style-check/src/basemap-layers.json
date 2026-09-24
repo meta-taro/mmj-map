@@ -5,10 +5,10 @@
     "スタイルが参照する source-layer が、ここに無ければ CI が落ちる（ベースルール §23）。"
   ],
   "source": {
-    "key": "20260915.pmtiles",
+    "key": "20260923.pmtiles",
     "basemapVersion": "4.15.2",
-    "measuredFrom": "dist/tiles/kansai.pmtiles",
-    "measuredAt": "2026-09-16",
+    "measuredFrom": "dist/tiles/newyork.pmtiles",
+    "measuredAt": "2026-09-24",
     "tilesetVersion": "4.15.2"
   },
   "vectorLayers": [

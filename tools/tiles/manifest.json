@@ -9,24 +9,24 @@
     "provider": "protomaps-daily-planet",
     "buildsIndexUrl": "https://build-metadata.protomaps.dev/builds.json",
     "buildBaseUrl": "https://build.protomaps.com/",
-    "key": "20260915.pmtiles",
+    "key": "20260923.pmtiles",
     "basemapVersion": "4.15.2",
-    "size": 138031484053,
-    "md5sum": "gKc5TWbhCwYIeUrIcDReAQ==",
-    "b3sum": "ba618b3b5f301cc8b4142736932c798b0444860bb2caa67cc79a7b4bc5e35357",
-    "uploaded": "2026-09-15T09:02:55.277Z",
+    "size": 138242597731,
+    "uploaded": "2026-09-23T09:09:59.501Z",
+    "md5sum": "9iVTJgA4d/gCsoXbXqKOmA==",
+    "b3sum": "5c0a4437f5e7335bce83027023d06f1de3c62902feb142152d3fdcdd5fd6d2a0",
     "knownGood": [
       {
-        "key": "20260914.pmtiles",
+        "key": "20260922.pmtiles",
         "basemapVersion": "4.15.2",
-        "size": 138013553034,
-        "uploaded": "2026-09-14T08:57:17.654Z"
+        "size": 138217796350,
+        "uploaded": "2026-09-22T09:11:55.667Z"
       },
       {
-        "key": "20260913.pmtiles",
+        "key": "20260921.pmtiles",
         "basemapVersion": "4.15.2",
-        "size": 137999059691,
-        "uploaded": "2026-09-13T08:54:28.274Z"
+        "size": 138203225035,
+        "uploaded": "2026-09-21T09:08:31.176Z"
       }
     ]
   },
@@ -111,6 +111,39 @@
       "maxzoom": 15,
       "output": "singapore.pmtiles",
       "note": "シンガポール全域。ラベルは name:en で足りる（公用語に英語が入る）。"
+    },
+    "hanoi": {
+      "bbox": [
+        105.75,
+        20.93,
+        105.92,
+        21.09
+      ],
+      "maxzoom": 15,
+      "output": "hanoi.pmtiles",
+      "note": "ハノイ中心部（ホアンキエム湖〜西湖〜旧市街）。ラベルは name:vi。導入手順の 3 例のうち『日本の外』を受け持つ。"
+    },
+    "newyork": {
+      "bbox": [
+        -74.03,
+        40.65,
+        -73.9,
+        40.83
+      ],
+      "maxzoom": 15,
+      "output": "newyork.pmtiles",
+      "note": "マンハッタンとブルックリン北部。**経度が負の例**でもある（bbox の並びを間違えると、ここで気づく）。導入手順の 3 例のうち『アジアの外・ラテン文字』を受け持つ。"
+    },
+    "seoul": {
+      "bbox": [
+        126.76,
+        37.42,
+        127.18,
+        37.7
+      ],
+      "maxzoom": 15,
+      "output": "seoul.pmtiles",
+      "note": "ソウル特別市のおおよそ。ラベルは name:ko。**導入手順では表に 1 行だけ載せる**（手順の本文で 7 つ並べると、読む人が『7 つ覚える』と受け取るため）。"
     }
   },
   "attribution": "© OpenStreetMap contributors"

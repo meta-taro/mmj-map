@@ -19,11 +19,25 @@
 
 Một bản đồ cần ba thứ. MMJ cung cấp hai thứ sau, và chỉ cho bạn cách tạo thứ đầu tiên.
 
+**1. Tiles — nội dung bản đồ.** Đường sá, sông ngòi, công trình và địa danh của một vùng,
+đóng gói trong **một tệp duy nhất** mà bạn đặt lên máy chủ của mình như một tấm ảnh hay
+một tệp PDF. Phần mở rộng là `.pmtiles`. Trình duyệt chỉ lấy vài KB cần thiết bên trong
+tệp đó bằng một HTTP range request thông thường — đúng cơ chế cho phép bạn tua nhanh video.
+**Đây là thứ duy nhất bạn phải tự tạo**, vì nó phụ thuộc vào vùng đất mà trang của bạn nói
+tới. Một thành phố thường khoảng 10–60 MB.
+
+**2. Style — bản đồ trông như thế nào.** Một tệp JSON ghi rõ sông màu xanh nào, đường cao
+tốc dày bao nhiêu, địa danh hiện từ mức phóng to nào và cỡ chữ ra sao.
+**Cùng một bộ tiles, đổi style là thành một bản đồ khác hẳn.** Kho này có sẵn 6 bản.
+
+**3. Components — các thẻ HTML.** Tức là `<mmj-map>` và những thẻ đi kèm. Bạn viết một thẻ,
+trỏ tới hai tệp ở trên, và bản đồ hiện ra. Không cần bước build, không cần framework.
+
 | | Là gì | Lấy từ đâu |
 | --- | --- | --- |
-| 1 | **Tiles** — một tệp `.pmtiles` | Bạn tự cắt, hoặc tải tệp demo |
+| 1 | **Tiles** — một tệp `.pmtiles` | **Chỉ thứ này bạn tự tạo.** Cắt từ bản dựng hành tinh công khai, hoặc tải tệp demo |
 | 2 | **Style** — một tệp `.json` | Thư mục `styles/` trong kho này (6 bản) |
-| 3 | **Components** — ESM thuần, không cần build | `packages/elements/src/` |
+| 3 | **Components** — ESM thuần, không cần build | npm, hoặc sao chép `packages/elements/src/` |
 
 **Không cần chạy máy chủ nào.** Hosting tĩnh cộng với HTTP Range là toàn bộ câu chuyện.
 
@@ -49,8 +63,49 @@ và dung lượng đĩa.
 ```bash
 git clone https://github.com/meta-taro/mmj-map
 cd mmj-map && pnpm install
-pnpm tiles:extract -- demo        # hoặc japan / kansai, hoặc thêm vùng của riêng bạn
+pnpm tiles:extract -- hanoi       # tên vùng bất kỳ trong tools/tiles/manifest.json
 ```
+
+**Ba ví dụ thực tế.** Cả ba đều được cắt ngày 2026-09-24 từ cùng một bản dựng hành tinh,
+trên máy tính xách tay, **mỗi vùng mất chưa tới một phút**. Các con số là đo thật,
+không phải ước lượng.
+
+| Vùng | Lệnh | Dung lượng | Số lần Range | Nhãn |
+| --- | --- | --- | --- | --- |
+| **Osaka** | `pnpm tiles:extract -- demo` | 62.8 MB | — | mặc định (tiếng Nhật) |
+| **Hà Nội** | `pnpm tiles:extract -- hanoi` | **10.9 MB** | 45 | `lang="vi"` |
+| **New York** | `pnpm tiles:extract -- newyork` | **21.2 MB** | 41 | `lang="en"` |
+
+Osaka là tệp dùng cho bản demo và được cắt theo **đa giác chứ không phải hình chữ nhật**
+(toàn Nhật Bản ở mức thu nhỏ, chi tiết đường phố chỉ quanh trung tâm), để không vượt giới
+hạn kích thước tệp của GitHub Pages. Hà Nội và New York là hình chữ nhật đơn giản —
+**đây mới là dạng bạn thường viết**.
+
+`lang` là một thuộc tính trên thẻ, **không cần tệp tile hay style khác**:
+
+```html
+<mmj-map tiles="./tiles/hanoi.pmtiles" style-url="./styles/modern-dark.json"
+         center="105.8520,21.0285" zoom="13" lang="vi"></mmj-map>
+```
+
+**Không có nó thì dùng mặc định, và mặc định ưu tiên tên tiếng Nhật** — Hà Nội sẽ hiện là
+「ハノイ」. Đo trong chính bản cắt Hà Nội (một tile mức z10): `name:en` 45, `name:ko` 29,
+`name:zh-Hant` 28, `name:zh-Hans` 28, **`name:vi` 27**.
+New York thì ngược lại — các đối tượng vốn đã có `name` bằng chữ Latinh, nên `lang="en"`
+chủ yếu để **chặn vài bản dịch tiếng Nhật lọt vào**.
+
+**Bốn vùng nữa đã được định nghĩa sẵn, dùng cùng một lệnh:**
+
+| Vùng | Lệnh | `lang` |
+| --- | --- | --- |
+| Seoul | `pnpm tiles:extract -- seoul` | `ko` |
+| Đài Bắc | `pnpm tiles:extract -- taipei` | `zh-Hant` |
+| Thượng Hải | `pnpm tiles:extract -- shanghai` | `zh-Hans` |
+| Singapore | `pnpm tiles:extract -- singapore` | `en` |
+
+**Vùng của riêng bạn chỉ là một mục trong `tools/tiles/manifest.json`** — một cái tên,
+một hình chữ nhật theo thứ tự `[tây, nam, đông, bắc]`, và một mức phóng to tối đa.
+Không còn gì khác.
 
 Hướng dẫn đầy đủ ở [`docs/tiles/README.md`](../tiles/README.md) (tiếng Nhật).
 **Chỉ dùng dữ liệu công khai và công cụ công khai** — không tài khoản, không khoá, không hạn mức.
