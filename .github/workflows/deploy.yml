@@ -108,9 +108,28 @@ jobs:
         uses: actions/deploy-pages@v4
 
       # 出したら実物を見る。デプロイ成功 = 中身が正しい、ではない。
+      #
+      # **1 回で判定しない。** `deploy-pages` が返った直後は CDN がまだ温まっておらず、
+      # Pages が 503 を返すことがある（実測: 2026-09-21 の acd10b6 が `-> 503` 一発で
+      # 落ちた。中身は正しく出ていたのに deploy だけ赤かった）。
+      # **検査を外して通すのではなく、通るまで待つ**（§20）。
       - name: Verify published page
         run: |
           url="${{ steps.deployment.outputs.page_url }}"
-          code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
-          echo "GET $url -> $code"
-          test "$code" = "200"
+          code=""
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+            echo "[$i/10] GET $url -> $code"
+            if [ "$code" = "200" ]; then
+              # 200 だけでは足りない。**地図の部品が乗っているところまで見る**
+              if curl -s "$url" | grep -q '<mmj-map'; then
+                echo "OK: <mmj-map> found"
+                exit 0
+              fi
+              echo "::error::200 だが <mmj-map> が無い（別の中身が配信されている）"
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "::error::公開ページが 200 を返さなかった（最後の応答: $code）"
+          exit 1
