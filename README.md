@@ -19,11 +19,23 @@
 
 ## Why
 
-Most Japanese web maps look the same, because most of them are the same map. The
-alternatives each have a catch:
+**There are two complaints about maps, and they point in different directions.**
 
-- **Commercial map APIs** need a key, bill per view, and put your budget on a graph that
-  only goes up as your site succeeds.
+- **Commercial map APIs need a key.** They are not free to use freely. You are billed per
+  view, and what you may put on the map is decided by someone else's terms.
+- **The OpenStreetMap map is not good to look at as it comes.** The data is free. **The
+  default appearance is not.**
+
+**And almost nobody needs the whole planet.** You need the area your site is about, and
+**that you can hold yourself** — 10–60 MB for a city, under a minute to cut.
+**Because you are not serving the world, you do not need a server.**
+
+MMJ solves those three at once. **We borrow the data and own the presentation.**
+
+The remaining alternatives each have a catch:
+
+- **Commercial map APIs** bill per view, and put your budget on a graph that only goes up
+  as your site succeeds.
 - **The OpenStreetMap tile server** is not an option: its
   [Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/) rules out
   commercial and heavy-traffic use. Plenty of sites use it anyway. That is a liability,
@@ -32,6 +44,11 @@ alternatives each have a catch:
 
 So the map you can actually ship ends up being someone else's map, with someone else's
 look, on someone else's meter.
+
+> **Saying the default look is not good is not a complaint about the commons.**
+> This map stands on the people and organisations who survey, fund and edit
+> OpenStreetMap. **[`CREDITS.md`](CREDITS.md) names them.** Owning the presentation is
+> how we take that part on ourselves.
 
 ## What you skip
 
