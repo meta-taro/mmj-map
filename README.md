@@ -7,9 +7,15 @@
 > not**: the old demo URL is a hard 404 (measured 2026-09-24). The demo now lives at
 > <https://meta-taro.github.io/mmj-map/> — update any link you have shared.
 
-> **Status: early.** The design is written down and the approach has been proven in a
-> production site, but this repository is still being assembled. See
-> [`.claude/roadmap.md`](.claude/roadmap.md) for what happens first.
+> **Status: usable, early.** The components are on npm as
+> [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements), the demo is live
+> at <https://meta-taro.github.io/mmj-map/> (nine pages, all working), and the install
+> guide exists in five languages.
+>
+> **What is not done:** there are no hosted tiles — you cut your own, which is the point;
+> there are no Japanese glyphs, so CJK labels fall back to the viewer's font and the
+> letterforms change per machine; and the six styles are **proposals**, not an approved
+> palette. See [`.claude/roadmap.md`](.claude/roadmap.md).
 
 ## Why
 

@@ -45,8 +45,38 @@ pin を変えるとき（**手で JSON を書き換えないこと**）。
 
 ```bash
 pnpm tiles:resolve -- --update=latest      # 上流の最新へ
-pnpm tiles:resolve -- --update=20260915.pmtiles
+pnpm tiles:resolve -- --update=20260923.pmtiles
 ```
+
+### pin は上流から消えます
+
+**日次ビルドは古いものから削除されます。**実測（2026-09-24）では、
+**pin してから 9 日で消えました**。消えると切り出しが落ちます。
+
+```
+pmtiles extract https://build.protomaps.com/20260915.pmtiles ...
+Failed to create range reader, HTTP error: 404
+```
+
+`pnpm tiles:resolve` も同じことを検出して止まります。**自動では乗り換えません**（D-010）。
+
+```
+pin している 20260915.pmtiles が上流の索引にありません。
+  警告 20260914.pmtiles は上流の索引から消えています。戻れません。
+```
+
+**このとき戻り先も一緒に消えていることがあります**（実測ではそうでした）。
+その場合は上げるしかありません。**上げる前に `basemapVersion` を見ること。**
+同じなら、スタイルは高い確率で無傷です。
+
+```bash
+pnpm tiles:resolve -- --update=<上流にある新しいキー>
+pnpm --filter @mmj-map/style-check run snapshot -- dist/tiles/<新しく切ったもの>.pmtiles
+pnpm style:check     # vectorLayers に差が無ければ、スタイルは無傷
+```
+
+2026-09-24 に `20260915` → `20260923` へ上げたときは、**`basemap` が 4.15.2 のまま同じ**で、
+スナップショットの差分は**出どころの 3 行だけ**、`vectorLayers` は 1 バイトも変わりませんでした。
 
 ## 3. 切り出す
 
@@ -107,9 +137,10 @@ GET http://localhost:8787/tiles/kansai.pmtiles  Range: bytes=0-15
 
 - **グリフ（日本語）。** Protomaps が配っているフォントは Latin のみで、
   CJK のフォントスタックがありません。**1 範囲でも 404 になると地図全体が真っ白になります。**
-- **配信先。** 「すぐ試せる配信先」を用意するかどうかは未決です（`.claude/decisions.md` 未決）。
-- **画面を人が見ること。** 手元で `pnpm serve` すればデモは描けますが、
-  **まだ誰もブラウザで見ていません**（§29）。テストが通ることと、地図が読めることは別です。
+- **全国ぶんの配信先。** R2 + Worker のコードは出来ていますが、**まだデプロイしていません**。
+  **デモを出すだけなら要りません** — 大阪の 62.8 MB は GitHub Pages に直接載っていて、
+  Release `demo-tiles-20260915` からも落とせます。R2 が要るのは、
+  Pages の上限（1 ファイル 100 MB / サイト 1 GB）を越える範囲を配るときです。
 
 スタイル JSON は `styles/modern-dark.json` にあります。検査は `docs/styles/README.md`。
 
@@ -175,20 +206,21 @@ pin は 1 本だけです（D-010）。**同じコマンドが日によって違
 ```bash
 # いまの pin と戻り先を見る
 pnpm tiles:resolve
-#=> pin:      20260915.pmtiles（basemap 4.15.2）
-#   上流最新: 20260916.pmtiles（basemap 4.15.2）
-#   戻り先:   20260914.pmtiles, 20260913.pmtiles
+#=> pin:      20260923.pmtiles（basemap 4.15.2）
+#   上流最新: 20260923.pmtiles（basemap 4.15.2）
+#   戻り先:   20260922.pmtiles, 20260921.pmtiles
+#   pin と上流は一致しています。
 
 # 1 つ前の版で切り出す（出力名に版が入る）
 pnpm tiles:extract -- japan --build=previous
-#=> dist/tiles/japan.20260914.pmtiles
+#=> dist/tiles/japan.20260922.pmtiles
 
 # 2 つ前 / キー直指定
 pnpm tiles:extract -- japan --build=previous-2
-pnpm tiles:extract -- japan --build=20260913
+pnpm tiles:extract -- japan --build=20260921
 
 # 戻り先を足す（上流の索引と突き合わせてから書く・3 本まで）
-pnpm tiles:resolve --remember=20260912
+pnpm tiles:resolve -- --remember=20260922.pmtiles
 ```
 
 **manifest に書いていない版は使えません**（引数で任意の URL を取りに行かせないため・§21）。
@@ -196,24 +228,39 @@ pnpm tiles:resolve --remember=20260912
 ```
 $ pnpm tiles:extract -- kansai --build=20200101
 manifest が知らない版です: 20200101
-使えるのは: 20260915.pmtiles, 20260914.pmtiles, 20260913.pmtiles
-足すなら `pnpm tiles:resolve --remember=<キー>`
+使えるのは: 20260923.pmtiles, 20260922.pmtiles, 20260921.pmtiles
+足すなら `pnpm tiles:resolve -- --remember=<キー>`
 ```
 
 ### 出力名に版が入ります
 
-**pin 以外で切ったら、`japan.20260914.pmtiles` になります。**
+**pin 以外で切ったら、`japan.20260922.pmtiles` になります。**
 同じ名前へ上書きすると、20 分かけて作った新しい方を古い版で潰す事故が起きるためです。
 配信へ出すときは rename してください。
 
 ### 戻り先が上流から消えたら、resolve が言います
 
 ```
-戻り先: 20260914.pmtiles, 20260913.pmtiles
-  警告 20260913.pmtiles は上流の索引から消えています。**戻れません。**
+戻り先: 20260922.pmtiles, 20260921.pmtiles
+  警告 20260914.pmtiles は上流の索引から消えています。戻れません。
 ```
 
-上流は日次ビルドを **61 版・約 2 か月ぶん**保持しています（2026-09-17 実測）。
+### 上流が何を残しているか（2026-09-24 実測）
+
+索引にあるのは **62 版**ですが、**日次で残っているのは直近 7 版だけ**です。
+
+| | |
+|---|---|
+| 最古 | `20230918`（3 年前） |
+| 最新 | `20260924` |
+| **連続している範囲** | **`20260918`〜`20260924` の 7 日ぶんだけ** |
+| その前 | 飛び飛び（`20260811` → `20260722` → `20260720` → `20260709` …） |
+
+**つまり pin は 1 週間ほどで日次の窓から落ちます。**実際、9 日前の `20260915` は
+索引から消えていました。**戻り先を 3 本持っていても、同じ週のものなら一緒に消えます。**
+
+**以前ここには「61 版・約 2 か月ぶん保持」と書いてありました。外れています。**
+件数だけ見て間隔を見ていなかったのが原因です。
 
 ### 分かっていること
 
