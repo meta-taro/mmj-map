@@ -623,8 +623,16 @@
   台北・上海・ホーチミン・シンガポールで動くことを 2026-09-21 に実測済みで、
   ラベルの言語も属性で切り替わる（D-024）。**名前が製品より狭い。**
 - **決めたこと**: `meta-taro/modern-map-japan` → **`meta-taro/mmj-map`**。
-  - 公開 URL は <https://meta-taro.github.io/mmj-map/>。
-    **旧 URL は GitHub がリダイレクトする**ので、外から来た人は迷わない
+  - 公開 URL は <https://meta-taro.github.io/mmj-map/>
+  - **リダイレクトは `github.com` だけ。GitHub Pages はしない**（2026-09-24 実測）:
+
+    | URL | 応答 |
+    |---|---|
+    | `github.com/meta-taro/modern-map-japan` | **301** → `/mmj-map` |
+    | `meta-taro.github.io/modern-map-japan/` | **404** |
+
+    **改名の前に「旧 URL はリダイレクトされる」と書いたが、半分しか当たっていなかった。**
+    デモの URL を外へ渡していた場合は、**貼り替えないと切れる**
   - `git remote` / README 2 枚 / PRD / `docs/install` 5 言語 / デモ 9 枚 /
     `packages/elements/package.json`（repository・homepage・bugs）/
     `tools/serve` の `--base` の例と、それを縛るテストを揃えた
