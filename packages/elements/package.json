@@ -1,6 +1,6 @@
 {
   "name": "@mmj-map/elements",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "HTML だけで地図を置ける Web Components（ビルド不要・素の ESM）",
   "license": "MIT",
   "type": "module",
