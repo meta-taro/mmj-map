@@ -12,13 +12,29 @@
 
 A map needs three things. MMJ gives you the last two and shows you how to make the first.
 
+**1. Tiles — the map data.** Roads, rivers, buildings and place names for one area of the
+world, packed into **a single file** that you put on your web server like a photo or a PDF.
+Ours are `.pmtiles`. A browser pulls only the few kilobytes it needs out of that file using
+an ordinary HTTP range request — the same mechanism that lets you skip ahead in a video.
+**This is the one piece you have to produce yourself**, because it is specific to the area
+your site is about. A city is typically 10–60 MB.
+
+**2. A style — how the map should look.** A JSON file saying rivers are this blue, motorways
+are that thick, place names use this size at this zoom. **The same tiles look completely
+different under a different style.** Six are in this repository; pick one.
+
+**3. The components — the HTML tags.** `<mmj-map>` and friends. You write a tag, point it at
+your tile file and your style file, and a map appears. No build step, no framework.
+
 | | What | Where it comes from |
 | --- | --- | --- |
-| 1 | **Tiles** — one `.pmtiles` file | You build it, or you take the demo file |
+| 1 | **Tiles** — one `.pmtiles` file | **You make this.** Cut it from a public planet build, or take our demo file |
 | 2 | **A style** — one `.json` file | `styles/` in this repository (6 of them) |
-| 3 | **The components** — plain ESM, no build step | `packages/elements/src/` |
+| 3 | **The components** — plain ESM, no build step | npm, or copy `packages/elements/src/` |
 
 **There is no server to run.** Static hosting plus HTTP Range requests is the whole thing.
+If your site is already on GitHub Pages, Netlify, S3 or plain nginx, you are set — they all
+serve range requests already.
 
 ## 1. Get tiles
 
@@ -41,8 +57,47 @@ You need [go-pmtiles](https://github.com/protomaps/go-pmtiles) and disk space.
 ```bash
 git clone https://github.com/meta-taro/mmj-map
 cd mmj-map && pnpm install
-pnpm tiles:extract -- demo        # or japan / kansai, or add your own region
+pnpm tiles:extract -- hanoi       # any region name from tools/tiles/manifest.json
 ```
+
+**Three worked examples.** All three were cut on 2026-09-24 from the same planet build,
+on a laptop, in well under a minute each. The numbers are measured, not estimated.
+
+| Region | Command | Size | Range requests | Labels |
+| --- | --- | --- | --- | --- |
+| **Osaka** | `pnpm tiles:extract -- demo` | 62.8 MB | — | default (Japanese) |
+| **Hanoi** | `pnpm tiles:extract -- hanoi` | **10.9 MB** | 45 | `lang="vi"` |
+| **New York** | `pnpm tiles:extract -- newyork` | **21.2 MB** | 41 | `lang="en"` |
+
+Osaka is the demo file, and its region is a polygon rather than a box — nationwide
+overview at low zoom plus street detail only around the city, so it stays under the
+GitHub Pages file limit. Hanoi and New York are plain boxes, which is what you will
+normally write.
+
+`lang` is an attribute on the tag, not a different tile file or a different style:
+
+```html
+<mmj-map tiles="./tiles/hanoi.pmtiles" style-url="./styles/modern-dark.json"
+         center="105.8520,21.0285" zoom="13" lang="vi"></mmj-map>
+```
+
+**Without it you get our default, which prefers Japanese names** and will label Hanoi
+「ハノイ」 to a Vietnamese reader. Measured in the Hanoi extract (one zoom-10 tile):
+`name:en` 45, `name:ko` 29, `name:zh-Hant` 28, `name:zh-Hans` 28, **`name:vi` 27**.
+New York is the opposite case — its features already carry Latin `name` values, so
+`lang="en"` mainly stops the handful of Japanese translations from showing through.
+
+Four more regions are already defined, and take the same command:
+
+| Region | Command | `lang` |
+| --- | --- | --- |
+| Seoul | `pnpm tiles:extract -- seoul` | `ko` |
+| Taipei | `pnpm tiles:extract -- taipei` | `zh-Hant` |
+| Shanghai | `pnpm tiles:extract -- shanghai` | `zh-Hans` |
+| Singapore | `pnpm tiles:extract -- singapore` | `en` |
+
+**Your own area is one entry in `tools/tiles/manifest.json`** — a name, a bounding box in
+`[west, south, east, north]` order, and a maximum zoom. Nothing else.
 
 The full walkthrough is in [`docs/tiles/README.md`](../tiles/README.md) (Japanese).
 **Public data and public tools only** — no account, no key, no quota.

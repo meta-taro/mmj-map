@@ -19,11 +19,23 @@
 
 一張地圖需要三樣東西。MMJ 提供後兩樣，並告訴你第一樣怎麼做。
 
+**1. 圖磚 — 地圖的內容。** 某一塊地區的道路、河川、建築與地名，裝進**一個檔案**，
+像放照片或 PDF 一樣放到自己的伺服器上。副檔名是 `.pmtiles`，瀏覽器只會用一般的
+HTTP 範圍請求（和影片快轉所用的機制相同）**取出其中需要的那幾 KB**。
+**只有這一樣要你自己準備**，因為它隨著網站涵蓋的地區而不同。一座城市大約 10〜60 MB。
+
+**2. 樣式 — 地圖的長相。** 一個 JSON 檔，寫明河川是哪種藍、高速公路多粗、
+地名從哪個縮放層級開始用多大。**同樣的圖磚換一個樣式，看起來就是另一張地圖。**
+本儲存庫裡有 6 種，挑一種即可。
+
+**3. 元件 — HTML 標籤。** 也就是 `<mmj-map>` 等等。寫一個標籤，指向上面兩個檔案，
+地圖就出現了。不需要打包工具，也不需要框架。
+
 | | 是什麼 | 從哪裡來 |
 | --- | --- | --- |
-| 1 | **圖磚** — 一個 `.pmtiles` 檔 | 自己切出來，或下載示範檔 |
+| 1 | **圖磚** — 一個 `.pmtiles` 檔 | **只有這個要自己做。**從公開的全球建置切出，或下載示範檔 |
 | 2 | **樣式** — 一個 `.json` 檔 | 本儲存庫的 `styles/`（共 6 種） |
-| 3 | **元件** — 純 ESM，不需打包 | `packages/elements/src/` |
+| 3 | **元件** — 純 ESM，不需打包 | npm，或複製 `packages/elements/src/` |
 
 **不需要架伺服器。**靜態託管加上 HTTP Range 就是全部。
 
@@ -48,8 +60,43 @@ gh release download demo-tiles-20260915 \
 ```bash
 git clone https://github.com/meta-taro/mmj-map
 cd mmj-map && pnpm install
-pnpm tiles:extract -- demo        # 也可以用 japan / kansai，或自己加一個區域
+pnpm tiles:extract -- hanoi       # tools/tiles/manifest.json 裡的任一區域名稱
 ```
+
+**三個實例。** 三者都在 2026-09-24 從同一個全球建置切出，在筆電上**各花不到一分鐘**。
+數字是實測值，不是估計值。
+
+| 區域 | 指令 | 大小 | Range 次數 | 標籤 |
+| --- | --- | --- | --- | --- |
+| **大阪** | `pnpm tiles:extract -- demo` | 62.8 MB | — | 預設（日文） |
+| **河內** | `pnpm tiles:extract -- hanoi` | **10.9 MB** | 45 | `lang="vi"` |
+| **紐約** | `pnpm tiles:extract -- newyork` | **21.2 MB** | 41 | `lang="en"` |
+
+大阪是示範用的檔案，**以多邊形而非方框切出**（低縮放層級涵蓋全日本，街道細節只在市中心），
+為的是不超過 GitHub Pages 的單檔上限。河內與紐約是單純的方框，**你通常會寫的是這種**。
+
+`lang` 是標籤上的屬性，**不需要另外準備圖磚或樣式**：
+
+```html
+<mmj-map tiles="./tiles/hanoi.pmtiles" style-url="./styles/modern-dark.json"
+         center="105.8520,21.0285" zoom="13" lang="vi"></mmj-map>
+```
+
+**不寫就會用預設值，而預設優先顯示日文名稱。**在河內的切出檔中實測（一張 z10 圖磚）:
+`name:en` 45、`name:ko` 29、`name:zh-Hant` 28、`name:zh-Hans` 28、**`name:vi` 27**。
+紐約則相反——地物本身就帶拉丁字母的 `name`，`lang="en"` 的作用是**擋掉少數日文翻譯**。
+
+**另外四個區域已經定義好，用同一個指令即可取得：**
+
+| 區域 | 指令 | `lang` |
+| --- | --- | --- |
+| 首爾 | `pnpm tiles:extract -- seoul` | `ko` |
+| 台北 | `pnpm tiles:extract -- taipei` | `zh-Hant` |
+| 上海 | `pnpm tiles:extract -- shanghai` | `zh-Hans` |
+| 新加坡 | `pnpm tiles:extract -- singapore` | `en` |
+
+**你自己的區域，只是 `tools/tiles/manifest.json` 裡的一個項目**——
+一個名稱、一個依 `[西, 南, 東, 北]` 排列的方框、一個最大縮放層級。沒有別的了。
 
 完整步驟在 [`docs/tiles/README.md`](../tiles/README.md)（日文）。
 **只用公開資料與公開工具**，不需要帳號、金鑰或配額。
