@@ -494,6 +494,20 @@ AI が手を入れない文書なので、**人が直す**（CLAUDE.md の特例
 `Verify published page` が 1 回だけ curl して、**Pages の CDN が温まる前の 503**を
 引いていた。最大 10 回・15 秒間隔で待ち、**`<mmj-map>` が本文にあることまで**見る。
 
+### 渡し方を 2 回間違えた（記録として残す）
+
+**対話が要るコマンドを `!` で渡して、2 回止めた。**`npm login` で ENTER 待ちになり、
+指摘を受けた直後に `npm publish` でも同じことをした。
+
+**`!` は叩いて終わるものだけ**（`git push` / `gh pr create`）。**人の入力か外部の承認を待つもの**
+（`npm login` / `npm publish` の 2FA / `gcloud auth login` / `ssh` / `git rebase -i`）は
+**別ターミナル**と書く。
+
+原因は ECC `git-workflow.md` に私が足した一文（「`gcloud auth login` のような対話が要る
+コマンドも同じ」）。**2026-09-24 に反対の内容へ直した。**
+
+**PowerShell では `npm` が `npm.ps1` を掴んで実行ポリシーで止まる。`npm.cmd` を使う。**
+
 ### 測り方を間違えた（記録として残す）
 
 公開先の確認で「**3 枚が壊れている**」と人へ報告したが、**誤りだった**。
@@ -579,9 +593,14 @@ Claude in Chrome のタブが `document.hidden` のとき MapLibre の描画ル�
    （publish の経路は CLI か CI の 2 つだけで、サイトに upload 画面は無い）。
    - **`npm login` は `!` で渡せない。**ENTER 待ちとブラウザ往復があるので、
      **別のターミナルで叩く**必要がある。**`npm.cmd login`**（`npm.ps1` は実行ポリシーで止まる）
-   - **`@mmj-map/elements` は 0.1.1 へ版を上げたが、publish は未**。
-     **コードは 0.1.0 と同一**で、直すのは改名で古くなった repository / homepage / bugs の
-     リンクだけ。publish は `npm.cmd publish ./packages/elements`（人が叩く）
+   - **`@mmj-map/elements@0.1.1` を公開した**（2026-09-24）。
+     **コードは 0.1.0 と同一**で、直したのは改名で古くなった repository / homepage / bugs の
+     リンクだけ。**publish は 2FA の承認を挟む**ので、`!` では渡せない（別ターミナル）:
+
+         npm.cmd publish ./packages/elements
+
+     ブラウザで `https://www.npmjs.com/auth/cli/...` を承認すると通る。
+     **レジストリへの反映に数分かかる**（直後は `npm view` が旧版を返す）
    - npmjs.com の常時警告: **2FA を回避するトークンは 2026-08 / 2027-01 で段階的に閉じる**。
      長く持たせるなら GitHub Actions の Trusted Publishing（OIDC）
 8. **切り出した 7 地域をどこから配るか**（2026-09-24 時点で**手元にあるだけ**）。
