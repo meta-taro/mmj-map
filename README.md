@@ -3,8 +3,9 @@
 **M**odern **M**ap — a map you own. No API key, no per-view billing, no tile server to run.
 
 > **Renamed to `mmj-map` on 2026-09-24** (D-025), matching the npm scope `@mmj-map`.
-> GitHub redirects the old `meta-taro/modern-map-japan` URLs, but please update your
-> bookmarks: the demo now lives at <https://meta-taro.github.io/mmj-map/>.
+> `github.com/meta-taro/modern-map-japan` still redirects (301), but **GitHub Pages does
+> not**: the old demo URL is a hard 404 (measured 2026-09-24). The demo now lives at
+> <https://meta-taro.github.io/mmj-map/> — update any link you have shared.
 
 > **Status: early.** The design is written down and the approach has been proven in a
 > production site, but this repository is still being assembled. See

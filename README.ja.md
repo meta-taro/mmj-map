@@ -3,8 +3,9 @@
 **自分の地図を持つ**ための道具。**API キーなし・従量課金なし・地図サーバーなし。**
 
 > **2026-09-24 に `mmj-map` へ改名しました**（D-025）。npm の scope `@mmj-map` と揃えるためです。
-> 古い `meta-taro/modern-map-japan` の URL は GitHub がリダイレクトしますが、
-> **デモの場所は <https://meta-taro.github.io/mmj-map/> に変わっています。**
+> `github.com/meta-taro/modern-map-japan` は 301 でリダイレクトされますが、
+> **GitHub Pages はリダイレクトしません。**旧デモ URL は 404 です（2026-09-24 実測）。
+> デモは <https://meta-taro.github.io/mmj-map/> です。**渡したリンクがあれば貼り替えてください。**
 
 > **状態: 初期。** 設計は書き終わっており、やり方は本番サイトで一度通していますが、
 > このリポジトリ自体はまだ組み立て中です。最初の一手は
