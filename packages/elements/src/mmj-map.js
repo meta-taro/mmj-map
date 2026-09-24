@@ -29,9 +29,42 @@ import { applyTilesUrl, buildMapOptions, parseLngLat, parsePitch, parseZoom, has
 import { addExtrusion } from "./extrude.js";
 import { accentPalette, applyPalette, readDeclaredAccent, readTheme } from "./palette.js";
 import { applyLanguage, readLanguage } from "./lang.js";
+import {
+  MISSING_COLORS,
+  buildMissingLayers,
+  coverageNotice,
+  isMissingTile,
+  missingTilesFeature,
+  readArchive,
+  readTileKey,
+  shouldNotice,
+} from "./coverage.js";
 
 /** pmtiles プロトコルは 1 回だけ登録する（2 度目は MapLibre が投げる） */
 let protocolRegistered = false;
+
+/**
+ * 書庫ごとの「取りに行って空だったタイル」（`"z/x/y"`）。
+ *
+ * **プロトコルの登録が 1 回きりなので、ここは module の持ち物になる。**
+ * 1 ページに書庫違いの地図が並ぶ（`themes.html` は 6 枚）ため、**書庫で分ける**。
+ * @type {Map<string, Set<string>>}
+ */
+const missingTiles = new Map();
+
+/**
+ * その書庫の記録を取り出す。無ければ作る。
+ * @param {string} archive
+ * @returns {Set<string>}
+ */
+function missingFor(archive) {
+  const found = missingTiles.get(archive);
+  if (found !== undefined) return found;
+  /** @type {Set<string>} */
+  const created = new Set();
+  missingTiles.set(archive, created);
+  return created;
+}
 
 export class MmjMap extends HTMLElement {
   /** @type {any} */
@@ -50,6 +83,13 @@ export class MmjMap extends HTMLElement {
    * @type {string | null}
    */
   accent = null;
+
+  /**
+   * 取りに行って空だったタイル（`"z/x/y"`）。**この書庫に入っていない場所そのもの。**
+   * 同じ書庫を使う地図とは記録を共有する。
+   * @type {Set<string>}
+   */
+  missing = new Set();
 
   connectedCallback() {
     this.#render().catch((error) => this.#fail(error));
@@ -74,7 +114,19 @@ export class MmjMap extends HTMLElement {
     }
 
     if (!protocolRegistered) {
-      maplibregl.addProtocol("pmtiles", new pmtiles.Protocol().tile);
+      const fetchTile = new pmtiles.Protocol().tile;
+      // **空で返ってきたタイルを覚える。**pmtiles は無いタイルに `{data: null}` を返す
+      // （配信中の実体で確認・`coverage.js` の頭に理由）。
+      // **ヘッダの bounds は当てにならない**ので、取りに行った結果で範囲を知る。
+      maplibregl.addProtocol("pmtiles", async (/** @type {any} */ params, /** @type {any} */ signal) => {
+        const result = await fetchTile(params, signal);
+        if (isMissingTile(result?.data)) {
+          const archive = readArchive(params?.url);
+          const key = readTileKey(params?.url);
+          if (archive !== null && key !== null) missingFor(archive).add(`${key.z}/${key.x}/${key.y}`);
+        }
+        return result;
+      });
       protocolRegistered = true;
     }
 
@@ -133,6 +185,19 @@ export class MmjMap extends HTMLElement {
     const pitch = parsePitch(this.getAttribute("pitch"), wants3d ? 45 : 0);
     if (pitch > 0 && this.hasAttribute("hash") && !hashOverridesPitch(location.hash)) {
       this.map.setPitch(pitch);
+    }
+
+    // **入っていないタイルの場所を、入っていないと見せる。**
+    // 1 つの `.pmtiles` は地球の一部しか持たないので、縁は例外ではなく通常の状態。
+    // それまでは外へ出ると地の色だけが残り、**壊れたのと見分けがつかなかった**。
+    // `no-coverage` で止められる（惑星ビルドを直接配っている人には要らない）。
+    if (!this.hasAttribute("no-coverage")) {
+      try {
+        this.#showMissing(tilesUrl);
+      } catch (error) {
+        // ここが失敗しても地図は出る。**握り潰さず、地図は殺さない**（§8）
+        console.error("[mmj-map] 欠けたタイルの表示を用意できませんでした", error);
+      }
     }
 
     this.map.addControl(new maplibregl.NavigationControl(), "top-right");
@@ -205,6 +270,78 @@ export class MmjMap extends HTMLElement {
       throw new Error(`lang="${lang}" がどのラベルにも当たりませんでした（text-field に name:… がありません）`);
     }
     return result.style;
+  }
+
+  /**
+   * **取りに行って空だったタイルの場所を塗り、外へ出たら一行を出す。**
+   *
+   * 見せ方は 2 つで、役割が違う:
+   *
+   *   1. **面**（常時）— どこに何も無いかが、そのまま見える
+   *   2. **一行**（何も描けていないときだけ）— 「壊れた」ではないと言葉で言う
+   *
+   * **宣言された範囲を使わない**理由は `coverage.js` の頭に書いてある。
+   * 記録は書庫ごとに module 側が持つので、**同じ書庫の地図とは共有される**
+   * （1 枚が端まで動かして覚えたことが、隣の地図でも効く）。
+   *
+   * @param {string} tilesUrl
+   */
+  #showMissing(tilesUrl) {
+    if (this.map === null) return;
+    this.missing = missingFor(tilesUrl);
+
+    const built = buildMissingLayers(this.theme ?? undefined);
+
+    const draw = () => {
+      if (this.map === null || !this.map.isStyleLoaded()) return;
+      if (this.map.getSource(built.sourceId)) return;
+      this.map.addSource(built.sourceId, { type: "geojson", data: missingTilesFeature(this.missing) });
+      for (const layer of built.layers) this.map.addLayer(layer);
+    };
+    // **`once("load")` だけでは取りこぼす。**`load` が先に済んでいると二度と発火しない
+    // （実測 2026-09-24: 層が 1 枚も入らなかった）。`styledata` は両方を拾える。
+    draw();
+    this.map.on("styledata", draw);
+
+    const notice = this.#missingNoticeElement();
+    const update = () => {
+      if (this.map === null) return;
+      // **ここでも足しに行く。**`styledata` は `isStyleLoaded()` が true になる直前に
+      // 出きってしまうことがあり、それだけに頼ると層が 1 枚も入らない
+      // （実測 2026-09-24: `hasSrc:false` のまま地図だけ出ていた）。
+      draw();
+      this.map.getSource(built.sourceId)?.setData(missingTilesFeature(this.missing));
+      // **自分が足した層は数に入れない。**入れると「描けている」と判定され、
+      // 何も無い画面で一行が出なくなる。
+      const rendered = this.map
+        .queryRenderedFeatures()
+        .filter((/** @type {any} */ f) => !String(f.layer?.id ?? "").startsWith("mmj-")).length;
+      notice.hidden = !shouldNotice({ rendered, missing: this.missing.size });
+    };
+    // `idle` はタイルが落ち着いてから来る。**`moveend` だと取得が終わる前に判定する**
+    this.map.on("idle", update);
+  }
+
+  /**
+   * 「入っていない範囲です」の一行。**`textContent` だけで組む**（`popup-dom.js` と同じ方針）。
+   * 色は読み込んだスタイルから借りる。**部品が色を持たない。**
+   * @returns {HTMLElement}
+   */
+  #missingNoticeElement() {
+    const theme = this.theme;
+    const box = document.createElement("div");
+    box.setAttribute("role", "status");
+    box.hidden = true;
+    box.style.cssText =
+      "position:absolute;left:50%;top:1rem;transform:translateX(-50%);z-index:2;" +
+      "max-width:min(28rem,calc(100% - 2rem));padding:0.5rem 0.85rem;border-radius:999px;" +
+      `background:${theme?.surface ?? MISSING_COLORS.surface};color:${theme?.text ?? MISSING_COLORS.text};` +
+      `border:1px solid ${theme?.border ?? MISSING_COLORS.border};` +
+      "font:13px/1.5 system-ui,-apple-system,'Segoe UI','Hiragino Sans','Noto Sans JP',sans-serif;" +
+      "text-align:center;pointer-events:none;";
+    box.textContent = coverageNotice();
+    this.append(box);
+    return box;
   }
 
   /** @param {unknown} error */
