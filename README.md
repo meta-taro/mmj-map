@@ -2,9 +2,9 @@
 
 **M**odern **M**ap — a map you own. No API key, no per-view billing, no tile server to run.
 
-> **The repository is still called `modern-map-japan`.** MMJ is the name of the product;
-> the repository name is staying put because it is public and every URL, Pages deploy and
-> CI run already points at it (D-018).
+> **Renamed to `mmj-map` on 2026-09-24** (D-025), matching the npm scope `@mmj-map`.
+> GitHub redirects the old `meta-taro/modern-map-japan` URLs, but please update your
+> bookmarks: the demo now lives at <https://meta-taro.github.io/mmj-map/>.
 
 > **Status: early.** The design is written down and the approach has been proven in a
 > production site, but this repository is still being assembled. See

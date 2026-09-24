@@ -11,7 +11,7 @@
   これはブランドマークではありません。`DESIGN.md` が「決めない」と書いている
   デモサイトの装飾の範囲です。ブランドを作るなら、人が決めてください。
 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="modern-map-japan">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="MMJ">
   <rect width="32" height="32" rx="6" fill="#1B1F24"/>
   <!-- 交差する街路。地図であることだけを示す -->
   <g stroke="#D8DCE1" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.55">

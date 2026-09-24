@@ -3,7 +3,7 @@
  *
  *   pnpm serve                              # 既定 8787、dist/tiles と styles と apps/demo を配る
  *   pnpm serve -- --port=9000
- *   pnpm serve -- --base=/modern-map-japan  # **公開先と同じ形で配る**
+ *   pnpm serve -- --base=/mmj-map  # **公開先と同じ形で配る**
  *
  * `--base` を付けると、mount がまるごとその下へ移り、**base の外は 404 になる**。
  * GitHub Pages は `/<repo>/` の下に置かれるので、絶対パス参照の壊れ方を

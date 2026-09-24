@@ -33,7 +33,7 @@
 
 ```bash
 gh release download demo-tiles-20260915 \
-  --repo meta-taro/modern-map-japan \
+  --repo meta-taro/mmj-map \
   --pattern demo.pmtiles --output tiles/demo.pmtiles
 ```
 
@@ -46,8 +46,8 @@ gh release download demo-tiles-20260915 \
 需要 [go-pmtiles](https://github.com/protomaps/go-pmtiles) 和磁碟空間。
 
 ```bash
-git clone https://github.com/meta-taro/modern-map-japan
-cd modern-map-japan && pnpm install
+git clone https://github.com/meta-taro/mmj-map
+cd mmj-map && pnpm install
 pnpm tiles:extract -- demo        # 也可以用 japan / kansai，或自己加一個區域
 ```
 
@@ -171,4 +171,4 @@ pnpm palette -- --land=#f7f9fb --water=#bfd7e8 --ink=#16202b --accent=#0a5fff --
 - [`docs/elements/README.md`](../elements/README.md) — 每個元件的所有屬性
 - [`docs/styles/README.md`](../styles/README.md) — 樣式如何對照圖磚檢查
 - [`docs/serving/README.md`](../serving/README.md) — 託管與 HTTP Range
-- 線上示範：https://meta-taro.github.io/modern-map-japan/
+- 線上示範：https://meta-taro.github.io/mmj-map/

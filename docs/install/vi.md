@@ -33,7 +33,7 @@ Một bản đồ cần ba thứ. MMJ cung cấp hai thứ sau, và chỉ cho b�
 
 ```bash
 gh release download demo-tiles-20260915 \
-  --repo meta-taro/modern-map-japan \
+  --repo meta-taro/mmj-map \
   --pattern demo.pmtiles --output tiles/demo.pmtiles
 ```
 
@@ -47,8 +47,8 @@ Cắt bất kỳ khu vực nào trên Trái Đất từ bản dựng hằng ngà
 và dung lượng đĩa.
 
 ```bash
-git clone https://github.com/meta-taro/modern-map-japan
-cd modern-map-japan && pnpm install
+git clone https://github.com/meta-taro/mmj-map
+cd mmj-map && pnpm install
 pnpm tiles:extract -- demo        # hoặc japan / kansai, hoặc thêm vùng của riêng bạn
 ```
 
@@ -177,4 +177,4 @@ Hãy đọc [`LICENSES.md`](../../LICENSES.md) trước khi phát hành.
 - [`docs/elements/README.md`](../elements/README.md) — mọi thuộc tính của mọi component
 - [`docs/styles/README.md`](../styles/README.md) — cách kiểm tra style đối chiếu với tiles
 - [`docs/serving/README.md`](../serving/README.md) — hosting và HTTP Range
-- Demo trực tiếp: https://meta-taro.github.io/modern-map-japan/
+- Demo trực tiếp: https://meta-taro.github.io/mmj-map/

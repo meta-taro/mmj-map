@@ -10,7 +10,7 @@ compatibility_date = "2026-09-01"
 # binding 名（TILES）はコードと対応しているので変えないこと。
 [[r2_buckets]]
 binding = "TILES"
-bucket_name = "modern-map-japan-tiles"
+bucket_name = "mmj-map-tiles"
 
 [vars]
 # 読ませるオリジン。ベースデータは ODbL で隠す対象ではないため既定は "*"。

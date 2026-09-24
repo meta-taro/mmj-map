@@ -30,7 +30,7 @@
     <a href="./route.html">経路と案内</a>
     <a href="./themes.html">配色を見くらべる</a>
     <a href="./brand.html">サイトの色を当てる</a>
-    <a href="https://github.com/meta-taro/modern-map-japan">リポジトリ</a>
+    <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
   </nav>
 </header>
 
@@ -46,7 +46,7 @@
       </p>
       <p>
         自分でタイルをビルドして配信する手順は、リポジトリの
-        <a href="https://github.com/meta-taro/modern-map-japan">README</a> を見てください。
+        <a href="https://github.com/meta-taro/mmj-map">README</a> を見てください。
       </p>
       <p>
         空の地図を出す代わりに、この案内を出しています。
@@ -115,13 +115,13 @@
       map.on('error', (e) => {
         // グリフが 1 範囲でも 404 になると地図全体が真っ白になる。
         // 黙って白くせず、何が落ちたかを出す。
-        console.error('[modern-map-japan] map error:', e && e.error ? e.error : e);
+        console.error('[mmj-map] map error:', e && e.error ? e.error : e);
       });
     };
 
     start().catch((error) => {
       // 取得に失敗したら、白い地図ではなく「無い」と言う画面に戻す。
-      console.error('[modern-map-japan]', error);
+      console.error('[mmj-map]', error);
       document.getElementById('notice').hidden = false;
     });
   }

@@ -26,12 +26,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/meta-taro/modern-map-japan.git",
+    "url": "git+https://github.com/meta-taro/mmj-map.git",
     "directory": "packages/elements"
   },
-  "homepage": "https://meta-taro.github.io/modern-map-japan/",
+  "homepage": "https://meta-taro.github.io/mmj-map/",
   "bugs": {
-    "url": "https://github.com/meta-taro/modern-map-japan/issues"
+    "url": "https://github.com/meta-taro/mmj-map/issues"
   },
   "publishConfig": {
     "access": "public"

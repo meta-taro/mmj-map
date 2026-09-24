@@ -26,7 +26,7 @@
 
 ```bash
 gh release download demo-tiles-20260915 \
-  --repo meta-taro/modern-map-japan \
+  --repo meta-taro/mmj-map \
   --pattern demo.pmtiles --output tiles/demo.pmtiles
 ```
 
@@ -39,8 +39,8 @@ gh release download demo-tiles-20260915 \
 [go-pmtiles](https://github.com/protomaps/go-pmtiles) とディスクが要ります。
 
 ```bash
-git clone https://github.com/meta-taro/modern-map-japan
-cd modern-map-japan && pnpm install
+git clone https://github.com/meta-taro/mmj-map
+cd mmj-map && pnpm install
 pnpm tiles:extract -- demo        # japan / kansai、または自分の region を足す
 ```
 
@@ -166,4 +166,4 @@ pnpm palette -- --land=#f7f9fb --water=#bfd7e8 --ink=#16202b --accent=#0a5fff --
 - [`docs/elements/README.md`](../elements/README.md) — 部品ごとの属性表
 - [`docs/styles/README.md`](../styles/README.md) — スタイルをタイルと突き合わせる検査
 - [`docs/serving/README.md`](../serving/README.md) — 配信と HTTP Range
-- デモ: https://meta-taro.github.io/modern-map-japan/
+- デモ: https://meta-taro.github.io/mmj-map/
