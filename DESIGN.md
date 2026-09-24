@@ -1,4 +1,4 @@
-# DESIGN.md — modern-map-japan
+# DESIGN.md — mmj-map
 
 **このプロダクトでは、DESIGN.md が飾りではありません。**
 地図スタイルはこの製品の中身そのもので、色を決めることが仕事です。
