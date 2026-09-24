@@ -33,6 +33,26 @@ alternatives each have a catch:
 So the map you can actually ship ends up being someone else's map, with someone else's
 look, on someone else's meter.
 
+## What you skip
+
+**Starting from zero, four things stand between you and one working map.** MMJ removes them.
+
+| What you skip | What it costs you otherwise |
+|---|---|
+| **Working out the rights** | The OSM [Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/) **rules out commercial and heavy-traffic use**, and dropping the ODbL attribution from the screen is a breach |
+| **Learning how serving works** | **Some hosts answer `Range` with 200.** The map still draws, so you cannot see it — but **every tile pulls the whole archive**. MMJ ships a check for exactly this (`pnpm tiles:check-range`) |
+| **Learning how upstream works** | Daily builds **disappear**. Ours **vanished nine days after we pinned it** (measured 2026-09-24). Without a pin and a fallback, one morning you simply cannot cut tiles any more |
+| **Hunting for a look** | Six hand-written styles. **That whole search is gone** |
+
+There are more, and they are all the kind you find out about by stepping on them.
+
+- **`name:zh` does not exist** — it is `zh-Hant` / `zh-Hans`. Guessing gets you nothing.
+  MMJ switches with one attribute (`lang`)
+- **One archive holds only part of the planet.** Outside it, an empty screen is **correct** —
+  and **indistinguishable from broken**. MMJ paints the tiles that came back empty
+
+**You could work all of this out. The problem is that you work it out afterwards.**
+
 ## What this is
 
 **Data we borrow. Presentation we own.**
