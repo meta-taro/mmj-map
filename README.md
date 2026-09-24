@@ -50,6 +50,26 @@ look, on someone else's meter.
 > OpenStreetMap. **[`CREDITS.md`](CREDITS.md) names them.** Owning the presentation is
 > how we take that part on ourselves.
 
+### "Then join the community and fix it"
+
+**That is a fair objection, and for the data it is simply correct.** If a road is wrong,
+the place to fix it is OpenStreetMap, not this repository.
+
+But **the look is not the kind of thing you fix upstream.** The default OSM style has to
+answer **every use on earth with one design**. Anything that answers everything is
+optimal for nothing. That is a difference in role, not a defect.
+
+What MMJ carries is **the part that should never go upstream**:
+
+- **Your site's brand colour** — that is your colour, not the map's
+- **Labels in the local language** — the right answer depends on who is reading
+- **Your own POIs** — your data, not the map's data
+- **A photo at the turn in a route** — "left at this convenience store."
+  **It means nothing to anyone not walking that route**
+
+Every one of those is **one site's business, and none of it is data**.
+**Data improvements go to OSM. Presentation belongs to each site.** That is the line.
+
 ## What you skip
 
 **Starting from zero, four things stand between you and one working map.** MMJ removes them.
