@@ -38,10 +38,10 @@ describe("resolveOutDir", () => {
     expect(
       resolveOutDir({
         repoRoot: "/x/node_modules/@mmj-map/tiles",
-        cwd: "/home/me/site",
+        cwd: "/srv/site",
         insideRepo: false,
       }),
-    ).toBe(path.join("/home/me/site", "tiles"));
+    ).toBe(path.join("/srv/site", "tiles"));
   });
 
   it("`--out-dir` があれば、それが勝つ（中でも外でも）", () => {
@@ -57,10 +57,10 @@ describe("resolveOutDir", () => {
       resolveOutDir({
         flag: "./here",
         repoRoot: "/x",
-        cwd: "/home/me",
+        cwd: "/srv/app",
         insideRepo: false,
       }),
-    ).toBe(path.resolve("/home/me", "./here"));
+    ).toBe(path.resolve("/srv/app", "./here"));
   });
 });
 
