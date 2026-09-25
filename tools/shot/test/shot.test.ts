@@ -10,6 +10,7 @@ describe("parseShotArgs", () => {
       waitMs: 25000,
       width: 1280,
       height: 860,
+      offline: false,
     });
   });
 
@@ -20,6 +21,7 @@ describe("parseShotArgs", () => {
       waitMs: 5000,
       width: 1280,
       height: 860,
+      offline: false,
     });
   });
 
@@ -43,6 +45,7 @@ describe("parseShotArgs", () => {
       waitMs: 25000,
       width: 1200,
       height: 630,
+      offline: false,
     });
   });
 
@@ -53,7 +56,24 @@ describe("parseShotArgs", () => {
       waitMs: 9000,
       width: 800,
       height: 600,
+      offline: false,
     });
+  });
+
+  /**
+   * **「つながらなくても出る」は、切ってみないと言えない。**
+   * オンラインで撮れた絵は、掴んでいるのか通信しているのかを区別しない。
+   */
+  it("`--offline` で、一度読んだあと通信を切って撮り直す", () => {
+    expect(parseShotArgs(["http://x/", "a.png", "--offline"]).offline).toBe(true);
+  });
+
+  it("既定は通信ありのまま（**黙って切らない**）", () => {
+    expect(parseShotArgs([]).offline).toBe(false);
+  });
+
+  it("`--offline` を位置引数と数えない", () => {
+    expect(parseShotArgs(["--offline", "http://x/", "a.png", "9000"]).waitMs).toBe(9000);
   });
 
   it("読めない寸法は落とす（**黙って既定で撮ると、違う大きさの絵が出回る**）", () => {

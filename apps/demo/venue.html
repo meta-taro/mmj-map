@@ -79,6 +79,20 @@
     map.setAttribute('style-url', cfg.styleUrl);
     await import('./elements/index.js');
   }
+
+  // **2 回目からは、通信が無くても出るようにする。**
+  // 災害時に効く条件は「すでに端末に入っていること」だけで、
+  // 起きてからは落とせない。**普段開いてもらうことが、そのまま備えになる。**
+  //
+  // **地図を出したあとに登録する。**先に登録すると、初回の読み込みと
+  // 先読みが同じ回線を取り合う。
+  //
+  // 握り潰さない（§8）。登録できなくても地図は出るので、**地図は殺さない**。
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .register('./sw.js')
+      .catch((error) => console.error('[mmj] オフライン用の登録ができませんでした', error));
+  }
 </script>
 </body>
 </html>

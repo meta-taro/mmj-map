@@ -15,6 +15,13 @@ export interface ShotArgs {
   /** 撮る画面の幅（CSS ピクセル）。窓の大きさではなく、**出てくる絵の大きさ** */
   readonly width: number;
   readonly height: number;
+  /**
+   * 一度読んだあと**通信を切って**撮り直すか。
+   *
+   * **「つながらなくても出る」は、切ってみないと言えない。**
+   * オンラインで撮れた絵は、掴んでいるのか通信しているのかを区別しない。
+   */
+  readonly offline: boolean;
 }
 
 const DEFAULTS: ShotArgs = {
@@ -23,6 +30,7 @@ const DEFAULTS: ShotArgs = {
   waitMs: 25000,
   width: 1280,
   height: 860,
+  offline: false,
 };
 
 const SIZE_FLAG = "--size=";
@@ -65,6 +73,8 @@ export function parseShotArgs(argv: readonly string[]): ShotArgs {
     url: url ?? DEFAULTS.url,
     out: out ?? DEFAULTS.out,
     waitMs: wait === undefined ? DEFAULTS.waitMs : Number(wait),
+    // **黙って切らない。**明示されたときだけ、読み終えてから通信を落とす
+    offline: args.includes("--offline"),
     ...size,
   };
 }

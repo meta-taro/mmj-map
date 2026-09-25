@@ -176,6 +176,30 @@ for (;;) {
   }
 }
 
+// **「つながらなくても出る」は、切ってみないと言えない。**
+// 一度読み終えてから通信を落とし、読み込み直して同じように待つ。
+// **掴めていなければ、ここで地図が出なくなる。**それが見たいこと。
+if (args.offline) {
+  await send(
+    "Network.emulateNetworkConditions",
+    { offline: true, latency: 0, downloadThroughput: 0, uploadThroughput: 0 },
+    session,
+  );
+  console.log("通信を切って、読み込み直します");
+  await send("Page.reload", {}, session);
+
+  const offlineDeadline = Date.now() + args.waitMs;
+  state = { quietSince: null };
+  for (;;) {
+    await sleep(250);
+    drainEvents();
+    const next = nextWaitState(state, inflight.size, Date.now(), QUIET_MS);
+    state = next.state;
+    if (next.done) break;
+    if (Date.now() > offlineDeadline) break;
+  }
+}
+
 const shot = (await send("Page.captureScreenshot", { format: "png" }, session)).result as { data: string };
 const outPath = resolve(invokedFrom, args.out);
 mkdirSync(dirname(outPath), { recursive: true });
