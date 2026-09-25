@@ -9,7 +9,7 @@
     "mmj:kinds-verified": "dist/tiles/kansai.pmtiles の z14/14358/6506 を復号して実値を確認した（推測で書いていない）",
     "mmj:tiles-placeholder": "__TILES_URL__ は読み込み側が差し替える。配信先が未決のため URL を焼き込まない"
   },
-  "glyphs": "https://protomaps.github.io/basemaps-assets/fonts/{fontstack}/{range}.pbf",
+  "glyphs": "../glyphs/{fontstack}/{range}.pbf",
   "sources": {
     "basemap": {
       "type": "vector",

@@ -27,6 +27,9 @@ const mounts: Mount[] = withBasePath(
   [
     { prefix: "/tiles", dir: resolve(repoRoot, "dist/tiles") },
     { prefix: "/styles", dir: resolve(repoRoot, "styles") },
+    // **グリフを自前で配るため。**外（protomaps.github.io）を見ている限り、
+    // 通信が無いところでラベルが出ない
+    { prefix: "/glyphs", dir: resolve(repoRoot, "dist/glyphs") },
     // Web Components はビルドしない。**素の ESM をそのまま配る**（packages/elements/src）
     { prefix: "/elements", dir: resolve(repoRoot, "packages/elements/src") },
     { prefix: "/", dir: resolve(repoRoot, "apps/demo") },

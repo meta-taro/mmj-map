@@ -47,6 +47,21 @@ jobs:
           mkdir -p apps/demo/styles
           cp styles/*.json apps/demo/styles/
 
+      # ラベルの字。**スタイルが `../glyphs/` を指しているので、無いと字が出ない**（§23）。
+      #
+      # **全部は配らない。**上流のフォントは 256 範囲・5.95 MB あるが、
+      # **漢字・かな・ハングルは閲覧側のフォントで描く**ので要らない。
+      # ラテン系 6 範囲・561.7 KB で足りることは、日本語・ベトナム語・繁體中文・
+      # ハングルの 4 地域を描いて確かめてある（2026-09-25・404 は 0 件）。
+      #
+      # **揃わなければ落ちる。**1 範囲欠けると、その字を含むラベルだけが消える。
+      # 地図そのものは出るので、**見ても気づけない**。
+      - name: Bundle the label glyphs into the artifact
+        run: |
+          pnpm glyphs:fetch -- --out-dir=apps/demo/glyphs
+          test -f "apps/demo/glyphs/Noto Sans Regular/0-255.pbf"
+          du -sh apps/demo/glyphs
+
       # 部品（Web Components）はビルドしない。素の ESM をそのまま同梱する。
       # **参照だけ足してアップロードを忘れると、elements.html だけが実行時に壊れる**（§23）。
       - name: Bundle the web components into the artifact

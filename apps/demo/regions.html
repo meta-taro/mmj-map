@@ -119,7 +119,14 @@
     });
 
     await import('./elements/index.js');
-    show(REGIONS[0]);
+
+    // **「この地域を見てほしい」を URL で渡せるようにする**（他の頁の `#zoom/lat/lon` と同じ理由）。
+    // 検証にも要る——**8 地域を目で確かめる作業が、URL 無しだと繰り返せない。**
+    // 知らない名前は既定へ落とす（`?region=xxx` で白い画面を出さない）。
+    const asked = new URLSearchParams(location.search).get('region');
+    const start = REGIONS.find((r) => r.file === asked) ?? REGIONS[0];
+    select.value = start.file;
+    show(start);
   }
 </script>
 </body>
