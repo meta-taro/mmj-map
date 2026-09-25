@@ -133,6 +133,34 @@ export function applyPalette(style, colors) {
 }
 
 /**
+ * その色の上に置いたとき、**黒い絵記号が消えるか**。
+ *
+ * 地図の操作ボタン（＋ − 方位）は、MapLibre が**黒で描いた画像**として持っている。
+ * 暗い面へ置き換えると黒同士で見えなくなるので、反転させるかどうかをここで決める。
+ *
+ * **色を作ってはいない**（baseline §11）。反転は変換であって、新しい指し値ではない。
+ *
+ * **読めない値は「暗い」と決めつけない。**決めつけると、
+ * 明るい地図で絵記号のほうが消える（壊れ方が反対になるだけで、同じく壊れている）。
+ *
+ * 平均ではなく**見えかたの重み**（sRGB の相対輝度）で測る。
+ * 同じ `0x80` でも、緑は青よりずっと明るく見える。
+ *
+ * @param {string | null | undefined} color `#rgb` か `#rrggbb`
+ * @returns {boolean}
+ */
+export function isDarkColor(color) {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color ?? "")?.[1];
+  if (hex === undefined) return false;
+
+  const full = hex.length === 3 ? [...hex].map((c) => c + c) : [hex.slice(0, 2), hex.slice(2, 4), hex.slice(4, 6)];
+  const [r, g, b] = full.map((pair) => Number.parseInt(pair, 16) / 255);
+  // ITU-R BT.709。緑を重く、青を軽く見積もる
+  const luminance = 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+  return luminance < 0.5;
+}
+
+/**
  * `accent` の 1 色を、役割ごとの色へ広げる。
  * @param {string} color
  * @returns {Record<string, string>}
@@ -189,10 +217,15 @@ export function readDeclaredAccent(style) {
  * 1 ページに配色違いの地図を並べたとき、最初の 1 枚の色が全部に効く**
  * （`themes.html` は 6 枚並ぶ）。色から名前を作って混ざらないようにする。
  *
+ * **接頭辞を分けるのは、同じ色でも CSS が別だから。**吹き出しと地図の部品
+ * （帰属表示・縮尺）は同じ 3 色を使うが、当てる先が違う。名前が同じだと
+ * `<style>` は片方しか入らず、**後から来たほうが当たらない**。
+ *
  * @param {{ background: string | null, text: string | null, border: string | null }} colors
+ * @param {string} [prefix] 既定は `mmj-popup`（**既存の呼び出しの名前を変えないため**）
  * @returns {string}
  */
-export function themeClassName(colors) {
+export function themeClassName(colors, prefix = "mmj-popup") {
   const seed = `${colors.background}|${colors.text}|${colors.border}`;
   // 衝突しても実害が「同じ CSS を共有する」だけなので、短い決定的な値で足りる
   let hash = 2166136261;
@@ -200,5 +233,5 @@ export function themeClassName(colors) {
     hash ^= seed.charCodeAt(i);
     hash = Math.imul(hash, 16777619);
   }
-  return `mmj-popup-${(hash >>> 0).toString(36)}`;
+  return `${prefix}-${(hash >>> 0).toString(36)}`;
 }

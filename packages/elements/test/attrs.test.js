@@ -6,6 +6,7 @@ import {
   parsePitch,
   buildMapOptions,
   buildPopupOptions,
+  buildControlStyle,
   buildPopupStyle,
   hashOverridesPitch,
   parseLngLat,
@@ -271,6 +272,73 @@ describe("buildPopupStyle に色を渡す", () => {
     const css = buildPopupStyle(light, "mmj-popup-abc");
     for (const rule of css.split("}").filter((r) => r.trim() !== "")) {
       expect(rule).toContain(".mmj-popup-abc");
+    }
+  });
+});
+
+/**
+ * **帰属表示と縮尺も、白い箱のまま暗い地図に乗っていた。**
+ *
+ * 吹き出しは D-019 で直したが、**地図の部品（attribution / scale）は残っていた**。
+ * 公開デモ 10 枚すべてで、暗い地図の隅に紙が 2 枚浮いて見える（2026-09-25・人が指摘）。
+ *
+ * **帰属表示は消さない・薄くしない。**ODbL の条件であって体裁ではない（`LICENSES.md`）。
+ * 変えるのは「読める形で地図に馴染ませる」ところまで。
+ */
+describe("buildControlStyle", () => {
+  const light = { background: "#EDF0F3", text: "#2B3138", border: "#D4D9DF" };
+
+  it("渡した色を使う", () => {
+    const css = buildControlStyle(light, "mmj-ctrl-abc");
+    expect(css).toContain("#EDF0F3");
+    expect(css).toContain("#2B3138");
+  });
+
+  it("独自クラスの中だけを変える（**MapLibre 全体の見た目を書き換えない**）", () => {
+    const css = buildControlStyle(light, "mmj-ctrl-abc");
+    for (const rule of css.split("}").filter((r) => r.trim() !== "")) {
+      expect(rule).toContain(".mmj-ctrl-abc");
+    }
+  });
+
+  it("**リンクの色も変える。**既定の青が残ると、暗い面で読めない", () => {
+    expect(buildControlStyle(light, "mmj-ctrl-abc")).toContain("maplibregl-ctrl-attrib a");
+  });
+
+  it("**縮尺も同じ面に合わせる。**箱が 2 枚あるので、片方だけ直すともう片方が浮く", () => {
+    expect(buildControlStyle(light, "mmj-ctrl-abc")).toContain("maplibregl-ctrl-scale");
+  });
+
+  it("**帰属表示を消さない・薄くしない**（ODbL の条件であって体裁ではない）", () => {
+    const css = buildControlStyle(light, "mmj-ctrl-abc");
+    expect(css).not.toMatch(/display\s*:\s*none/);
+    expect(css).not.toMatch(/visibility\s*:\s*hidden/);
+    expect(css).not.toMatch(/opacity\s*:/);
+    expect(css).not.toMatch(/font-size\s*:\s*0/);
+  });
+
+  /**
+   * **箱は 3 つある。**帰属表示・縮尺・操作ボタン（＋ − 方位）。
+   * 2 つだけ直すと、残った 1 つが前より目立つ（実測: 直後に撮った `themes.html` で
+   * Modern Dark と Neon の右上に白い列が残った・2026-09-25）。
+   */
+  it("**操作ボタンも同じ面に合わせる。**2 つだけ直すと、残った 1 つが前より目立つ", () => {
+    expect(buildControlStyle(light, "mmj-ctrl-abc")).toContain("maplibregl-ctrl-group");
+  });
+
+  it("**暗い面では絵記号を反転する。**黒い ＋ − を暗い面へ置くと消える", () => {
+    const dark = { background: "#1B1F24", text: "#D8DCE1", border: "#2E343B" };
+    expect(buildControlStyle(dark, "mmj-ctrl-abc")).toContain("invert");
+  });
+
+  it("明るい面では反転しない（**反転すると今度は明るい地図で消える**）", () => {
+    expect(buildControlStyle(light, "mmj-ctrl-abc")).not.toContain("invert");
+  });
+
+  it("配色ごとにクラスを分けられる（**同じだと 6 枚並べたとき色が混ざる**）", () => {
+    const css = buildControlStyle(light, "mmj-ctrl-xyz");
+    for (const rule of css.split("}").filter((r) => r.trim() !== "")) {
+      expect(rule).toContain(".mmj-ctrl-xyz");
     }
   });
 });

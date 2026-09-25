@@ -7,6 +7,7 @@ import {
   applyPalette,
   readDeclaredAccent,
   readTheme,
+  isDarkColor,
   themeClassName,
 } from "../src/palette.js";
 
@@ -139,6 +140,37 @@ describe("readTheme", () => {
   });
 });
 
+/**
+ * **地図の部品の絵記号（＋ − 方位）は、黒で描かれた画像として来る。**
+ * 暗い面へ置き換えると黒同士で見えなくなるので、反転させるかどうかを決める必要がある。
+ * **色を作る話ではない**（反転は変換であって、新しい指し値ではない）。
+ */
+describe("isDarkColor", () => {
+  it("手書き 6 枚の地色を、明暗で正しく分ける", () => {
+    // すべて styles/*.json にある地色。**ここで新しい色を作っていない**
+    expect(isDarkColor("#1B1F24"), "modern-dark").toBe(true);
+    expect(isDarkColor("#EDF0F3"), "modern-light").toBe(false);
+    expect(isDarkColor("#FFFFFF"), "modern-ink").toBe(false);
+  });
+
+  it("3 桁の指定も読む（`#fff`）", () => {
+    expect(isDarkColor("#fff")).toBe(false);
+    expect(isDarkColor("#000")).toBe(true);
+  });
+
+  it("**読めない値は暗いと決めつけない。**決めつけると明るい地図で絵記号が消える", () => {
+    expect(isDarkColor("rgb(0,0,0)")).toBe(false);
+    expect(isDarkColor("")).toBe(false);
+    expect(isDarkColor(null)).toBe(false);
+  });
+
+  it("**緑は青よりずっと明るく見える。**平均ではなく、見えかたの重みで測る", () => {
+    // 同じ 0xC0 でも、緑は明るい側・青は暗い側（平均で測ると、どちらも同じ扱いになる）
+    expect(isDarkColor("#00C000"), "緑").toBe(false);
+    expect(isDarkColor("#0000C0"), "青").toBe(true);
+  });
+});
+
 describe("themeClassName", () => {
   it("同じ色なら同じ名前（1 ページに同じ配色の地図が何枚あっても style は 1 つ）", () => {
     const colors = { background: "#1B1F24", text: "#D8DCE1", border: "#2E343B" };
@@ -154,6 +186,25 @@ describe("themeClassName", () => {
   it("CSS のクラス名として使える文字だけを返す", () => {
     const name = themeClassName({ background: "#1B1F24", text: "#D8DCE1", border: "#2E343B" });
     expect(name).toMatch(/^mmj-popup-[a-z0-9]+$/);
+  });
+
+  /**
+   * 吹き出しと地図の部品（帰属表示・縮尺）は、**同じ色を使うが別の CSS**。
+   * 名前が同じだと `<style>` は片方しか入らず、**後から来たほうが当たらない**。
+   */
+  it("接頭辞を渡せる（吹き出しと地図の部品で名前を分けるため）", () => {
+    const colors = { background: "#1B1F24", text: "#D8DCE1", border: "#2E343B" };
+    expect(themeClassName(colors, "mmj-ctrl")).toMatch(/^mmj-ctrl-[a-z0-9]+$/);
+  });
+
+  it("**接頭辞が違えば名前も違う。**同じだと片方の style しか入らない", () => {
+    const colors = { background: "#1B1F24", text: "#D8DCE1", border: "#2E343B" };
+    expect(themeClassName(colors, "mmj-ctrl")).not.toBe(themeClassName(colors));
+  });
+
+  it("接頭辞を渡さなければ、これまでと同じ名前（**既存の呼び出しを変えない**）", () => {
+    const colors = { background: "#1B1F24", text: "#D8DCE1", border: "#2E343B" };
+    expect(themeClassName(colors, "mmj-popup")).toBe(themeClassName(colors));
   });
 });
 
