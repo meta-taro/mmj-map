@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * タイルビルドの入口。
  *
@@ -6,6 +7,7 @@
  */
 import { spawn } from "node:child_process";
 import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
+import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -24,11 +26,25 @@ import { chooseBuild, outputNameFor, rememberBuild, type KnownBuild } from "./ro
 /** 戻り先として覚えておく本数。際限なく増やさない（D-014） */
 const KNOWN_GOOD_LIMIT = 3;
 import { interpretRangeResponse, PROBE_RANGE_HEADER } from "./range.js";
+import { adhocRegion, refuseOutsideRepo, resolveOutDir, shouldResolveLatest, sizeVerdict } from "./install.js";
 
 const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const manifestPath = path.join(packageRoot, "manifest.json");
 const repoRoot = path.dirname(path.dirname(packageRoot));
-const defaultOutDir = path.join(repoRoot, "dist", "tiles");
+
+/**
+ * **このリポジトリの中から動いているか。**
+ *
+ * `npx` で入れられると `node_modules/@mmj-map/tiles/` の下から動く。
+ * そのとき `repoRoot` は利用者のリポジトリでも何でもないので、
+ * **そこを既定の出力先にすると、次の install で消える場所へ書く**ことになる。
+ *
+ * 判定は `pnpm-workspace.yaml` の有無。**このリポジトリにしか無いもの**を見る。
+ */
+const insideRepo = existsSync(path.join(repoRoot, "pnpm-workspace.yaml"));
+
+/** 叩いた場所。pnpm 経由だと cwd がパッケージへ移るので `INIT_CWD` を優先する */
+const invokedFrom = process.env["INIT_CWD"] ?? process.cwd();
 
 async function readManifest(): Promise<{ manifest: TilesManifest; raw: Record<string, unknown> }> {
   const text = await readFile(manifestPath, "utf8");
@@ -57,6 +73,17 @@ async function commandResolve(argv: readonly string[]): Promise<number> {
   if (skipped.length > 0) {
     console.warn(`索引に読めない行が ${skipped.length} 件ありました:`);
     for (const reason of skipped.slice(0, 5)) console.warn(`  - ${reason}`);
+  }
+
+  // **manifest を書き換える命令は、このリポジトリの中でだけ。**
+  // node_modules の中から書いても、次の install で消える。
+  for (const command of ["--update", "--remember"]) {
+    if (getFlag(argv, command.slice(2)) === undefined) continue;
+    const refusal = insideRepo ? null : refuseOutsideRepo(command);
+    if (refusal !== null) {
+      console.error(refusal);
+      return 2;
+    }
   }
 
   // 確認済みの旧版を覚える（戻り先・D-014）。**上流の索引と突き合わせてから書く。**
@@ -141,12 +168,34 @@ function run(plan: ExtractPlan): Promise<number> {
 }
 
 async function commandExtract(argv: readonly string[]): Promise<number> {
-  const { manifest } = await readManifest();
+  const { manifest: pinned } = await readManifest();
   const regionName = argv.find((arg) => !arg.startsWith("--")) ?? "japan";
-  const outDir = getFlag(argv, "out-dir") ?? defaultOutDir;
+  const outDirFlag = getFlag(argv, "out-dir");
+  const outDir = resolveOutDir({
+    ...(outDirFlag === undefined ? {} : { flag: outDirFlag }),
+    repoRoot,
+    cwd: invokedFrom,
+    insideRepo,
+  });
   const bboxFlag = getFlag(argv, "bbox");
   const commandFlag = getFlag(argv, "command");
   const buildFlag = getFlag(argv, "build");
+  const maxzoomFlag = getFlag(argv, "maxzoom");
+
+  // **`--bbox` だけで使えるようにする。**外から使う人は manifest を編集できない
+  // （node_modules の中で、次の install で消える）。その場限りの region を足して進む。
+  let manifest = pinned;
+  if (pinned.regions[regionName] === undefined && bboxFlag !== undefined) {
+    const maxzoom = maxzoomFlag === undefined ? 15 : Number(maxzoomFlag);
+    if (!Number.isInteger(maxzoom) || maxzoom < 0 || maxzoom > 15) {
+      console.error(`--maxzoom は 0〜15 の整数です（渡されたのは ${maxzoomFlag}）`);
+      return 2;
+    }
+    manifest = {
+      ...pinned,
+      regions: { ...pinned.regions, [regionName]: adhocRegion(regionName, parseBBoxString(bboxFlag), maxzoom) },
+    };
+  }
 
   // manifest が知っている版だけ（先頭が pin）。**引数で任意の URL を取りに行かせない**（§21）
   const known: KnownBuild[] = [
@@ -160,7 +209,29 @@ async function commandExtract(argv: readonly string[]): Promise<number> {
   ];
 
   let build: { key: string; outputName: string } | undefined;
-  if (buildFlag !== undefined) {
+
+  // **外から叩かれたら、上流の最新を実行時に解決する。**
+  // pin は 1 週間ほどで索引から落ちる（実測: 9 日）。配った道具が pin だけを見ていたら、
+  // 配った翌週には 404 で止まる。**manifest は書き換えない**（node_modules の中なので消える）。
+  // 出力名に版が入るので、**どの版で作ったかは後から言える**（D-010 の目的）。
+  if (shouldResolveLatest({ insideRepo, ...(buildFlag === undefined ? {} : { buildFlag }) })) {
+    const region = manifest.regions[regionName];
+    if (region === undefined) {
+      console.error(`region '${regionName}' は manifest にありません`);
+      return 2;
+    }
+    const { entries } = await fetchBuildsIndex(manifest.source.buildsIndexUrl);
+    const newest = latestBuild(entries);
+    if (newest === undefined) {
+      console.error('上流の索引にビルドがありません。');
+      return 1;
+    }
+    build = { key: newest.key, outputName: outputNameFor(region.output, newest.key, manifest.source.key) };
+    console.log(`上流の最新 ${newest.key}（basemap ${newest.version}）で切り出します。`);
+    if (newest.key !== manifest.source.key) {
+      console.log(`出力: ${build.outputName}（名前に版が入ります）`);
+    }
+  } else if (buildFlag !== undefined) {
     let chosen;
     try {
       chosen = chooseBuild(known, buildFlag);
@@ -215,6 +286,8 @@ async function commandExtract(argv: readonly string[]): Promise<number> {
   }
 
   console.log(`できました: ${plan.outputPath}`);
+  // **バイト数だけでは判断できない。**乗るかどうかまで言う
+  console.log(sizeVerdict(statSync(plan.outputPath).size));
   console.log(`帰属表示（画面から外さない）: ${manifest.attribution}`);
   return 0;
 }

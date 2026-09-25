@@ -1,15 +1,34 @@
 {
-  "name": "@mmj-map/tiles-build",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@mmj-map/tiles",
+  "version": "0.1.0",
   "type": "module",
-  "description": "公開データ（Protomaps 日次ビルド）と公開ツール（go-pmtiles）だけで日本ぶんの PMTiles を作る",
+  "license": "MIT",
+  "description": "公開データ（Protomaps 日次ビルド）と公開ツール（go-pmtiles）だけで、地球上の好きな範囲の PMTiles を切り出す",
+  "keywords": ["pmtiles", "openstreetmap", "protomaps", "maplibre", "vector-tiles"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meta-taro/mmj-map.git",
+    "directory": "tools/tiles"
+  },
+  "homepage": "https://meta-taro.github.io/mmj-map/",
+  "bugs": {
+    "url": "https://github.com/meta-taro/mmj-map/issues"
+  },
+  "bin": {
+    "mmj-tiles": "dist/cli.js"
+  },
+  "files": ["dist", "manifest.json", "regions", "README.md", "LICENSE"],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "resolve": "tsx src/cli.ts resolve",
     "extract": "tsx src/cli.ts extract",
     "check-range": "tsx src/cli.ts check-range",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepublishOnly": "pnpm build"
   },
   "devDependencies": {
     "@types/node": "^26.5.1",
