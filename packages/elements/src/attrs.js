@@ -97,6 +97,47 @@ export function buildMapOptions(input) {
 }
 
 /**
+ * 現在地を出すかどうかと、その設定。**属性が無ければ `null`。**
+ *
+ *   <mmj-map locate>
+ *
+ * **避難で本当に要るのは「地図」より「いま自分がどこで、どっちを向いているか」。**
+ * **GPS は通信が無くても動く**（測位は衛星からで、通信ではない）。
+ * つまり**地図さえ手元にあれば、停電でも輻輳でも現在地つきで動ける**。
+ * 欠けていた唯一のピースは、**地図のほうがネット越しだった**ことだけ。
+ *
+ * **勝手に要求しない。**位置情報は、属性で明示されたときだけ出す。
+ * 押すまで測位も始めない（開いた瞬間に許可を求める画面は、それだけで閉じられる）。
+ *
+ * @param {string | null | undefined} attribute `locate` 属性の値（空文字でよい）
+ * @returns {{
+ *   positionOptions: { enableHighAccuracy: boolean },
+ *   trackUserLocation: boolean,
+ *   showUserHeading: boolean,
+ *   showAccuracyCircle: boolean,
+ * } | null}
+ */
+export function buildLocateOptions(attribute) {
+  if (attribute === null || attribute === undefined) return NONE;
+
+  return {
+    positionOptions: {
+      // **衛星を優先する。**Wi-Fi や基地局から位置を出す方式は、
+      // まさに通信が無い場所で効かない
+      enableHighAccuracy: true,
+      // **`timeout` を入れない。**通信が無いと初回の測位に数十秒かかる
+      // （普段は軌道情報を通信で先取りしている＝A-GPS）。
+      // ここを切ると、**効いてほしい場面で自分から諦める**ことになる
+    },
+    // 止まった点だけ出しても、歩いている人には使えない
+    trackUserLocation: true,
+    // **避難では「どっちへ走るか」が要る。**点だけでは向きが分からない
+    showUserHeading: true,
+    showAccuracyCircle: true,
+  };
+}
+
+/**
  * 10 進数として読む。空文字や "12px" を数にしない。
  * @param {string | undefined} text
  * @returns {number | null}

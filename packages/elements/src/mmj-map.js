@@ -25,7 +25,15 @@
  *
  * maplibre-gl と pmtiles は、**読み込む側が `<script>` で入れる**（ゼロ構築の方針）。
  */
-import { applyTilesUrl, buildMapOptions, parseLngLat, parsePitch, parseZoom, hashOverridesPitch } from "./attrs.js";
+import {
+  applyTilesUrl,
+  buildLocateOptions,
+  buildMapOptions,
+  hashOverridesPitch,
+  parseLngLat,
+  parsePitch,
+  parseZoom,
+} from "./attrs.js";
 import { ensureControlContrast } from "./controls-dom.js";
 import { popupColorsFrom } from "./popup-dom.js";
 import { addExtrusion } from "./extrude.js";
@@ -204,6 +212,14 @@ export class MmjMap extends HTMLElement {
 
     this.map.addControl(new maplibregl.NavigationControl(), "top-right");
     this.map.addControl(new maplibregl.ScaleControl({ unit: "metric" }));
+
+    // **`locate` を付けたときだけ現在地を出す。**勝手に位置情報を要求しない。
+    // **GPS は通信が無くても動く**ので、タイルが手元にあれば
+    // 停電でも輻輳でも現在地つきで動ける。**欠けていたのは地図のほうだった。**
+    const locate = buildLocateOptions(this.getAttribute("locate"));
+    if (locate !== null) {
+      this.map.addControl(new maplibregl.GeolocateControl(locate), "top-right");
+    }
 
     // **帰属表示と縮尺も、白い箱のまま暗い地図に乗っていた。**
     // 吹き出しは D-019 で直したが、この 2 つは残っていて、暗い地図の隅に

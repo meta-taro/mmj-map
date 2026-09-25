@@ -7,6 +7,7 @@ import {
   buildMapOptions,
   buildPopupOptions,
   buildControlStyle,
+  buildLocateOptions,
   buildPopupStyle,
   hashOverridesPitch,
   parseLngLat,
@@ -273,6 +274,45 @@ describe("buildPopupStyle に色を渡す", () => {
     for (const rule of css.split("}").filter((r) => r.trim() !== "")) {
       expect(rule).toContain(".mmj-popup-abc");
     }
+  });
+});
+
+/**
+ * **避難で本当に要るのは「地図」より「いま自分がどこで、どっちを向いているか」。**
+ *
+ * **GPS は通信が無くても動く**（測位は衛星からで、通信ではない）。
+ * つまり**地図さえ手元にあれば、停電・輻輳でも現在地つきで動ける**。
+ * 欠けていた唯一のピースは、地図がネット越しだったことだけ。
+ *
+ * ただし**通信が無いと初回の測位が数十秒かかる**（普段は軌道情報を通信で
+ * 先取りしている＝A-GPS）。ここを短い timeout で切ると、**まさに効いてほしい
+ * 場面で自分から諦める**ことになる。
+ */
+describe("buildLocateOptions", () => {
+  it("**属性が無ければ null。**勝手に位置情報を要求しない", () => {
+    expect(buildLocateOptions(null)).toBeNull();
+    expect(buildLocateOptions(undefined)).toBeNull();
+  });
+
+  it("属性があれば設定を返す（値は空でよい＝ただ付けるだけ）", () => {
+    expect(buildLocateOptions("")).not.toBeNull();
+  });
+
+  it("**衛星を優先する。**通信に頼る測位は、通信が無いところで効かない", () => {
+    expect(buildLocateOptions("")?.positionOptions?.enableHighAccuracy).toBe(true);
+  });
+
+  it("**時間で打ち切らない。**通信が無いときの初回測位を、自分から諦めない", () => {
+    // `timeout` を入れた時点で、数十秒かかる正常な測位が「失敗」になる
+    expect(buildLocateOptions("")?.positionOptions).not.toHaveProperty("timeout");
+  });
+
+  it("**向きも出す。**避難では「どっちへ走るか」が要る", () => {
+    expect(buildLocateOptions("")?.showUserHeading).toBe(true);
+  });
+
+  it("動いたら追う（止まった点だけ出しても、歩いている人には使えない）", () => {
+    expect(buildLocateOptions("")?.trackUserLocation).toBe(true);
   });
 });
 
