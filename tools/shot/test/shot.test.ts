@@ -4,7 +4,13 @@ import { isCountableRequest, isNoticeShown, nextWaitState, parseShotArgs, pickBr
 
 describe("parseShotArgs", () => {
   it("既定は手元の配信のトップ", () => {
-    expect(parseShotArgs([])).toEqual({ url: "http://localhost:8787/", out: "shot.png", waitMs: 25000 });
+    expect(parseShotArgs([])).toEqual({
+      url: "http://localhost:8787/",
+      out: "shot.png",
+      waitMs: 25000,
+      width: 1280,
+      height: 860,
+    });
   });
 
   it("URL・出力先・待ち時間を受け取る", () => {
@@ -12,6 +18,8 @@ describe("parseShotArgs", () => {
       url: "http://localhost:9000/#14/34.7/135.5",
       out: "a/b.png",
       waitMs: 5000,
+      width: 1280,
+      height: 860,
     });
   });
 
@@ -21,6 +29,36 @@ describe("parseShotArgs", () => {
 
   it("待ち時間が数でなければ落とす（黙って既定へ戻すと、待っていないことに気づけない）", () => {
     expect(() => parseShotArgs(["http://x/", "a.png", "すぐ"])).toThrow(/待ち時間/);
+  });
+
+  /**
+   * **寸法を指定できないと、SNS カードの 1200×630 が撮れない。**
+   * 窓の外から大きさを変える手は使えなかった（拡張から resize しても
+   * `innerWidth` が 1359 のまま変わらないのを実測・2026-09-25）。撮る側が寸法を持つのが確実。
+   */
+  it("`--size=` で撮る大きさを決める", () => {
+    expect(parseShotArgs(["http://x/", "og.png", "--size=1200x630"])).toEqual({
+      url: "http://x/",
+      out: "og.png",
+      waitMs: 25000,
+      width: 1200,
+      height: 630,
+    });
+  });
+
+  it("`--size=` を位置引数と数えない（待ち時間として読むと落ちる）", () => {
+    expect(parseShotArgs(["--size=800x600", "http://x/", "a.png", "9000"])).toEqual({
+      url: "http://x/",
+      out: "a.png",
+      waitMs: 9000,
+      width: 800,
+      height: 600,
+    });
+  });
+
+  it("読めない寸法は落とす（**黙って既定で撮ると、違う大きさの絵が出回る**）", () => {
+    expect(() => parseShotArgs(["--size=1200"])).toThrow(/寸法/);
+    expect(() => parseShotArgs(["--size=0x630"])).toThrow(/寸法/);
   });
 });
 

@@ -3,6 +3,10 @@
  *
  *   pnpm shot                                              # 既定のトップを shot.png へ
  *   pnpm shot -- "http://localhost:8787/#15/34.70/135.49" docs/screenshots/umeda.png
+ *   pnpm shot -- "http://localhost:8787/og.html" apps/demo/og.png --size=1200x630
+ *
+ * `--size=` は**出てくる絵の大きさ**。窓の大きさではない（SNS のカードのように
+ * 寸法が決まっているものを撮るため）。位置引数とは数えないので、順番はどこでもよい。
  *
  * 依存は足していない。Node 24 の WebSocket と、機械に入っているブラウザの
  * CDP（DevTools Protocol）だけで動く。
@@ -56,7 +60,7 @@ const chrome = spawn(
   [
     "--headless=new", "--no-sandbox", "--hide-scrollbars", "--enable-unsafe-swiftshader",
     `--remote-debugging-port=${PORT}`, `--user-data-dir=${profile}`,
-    "--window-size=1280,860", "about:blank",
+    `--window-size=${args.width},${args.height}`, "about:blank",
   ],
   { stdio: "ignore" },
 );
@@ -105,6 +109,16 @@ const session = attached.sessionId;
 for (const method of ["Page.enable", "Runtime.enable", "Log.enable", "Network.enable"]) {
   await send(method, {}, session);
 }
+
+// **絵の大きさは窓ではなくここで決める。**`--window-size` は OS の枠のぶんだけずれるし、
+// ブラウザの外から窓を変える手も効かなかった（拡張で resize しても `innerWidth` が
+// 変わらないのを実測・2026-09-25）。SNS のカードのように寸法が決まっているものは、
+// ずれた時点で勝手に切られる。
+await send(
+  "Emulation.setDeviceMetricsOverride",
+  { width: args.width, height: args.height, deviceScaleFactor: 1, mobile: false },
+  session,
+);
 
 const inflight = new Map<string, string>();
 const failures: string[] = [];
