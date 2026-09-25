@@ -361,6 +361,40 @@
 }
 
 /* 言い切りの 1 行。**地の文と同じ大きさだと、ただの 1 文として流れる** */
+/* 「配る単位」の表。**数字を並べて桁の違いを見せる**のが役目なので、
+   数字は等幅で揃える（比例フォントだと桁が揃わず、差が読めない）。
+   色はすべて既存のトークンから借りている。**新しい色を作っていない**（baseline §11） */
+.lp-table {
+  width: 100%;
+  margin: 2rem 0;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.lp-table :is(th, td) {
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.lp-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+/* 大きさと切り出しの列。**桁を揃えて見せる** */
+.lp-table :is(th, td):not(:first-child) {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lp-table td b {
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+
 .lp-pull {
   margin: 1.5rem 0 1.25rem;
   padding-left: 1rem;

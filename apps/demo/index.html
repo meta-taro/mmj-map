@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MMJ — 自分の地図を持つ</title>
-<meta name="description" content="API キーなし・従量課金なし・地図サーバーなし。手書きのスタイルと PMTiles だけで、自分の地図を静的配信します。">
+<title>MMJ — ここの地図を、手元に</title>
+<meta name="description" content="地球ぜんぶは要りません。舞浜一帯なら 1.9 MB——写真 1 枚より小さい。手元にあるので、つながらなくても出ます。API キーも従量課金も地図サーバーもなし。">
 <!-- **SNS に貼られたときに出る面。**URL は絶対で書く（相対だと貼り先で解けない）。
      絵は `og.html` を `pnpm shot -- --size=1200x630` で撮ったもので、
      **本物の地図が写っている**。撮り直しは版下を直して撮るだけ。 -->
@@ -12,12 +12,12 @@
 <meta property="og:site_name" content="MMJ">
 <meta property="og:locale" content="ja_JP">
 <meta property="og:url" content="https://meta-taro.github.io/mmj-map/">
-<meta property="og:title" content="MMJ — 自分の地図を持つ">
-<meta property="og:description" content="API キーなし・従量課金なし・地図サーバーなし。手書きのスタイルと PMTiles だけで、自分の地図を静的配信します。">
+<meta property="og:title" content="MMJ — ここの地図を、手元に">
+<meta property="og:description" content="地球ぜんぶは要りません。舞浜一帯なら 1.9 MB——写真 1 枚より小さい。手元にあるので、つながらなくても出ます。API キーも従量課金も地図サーバーもなし。">
 <meta property="og:image" content="https://meta-taro.github.io/mmj-map/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="MMJ「自分の地図を持つ」。大阪の暗色の地図に、API キーなし・従量課金なし・地図サーバーなしと書かれたカード。右下に © OpenStreetMap contributors。">
+<meta property="og:image:alt" content="MMJ「ここの地図を、手元に。」。大阪市街の暗色の地図に、つながらなくても出る・API キーなし・地図サーバーなし と書かれたカード。右下に © OpenStreetMap contributors。">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://meta-taro.github.io/mmj-map/og.png">
 <link rel="icon" href="./favicon.svg">
@@ -47,10 +47,12 @@
 
   <section class="lp-hero">
     <p class="lp-eyebrow">OSS · MIT · OpenStreetMap (ODbL)</p>
-    <h1 class="lp-title">自分の地図を、<br>自分で持つ。</h1>
+    <h1 class="lp-title">ここの地図を、<br>手元に。</h1>
     <p class="lp-lead">
-      <strong>API キーなし・従量課金なし・地図サーバーなし。</strong>
-      手書きのスタイルと 1 つの PMTiles ファイルだけで、静的配信のまま地図が出ます。
+      <strong>地球ぜんぶは要りません。</strong>必要な範囲だけ切り出せば、
+      <strong>写真 1 枚より小さくなります</strong>——舞浜一帯で 1.9 MB。
+      手元にあるので、<a href="./venue.html">つながらなくても出ます</a>。
+      API キーも、従量課金も、地図サーバーもありません。
     </p>
     <p class="lp-actions">
       <a class="lp-btn lp-btn-primary" href="#how">使い方を見る</a>
@@ -84,8 +86,8 @@
   <dl class="lp-stats">
     <div><dt>API キー</dt><dd><b>0</b></dd></div>
     <div><dt>地図サーバー</dt><dd><b>0</b> 台</dd></div>
-    <div><dt>配るファイル</dt><dd><b>1</b> つ</dd></div>
-    <div><dt>大阪の切り出し</dt><dd><b>62.8</b> MB</dd></div>
+    <div><dt>舞浜一帯の地図</dt><dd><b>1.9</b> MB</dd></div>
+    <div><dt>会場ひとそろい</dt><dd><b>3.6</b> MB</dd></div>
     <div><dt>手書きスタイル</dt><dd><b>6</b> 枚</dd></div>
   </dl>
 
@@ -105,6 +107,46 @@
       <li><strong>スタイル</strong>は手書きです。生成物ではなく作品として扱います</li>
       <li><strong>サーバーを立てません。</strong>静的配信と HTTP Range だけでデプロイが完結します</li>
     </ul>
+  </section>
+
+  <section class="lp-section" id="unit">
+    <h2>配る単位</h2>
+    <p class="lp-section-lead">
+      地図というと「日本の地図」「世界の地図」を思い浮かべますが、
+      <strong>ほとんどの用途で必要なのは「ここ」だけ</strong>です。
+      そして範囲を絞ると、大きさが桁で変わります。
+    </p>
+
+    <!-- **すべて実測。**丸めた見栄えの数を置かない -->
+    <table class="lp-table">
+      <thead><tr><th>範囲</th><th>大きさ</th><th>切り出し</th></tr></thead>
+      <tbody>
+        <tr><td>舞浜一帯（会場ひとつ）</td><td><b>1.9 MB</b></td><td>31 リクエスト・9.5 秒</td></tr>
+        <tr><td>ハノイ中心部</td><td>10.9 MB</td><td>45 リクエスト・12.5 秒</td></tr>
+        <tr><td>大阪（広域 ＋ 市街）</td><td>62.8 MB</td><td>—</td></tr>
+        <tr><td>日本全土</td><td>2.6 GB</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <p class="lp-pull">惑星は端末に置けません。会場は置けます。</p>
+
+    <p>
+      「世界中のタイルは持てない」は MMJ の制約でしたが、<strong>範囲を絞る用途では前提</strong>になります。
+      会場・駅・学校がそれぞれ自分の範囲だけを持てば、<strong>アクセスが 1 か所に集まりません</strong>。
+      混雑した場所で地図が出ないのは、たいてい全員が同じ配信元を見ているからです。
+    </p>
+
+    <p>
+      <a href="./venue.html">会場の地図</a>は、<strong>通信を切っても出ます</strong>。
+      一度開けば、地図・ラベルの字・描く道具（合計 3.6 MB）が端末に残るためです。
+      <strong>これは会場ほどの範囲だからできること</strong>で、日本全土では同じことはできません。
+    </p>
+
+    <p class="lp-note">
+      現在地は衛星から測るので、<strong>通信が無くても出ます</strong>
+      （<code>locate</code> を付けたときだけ。付けない限り位置情報は要求しません）。
+      ただし通信が無いと<strong>初回の測位に数十秒かかる</strong>ことがあります。
+    </p>
   </section>
 
   <section class="lp-section" id="how">

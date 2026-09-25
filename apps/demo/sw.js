@@ -133,7 +133,33 @@ self.addEventListener("fetch", (event) => {
         return fetch(request);
       }
 
-      // Range 無し。掴んであればそれを返す（**開くたびに取りに行かない**）
+      // **頁（HTML）は通信を先に見る。**
+      //
+      // **掴んだものを先に返すと、直しても利用者に届かない。**
+      // 版を手で上げる運用にしていたが、**実際に自分で踏んだ**——
+      // 版下を直して撮り直したのに、絵が 1 ピクセルも変わらなかった（2026-09-25）。
+      // 配信は新しいものを返していて、古い頁を返していたのはここだった。
+      // **手で上げる運用は漏れる。**機械が毎回見に行く形にする。
+      //
+      // 通信が無ければ掴んだものを返す。**オフラインで出ることは変わらない。**
+      const isDocument = request.mode === "navigate" || request.destination === "document";
+      if (isDocument) {
+        try {
+          const fresh = await fetch(request);
+          if (fresh.ok && fresh.status === 200) {
+            const cache = await caches.open(CACHE);
+            await cache.put(request, fresh.clone());
+          }
+          return fresh;
+        } catch {
+          const cached = await caches.match(request, { cacheName: CACHE });
+          if (cached !== undefined) return cached;
+          throw new Error(`通信も掴んだものもありません: ${request.url}`);
+        }
+      }
+
+      // 資産（描く道具・字・スタイル・タイル）は掴んだものを先に返す。
+      // **開くたびに 1.15 MB 取りに行かない。**中身が変わったら版を上げる
       const cached = await caches.match(request, { cacheName: CACHE });
       if (cached !== undefined) return cached;
 

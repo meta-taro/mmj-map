@@ -154,6 +154,18 @@
 <body>
 
 <div class="card">
+  <!-- **範囲は舞浜のままで、駅と町側を写す。**
+       園内へ寄せると、広報用の絵の主役が特定企業の施設名になり、
+       **提携しているように読まれかねない**（地図データとしては正しくても、
+       宣伝物としては別の話）。示したいのは「この広さで 1.9 MB」であって、
+       どの施設かではない。 -->
+  <!-- **舞浜ではなく大阪を写す。**一度は舞浜（1.9 MB の実例）にしたが、
+       **あの範囲は園が主役で、どう切っても特定企業の施設名が絵の主役になった**
+       （地図データとしては正しくても、**宣伝物だと提携しているように読まれかねない**）。
+       引いて町側を入れようとすると、今度は切り出した範囲の外が黒帯で出る。
+
+       示したいのは「**この広さなら小さい**」であって、どこかではない。
+       数字は文章側で言えば足りるので、絵は中立な市街にする。 -->
   <mmj-map id="map" center="135.5023,34.6937" zoom="12.4"></mmj-map>
   <div class="veil"></div>
 
@@ -162,15 +174,15 @@
       <span class="wordmark">MMJ</span>
       <span class="eyebrow">OSS · MIT</span>
     </div>
-    <h1>自分の地図を持つ</h1>
+    <h1>ここの地図を、<br>手元に。</h1>
     <p class="lead">
-      <b>API キーなし・従量課金なし・地図サーバーなし。</b>
-      手書きのスタイルと PMTiles 1 ファイルだけで、静的配信のまま地図を出します。
+      <b>地球ぜんぶは要りません。</b>
+      会場ひとつぶんなら、写真 1 枚より小さくなります。
     </p>
     <div class="chips">
-      <span class="chip">HTML 3 行</span>
-      <span class="chip">大阪 62.8 MB</span>
-      <span class="chip">8 地域</span>
+      <span class="chip">つながらなくても出る</span>
+      <span class="chip">API キーなし</span>
+      <span class="chip">地図サーバーなし</span>
     </div>
   </div>
 
@@ -195,6 +207,8 @@
     notice.style.cssText = 'position:absolute;inset:auto 80px 120px;color:#d8dce1';
     document.querySelector('.card').append(notice);
   } else {
+    // **カードに書いたことと、写っている地図を食い違わせない。**
+    // チップに大きさを書かないので、ここは配信の既定（大阪）でよい。
     map.setAttribute('tiles', cfg.tilesUrl);
     map.setAttribute('style-url', cfg.styleUrl);
     await import('./elements/index.js');
