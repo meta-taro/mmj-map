@@ -9,7 +9,8 @@
 
 > **状態: 使えます。ただし初期です。** 部品は npm にあり
 > （[`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements)）、
-> デモは <https://meta-taro.github.io/mmj-map/> で動いています（9 枚すべて）。
+> デモは <https://meta-taro.github.io/mmj-map/> で動いています（10 枚すべて）。
+> **8 地域を切り替えられます**（大阪・ハノイ・ホーチミン・ニューヨーク・シンガポール・上海・台北・ソウル）。
 > 導入手順は 5 言語。
 >
 > **できていないこと**: **配信されたタイルはありません**（自分で切り出します。それが狙いです）。
@@ -44,7 +45,7 @@ MMJ は、この 3 つを同時に解いたものです。**データは OSM か
 
 > **OSM の見え方に不満があると書きましたが、それはコモンズへの不満ではありません。**
 > この地図は、OpenStreetMap に測量・資金・編集で関わっている人と組織の上に立っています。
-> **誰が支えているかは [`CREDITS.md`](CREDITS.md) に名指しで書いてあります**（英語）。
+> **誰が支えているかは [`CREDITS.ja.md`](CREDITS.ja.md) に名指しで書いてあります。**
 > 見え方を自分で持つのは、**そこを引き受けるため**です。
 
 ### 「なら、コミュニティに入って直せばいい」
@@ -137,7 +138,7 @@ bbox か多角形を渡せば、その範囲のタイルが出ます。
 - [`docs/install/`](docs/install/) — **サイトに地図を置く手順**（English / 日本語 / 繁體中文 / 简体中文 / Tiếng Việt）
 - [`docs/tiles/README.md`](docs/tiles/README.md) — **ベースタイルを自分で作る手順**（公開データと公開ツールだけで完結します）
 - [`PRINCIPLES.md`](PRINCIPLES.md) — このプロジェクトの指針。何を約束し、データを何で選び、誰を歓迎するか（英語）
-- [`CREDITS.md`](CREDITS.md) — この地図が立っている土台（英語）
+- [`CREDITS.ja.md`](CREDITS.ja.md) — **この地図が立っている土台**（英語版: [`CREDITS.md`](CREDITS.md)）
 - [`PRD.md`](PRD.md) — スコープと、**あえて作らないもの**
 - [`.claude/roadmap.md`](.claude/roadmap.md) — フェーズ
 - [`.claude/decisions.md`](.claude/decisions.md) — 決定と、その理由
