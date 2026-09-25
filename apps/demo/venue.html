@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>会場の地図を、手元に — MMJ</title>
+<meta name="description" content="舞浜一帯の地図は 1.9 MB。写真 1 枚より小さい。配る単位は「日本の地図」ではなく「ここの地図」です。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="会場の地図を、手元に — MMJ">
+<meta property="og:description" content="舞浜一帯の地図は 1.9 MB。写真 1 枚より小さい。配る単位は「日本の地図」ではなく「ここの地図」です。">
+<link rel="icon" href="./favicon.svg">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>会場の地図を、手元に</h1>
+  <p>
+    ここに出ている舞浜一帯の地図は、<strong>1.9 MB</strong> です。写真 1 枚より小さい。
+    切り出しは <strong>31 リクエスト・9.5 秒</strong>でした。
+    <strong>配る単位は「日本の地図」ではなく「ここの地図」です。</strong>
+    右上の丸いボタンを押すと現在地が出ます
+    （<strong>測位は衛星からで、通信ではありません</strong>）。
+  </p>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">はじめに</a>
+    <a href="./plain.html">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./3d.html">建物を立てる</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="./route.html">経路と案内</a>
+    <a href="./themes.html">配色を見くらべる</a>
+    <a href="./brand.html">サイトの色を当てる</a>
+    <a href="./regions.html">地域を切り替える</a>
+    <a href="./venue.html" aria-current="page">会場の地図</a>
+    <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
+  </nav>
+</header>
+
+<main class="map-area">
+  <mmj-map id="map" center="139.8850,35.6305" zoom="15.5" locate cooperative></mmj-map>
+
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script type="module">
+  /**
+   * **会場規模の地図が現実的かを示す 1 枚。**
+   *
+   * 数字が主張そのもの: 舞浜一帯で **1.9 MB**。惑星は端末に置けないが、
+   * **会場は置ける**。「世界中のタイルは持てない」という制約が、
+   * ここでは制約ではなく前提になる。
+   *
+   * **タイルは `demo.pmtiles` ではなく `maihama.pmtiles` を名指しする。**
+   * 大阪の広域タイルを舞浜の座標で見せたら、この頁の主張（1.9 MB で足りる）が
+   * 嘘になる。**置くデータが嘘だと、画面は嘘になる。**
+   *
+   * **まだオフラインでは動かない。**MapLibre 本体とグリフを外から取っているため。
+   * ここで出しているのは「**大きさ**」と「**現在地**」の 2 つだけで、
+   * **オフラインだとはどこにも書いていない**。書けるようにしてから書く。
+   */
+  const cfg = window.MMJ_CONFIG ?? {};
+  const map = document.getElementById('map');
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    map.remove();
+    document.getElementById('notice').hidden = false;
+  } else {
+    map.setAttribute('tiles', new URL('maihama.pmtiles', cfg.tilesUrl).href);
+    map.setAttribute('style-url', cfg.styleUrl);
+    await import('./elements/index.js');
+  }
+</script>
+</body>
+</html>

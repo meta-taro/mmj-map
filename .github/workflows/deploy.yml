@@ -95,7 +95,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           total=0
-          for region in hanoi hochiminh newyork singapore shanghai taipei seoul; do
+          for region in hanoi hochiminh newyork singapore shanghai taipei seoul maihama; do
             gh release download "$REGIONS_TAG" \
               --repo "$GITHUB_REPOSITORY" \
               --pattern "$region.pmtiles" \
