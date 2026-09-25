@@ -28,6 +28,7 @@ export const POI_DEFAULTS = {
  *   minZoom?: number,
  *   color?: string,
  *   textColor?: string,
+ *   attribution?: string,
  * }} input
  * @returns {{ sourceId: string, source: any, layers: any[] }}
  */
@@ -41,9 +42,17 @@ export function buildPoiSpec(input) {
   // **件数を知っているのは持ち込む側だけ。**3 件と 3000 件で出しはじめは変わる
   const minzoom = input.minZoom ?? POI_DEFAULTS.minZoom;
 
+  // **地図は単体で持ち歩かれる。**オフラインで端末に入ったあと、
+  // 配布元のページは付いて来ない。**出典を地図の外に書いても、読む人には届かない。**
+  // 避難所の指定のように「間違っていると人が危ない」データを重ねるときに要る。
+  //
+  // **渡されたときだけ付ける。**空の出典欄を地図に出しても意味が無いし、
+  // 出どころを騙ることになる。MapLibre が `© OpenStreetMap contributors` の隣へ並べる。
+  const attribution = typeof input.attribution === "string" ? input.attribution.trim() : "";
+
   return {
     sourceId,
-    source: { type: "geojson", data: input.src },
+    source: { type: "geojson", data: input.src, ...(attribution === "" ? {} : { attribution }) },
     layers: [
       {
         id: `${sourceId}-dot`,

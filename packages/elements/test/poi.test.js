@@ -2,6 +2,34 @@ import { describe, expect, it } from "vitest";
 
 import { POI_DEFAULTS, buildPoiSpec } from "../src/poi.js";
 
+/**
+ * **地図は単体で持ち歩かれる。**オフラインで端末に入ったあとは、
+ * 配布元のページは付いて来ない。**出典を地図の外に書いても、読む人には届かない。**
+ *
+ * 避難所の指定のように「間違っていると人が危ない」データを重ねるとき、
+ * **どこの・いつ時点のものかが、その場で読めること**が要る。
+ * MMJ は渡されたデータを描くだけで、正しさはデータの出どころが持つ——
+ * だからこそ、**出どころを名乗れる場所**を部品が用意する。
+ */
+describe("buildPoiSpec の attribution", () => {
+  it("渡した出典を source に載せる（**地図の中に出る**）", () => {
+    const spec = buildPoiSpec({
+      id: "shelters",
+      src: "/data/shelters.geojson",
+      attribution: "出典：○○市 指定緊急避難場所一覧（2026 年 9 月時点）",
+    });
+    expect(spec.source.attribution).toBe("出典：○○市 指定緊急避難場所一覧（2026 年 9 月時点）");
+  });
+
+  it("渡さなければ付けない（**出どころを騙らない**）", () => {
+    expect(buildPoiSpec({ id: "a", src: "/a.geojson" }).source).not.toHaveProperty("attribution");
+  });
+
+  it("空文字も付けない（**空の出典欄を地図に出さない**）", () => {
+    expect(buildPoiSpec({ id: "a", src: "/a.geojson", attribution: "" }).source).not.toHaveProperty("attribution");
+  });
+});
+
 describe("buildPoiSpec", () => {
   const spec = buildPoiSpec({ id: "mmj-poi-1", src: "/data/our-poi.geojson" });
 

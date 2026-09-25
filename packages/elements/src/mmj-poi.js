@@ -75,6 +75,9 @@ export class MmjPoi extends HTMLElement {
         minZoom: parseCount(this.getAttribute("min-zoom"), POI_DEFAULTS.minZoom),
         // 指定が無ければ、サイトのテーマカラー（`<mmj-map accent>`）を既定にする。
         // 名前は地図のラベルと同じ色を借りる。**ここで色を作らない**
+        // **出典と時点は、地図の中に出す。**持ち出された先では、
+        // 配布元のページは付いて来ない（`© OpenStreetMap contributors` の隣に並ぶ）
+        attribution: this.getAttribute("attribution") ?? undefined,
         color: this.getAttribute("color") ?? accent ?? undefined,
         textColor: this.getAttribute("text-color") ?? theme?.text ?? undefined,
       });
