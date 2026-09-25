@@ -331,3 +331,56 @@ mmj-map,
   block-size: 100%;
 }
 
+
+/* --- 地域を切り替える（regions.html） -------------------------------------- */
+
+/* **帯と地図を grid で積む。**通常フローで積んで地図を 100% にすると、
+ * 帯のぶんだけ縦に溢れる（画面では気づきにくい）。 */
+.region-main {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+/* **選ぶ所と、書く内容を並べる。**「これを書けばこれが出る」を 1 行で見せる */
+.region-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 0.85rem;
+}
+
+.region-bar[hidden] {
+  display: none;
+}
+
+.region-bar select {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+/* 長いので、狭い画面では隠す。**地図と選択肢のほうが先** */
+.region-bar code {
+  flex: 1 1 22rem;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  background: var(--code);
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  color: var(--muted);
+}
+
+/* grid の行は既定で中身より小さくならない。0 を許さないと地図が溢れる */
+.region-stage {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+}

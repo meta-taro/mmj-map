@@ -81,6 +81,36 @@ jobs:
           test "$size" -lt 104857600
           test "$size" -gt 1000000
 
+      # 地域タイル（`regions.html` が切り替えるもの）。
+      #
+      # **すべて同じ上流ビルドから切り出してある**ので、`pnpm tiles:extract -- <region>`
+      # で再現できる。**日本全土はここに入れられない**——2.60 GiB で、
+      # 1 ファイル 100 MB にもサイト 1 GB にも収まらない。
+      #
+      # **1 つでも欠けたら deploy を落とす。**`regions.html` の選択肢が
+      # 404 を引く状態で出さない（選べるのに出ない、が一番分かりにくい）。
+      - name: Bundle the regional tiles from the release
+        env:
+          REGIONS_TAG: regions-20260923
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          total=0
+          for region in hanoi hochiminh newyork singapore shanghai taipei seoul; do
+            gh release download "$REGIONS_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --pattern "$region.pmtiles" \
+              --output "apps/demo/tiles/$region.pmtiles"
+            size=$(stat -c%s "apps/demo/tiles/$region.pmtiles")
+            echo "$region.pmtiles: $size バイト"
+            test "$size" -lt 104857600
+            test "$size" -gt 1000000
+            total=$((total + size))
+          done
+          total=$((total + $(stat -c%s apps/demo/tiles/demo.pmtiles)))
+          echo "タイル合計: $total バイト"
+          # サイト全体の上限は 1 GB。タイルだけで 800 MB を越えたら設計を見直す
+          test "$total" -lt 838860800
+
       # 成果物の中の config.js だけを、同梱したタイルへ向ける。
       # **リポジトリの apps/demo/config.js は null のまま。**手元に配信が無いのは事実なので、
       # そこを書き換えると「動くはずなのに動かない」という誤解を生む

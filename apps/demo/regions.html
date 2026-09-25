@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>地域を切り替える — MMJ</title>
+<meta name="description" content="同じ部品・同じスタイルのまま、タイルと lang を差し替えるだけで 8 地域を出します。コードは 1 行も変わりません。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="地域を切り替える — MMJ">
+<meta property="og:description" content="同じ部品・同じスタイルのまま、タイルと lang を差し替えるだけで 8 地域を出します。">
+<link rel="icon" href="./favicon.svg">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>地域を切り替える</h1>
+  <p>
+    <strong>コードは 1 行も変わりません。</strong>変わるのは <code>tiles</code> と <code>lang</code> の 2 つだけです。
+    スタイルは 8 地域とも同じ <code>modern-dark.json</code> で、<strong>地域ごとにスタイルを増やしていません</strong>。
+    切り出しは 1 都市あたり <strong>10〜60 MB・1 分未満</strong>で、上流の公開ビルドから
+    必要な範囲だけを HTTP Range で取っています。
+  </p>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">はじめに</a>
+    <a href="./plain.html">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./3d.html">建物を立てる</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="./route.html">経路と案内</a>
+    <a href="./themes.html">配色を見くらべる</a>
+    <a href="./brand.html">サイトの色を当てる</a>
+    <a href="./regions.html" aria-current="page">地域を切り替える</a>
+    <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
+  </nav>
+</header>
+
+<main class="map-area region-main">
+  <div class="region-bar">
+    <label for="region">地域</label>
+    <select id="region"></select>
+    <code id="snippet"></code>
+  </div>
+
+  <div id="stage" class="region-stage"></div>
+
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script type="module">
+  /**
+   * **地域ごとにスタイルを増やさない**（D-024）。
+   * 変えるのは `tiles` と `lang` だけで、`style-url` は 8 地域とも同じ。
+   *
+   * `lang` は推測で書いていない。**切り出したタイルから数えた**結果で決めている
+   * （例: 大阪には `name:zh` が無く、`zh-Hant` / `zh-Hans` に分かれていた）。
+   *
+   * `ideograph-fonts` も地域ごとに変える。**同じ符号でも国ごとに字体が違う**ので、
+   * 日本語向けの既定のままだと中国語・韓国語の地図で字形が合わない。
+   */
+  const REGIONS = [
+    { file: 'demo', label: '大阪（デモ）', center: '135.5023,34.6937', zoom: '12', note: '62.8 MB' },
+    { file: 'hanoi', label: 'ハノイ', center: '105.8520,21.0285', zoom: '13', lang: 'vi', note: '10.9 MB' },
+    { file: 'hochiminh', label: 'ホーチミン', center: '106.6958,10.7769', zoom: '13', lang: 'vi', note: '11.0 MB' },
+    { file: 'newyork', label: 'ニューヨーク', center: '-73.9857,40.7484', zoom: '13', lang: 'en', note: '21.2 MB' },
+    { file: 'singapore', label: 'シンガポール', center: '103.8198,1.3521', zoom: '12', lang: 'en', note: '23.9 MB' },
+    { file: 'shanghai', label: '上海', center: '121.4737,31.2304', zoom: '13', lang: 'zh-Hans',
+      fonts: "'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif", note: '27.8 MB' },
+    { file: 'taipei', label: '台北', center: '121.5170,25.0478', zoom: '13', lang: 'zh-Hant',
+      fonts: "'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif", note: '36.5 MB' },
+    { file: 'seoul', label: 'ソウル', center: '126.9780,37.5665', zoom: '13', lang: 'ko',
+      fonts: "'Noto Sans KR','Malgun Gothic',sans-serif", note: '37.0 MB' },
+  ];
+
+  const cfg = window.MMJ_CONFIG ?? {};
+  const select = document.getElementById('region');
+  const stage = document.getElementById('stage');
+  const snippet = document.getElementById('snippet');
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    document.querySelector('.region-bar').hidden = true;
+    document.getElementById('notice').hidden = false;
+  } else {
+    for (const region of REGIONS) {
+      const option = document.createElement('option');
+      option.value = region.file;
+      option.textContent = `${region.label}（${region.note}）`;
+      select.append(option);
+    }
+
+    // **属性を入れてから付ける。**逆にすると connectedCallback が先に走る。
+    // 切り替えは作り直し。`tiles` は読み込み時に一度だけ読まれるため。
+    const show = (region) => {
+      const map = document.createElement('mmj-map');
+      map.setAttribute('tiles', new URL(`${region.file}.pmtiles`, cfg.tilesUrl).href);
+      map.setAttribute('style-url', cfg.styleUrl);
+      map.setAttribute('center', region.center);
+      map.setAttribute('zoom', region.zoom);
+      if (region.lang !== undefined) map.setAttribute('lang', region.lang);
+      if (region.fonts !== undefined) map.setAttribute('ideograph-fonts', region.fonts);
+      stage.replaceChildren(map);
+
+      // 画面に出ているものと、書く内容を一致させる。**片方だけ直すと嘘になる**
+      const lang = region.lang === undefined ? '' : ` lang="${region.lang}"`;
+      snippet.textContent = `<mmj-map tiles="./tiles/${region.file}.pmtiles" style-url="./styles/modern-dark.json"${lang}>`;
+    };
+
+    select.addEventListener('change', () => {
+      show(REGIONS.find((r) => r.file === select.value));
+    });
+
+    await import('./elements/index.js');
+    show(REGIONS[0]);
+  }
+</script>
+</body>
+</html>
