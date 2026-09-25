@@ -9,8 +9,9 @@
 
 > **Status: usable, early.** The components are on npm as
 > [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements), the demo is live
-> at <https://meta-taro.github.io/mmj-map/> (nine pages, all working), and the install
-> guide exists in five languages.
+> at <https://meta-taro.github.io/mmj-map/> (ten pages, all working) with **eight regions you
+> can switch between** — Osaka, Hanoi, Ho Chi Minh City, New York, Singapore, Shanghai,
+> Taipei, Seoul — and the install guide exists in five languages.
 >
 > **What is not done:** there are no hosted tiles — you cut your own, which is the point;
 > there are no Japanese glyphs, so CJK labels fall back to the viewer's font and the

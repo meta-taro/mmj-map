@@ -2,6 +2,8 @@
 
 Almost nothing on this map was surveyed by us. This file names the work it stands on.
 
+> 日本語版: [`CREDITS.ja.md`](CREDITS.ja.md)（この英語版が正）
+
 **Listed here means "we depend on it" or "it is given back to the commons".** Nobody
 listed has endorsed this project, reviewed it, or is affiliated with it.
 
