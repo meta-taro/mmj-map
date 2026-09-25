@@ -47,6 +47,19 @@ jobs:
           mkdir -p apps/demo/styles
           cp styles/*.json apps/demo/styles/
 
+      # MapLibre と pmtiles を同梱する。**CDN を見ている限り、通信が無いところで
+      # 地図が 1 ピクセルも出ない**（§23）。閉じた網では CDN が遮断されていることもある。
+      #
+      # **版は上げない。**頁が読んでいた 5.24.0 / 4.4.0 をそのまま置く。
+      # オフライン化とメジャー更新を同時にやると、**壊れたときにどちらが原因か言えない**。
+      - name: Bundle MapLibre and pmtiles into the artifact
+        run: |
+          mkdir -p apps/demo/vendor/maplibre-gl apps/demo/vendor/pmtiles
+          cp node_modules/maplibre-gl/dist/maplibre-gl.js apps/demo/vendor/maplibre-gl/
+          cp node_modules/maplibre-gl/dist/maplibre-gl.css apps/demo/vendor/maplibre-gl/
+          cp node_modules/pmtiles/dist/pmtiles.js apps/demo/vendor/pmtiles/
+          du -sh apps/demo/vendor
+
       # ラベルの字。**スタイルが `../glyphs/` を指しているので、無いと字が出ない**（§23）。
       #
       # **全部は配らない。**上流のフォントは 256 範囲・5.95 MB あるが、

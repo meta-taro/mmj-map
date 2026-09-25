@@ -41,6 +41,10 @@ const MOUNTS: Mount[] = [
 const PRODUCED_AT_DEPLOY: Readonly<Record<string, string | null>> = {
   "apps/demo/elements": "packages/elements/src",
   "apps/demo/styles": "styles",
+  // **CDN をやめて同梱したもの。**出どころは node_modules（版は package.json が固定する）。
+  // 通信が無いところで**地図が 1 ピクセルも出ない**のを直すために入れた
+  "apps/demo/vendor/maplibre-gl": "node_modules/maplibre-gl/dist",
+  "apps/demo/vendor/pmtiles": "node_modules/pmtiles/dist",
   // Release から降ろすので、リポジトリにも他のどこにも無い。**存在検査の対象外**
   "apps/demo/tiles": null,
 };

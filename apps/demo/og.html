@@ -14,7 +14,7 @@
      そのため `© OpenStreetMap contributors` も本物が出る。ODbL の帰属は
      カードの中でも消さない（`LICENSES.md`）。 -->
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="./vendor/maplibre-gl/maplibre-gl.css">
 <style>
   /* **1200×630 に決め打つ。**この頁だけは画面に合わせて伸び縮みしてはいけない。
      伸びると撮るたびに違う絵が出る。撮る側（`pnpm shot -- --size=1200x630`）と
@@ -177,8 +177,8 @@
   <p class="url">github.com/meta-taro/mmj-map</p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="./vendor/maplibre-gl/maplibre-gl.js"></script>
+<script src="./vendor/pmtiles/pmtiles.js"></script>
 <script src="./config.js"></script>
 <script type="module">
   // **属性を入れてから部品を読み込む。**逆にすると connectedCallback が先に走る。

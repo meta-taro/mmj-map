@@ -9,7 +9,7 @@
 <meta property="og:title" content="建物を立てる — MMJ">
 <meta property="og:description" content="属性を 1 つ付けるだけで建物が立つデモ。タイルは 2D と同じもので、転送量は 1 バイトも増えません。">
 <link rel="icon" href="./favicon.svg">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="./vendor/maplibre-gl/maplibre-gl.css">
 <link rel="stylesheet" href="./demo.css">
 </head>
 <body>
@@ -47,8 +47,8 @@
   </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="./vendor/maplibre-gl/maplibre-gl.js"></script>
+<script src="./vendor/pmtiles/pmtiles.js"></script>
 <script src="./config.js"></script>
 <script type="module">
   // **属性を入れてから部品を読み込む。**逆にすると connectedCallback が先に走る。

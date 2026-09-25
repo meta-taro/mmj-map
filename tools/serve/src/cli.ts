@@ -30,6 +30,12 @@ const mounts: Mount[] = withBasePath(
     // **グリフを自前で配るため。**外（protomaps.github.io）を見ている限り、
     // 通信が無いところでラベルが出ない
     { prefix: "/glyphs", dir: resolve(repoRoot, "dist/glyphs") },
+    // **MapLibre と pmtiles も自前で配る。**CDN を見ている限り、
+    // 通信が無いところで**地図が 1 ピクセルも出ない**。
+    // 手元では node_modules をそのまま配る（**コピーを 2 か所に置かないため**）。
+    // 公開先では `deploy.yml` が同じ dist を `apps/demo/vendor/` へ複製する。
+    { prefix: "/vendor/maplibre-gl", dir: resolve(repoRoot, "node_modules/maplibre-gl/dist") },
+    { prefix: "/vendor/pmtiles", dir: resolve(repoRoot, "node_modules/pmtiles/dist") },
     // Web Components はビルドしない。**素の ESM をそのまま配る**（packages/elements/src）
     { prefix: "/elements", dir: resolve(repoRoot, "packages/elements/src") },
     { prefix: "/", dir: resolve(repoRoot, "apps/demo") },
