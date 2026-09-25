@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>OG 画像の版下 — MMJ</title>
+<!-- **これは人が読む頁ではなく、`og.png` の版下。**
+     SNS のカードに出る絵を画像編集ソフトで作ると、直したいときに作った人しか直せない。
+     頁として置いておけば、文言も配色も差し替えられ、**撮り直しは 1 コマンドで済む**。
+
+       pnpm serve
+       pnpm shot -- "http://localhost:8787/og.html" apps/demo/og.png --size=1200x630
+
+     地図は本物を出す。**作り物の絵を置かない**（中身と違う絵が出回る）。
+     そのため `© OpenStreetMap contributors` も本物が出る。ODbL の帰属は
+     カードの中でも消さない（`LICENSES.md`）。 -->
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<style>
+  /* **1200×630 に決め打つ。**この頁だけは画面に合わせて伸び縮みしてはいけない。
+     伸びると撮るたびに違う絵が出る。撮る側（`pnpm shot -- --size=1200x630`）と
+     同じ数をここにも書く。 */
+  :root {
+    --bg: #14161a;
+    --text: #d8dce1;
+    --muted: #aab2bc;
+    --accent: #8fa9b8;
+    --accent-deep: #14303d;
+  }
+
+  html, body { margin: 0; background: var(--bg); }
+
+  .card {
+    position: relative;
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    color: var(--text);
+    font: 16px/1.7 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  }
+
+  mmj-map {
+    position: absolute;
+    inset: 0;
+    display: block;
+  }
+
+  /* 左から文字の下へ敷く暗幕。**右下は暗くしない**——帰属表示が読めなくなる */
+  .veil {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(100deg,
+        color-mix(in oklab, var(--bg) 96%, transparent) 0%,
+        color-mix(in oklab, var(--bg) 88%, transparent) 38%,
+        color-mix(in oklab, var(--accent-deep) 30%, transparent) 62%,
+        transparent 88%);
+    pointer-events: none;
+  }
+
+  .copy {
+    position: absolute;
+    inset: 72px auto 72px 80px;
+    width: 640px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .wordmark {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--accent);
+  }
+
+  .eyebrow {
+    font-size: 15px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+
+  h1 {
+    margin: 0;
+    /* 大きい見出しは字間を詰める。行間も詰めて塊に見せる */
+    font-size: 68px;
+    line-height: 1.12;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+
+  .lead {
+    margin: 0;
+    font-size: 21px;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 30em;
+  }
+
+  .lead b { color: var(--text); font-weight: 600; }
+
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .chip {
+    padding: 7px 14px;
+    border: 1px solid color-mix(in oklab, var(--accent) 40%, transparent);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--bg) 60%, transparent);
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  .url {
+    position: absolute;
+    left: 80px;
+    bottom: 40px;
+    font-size: 16px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    font-family: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
+  }
+
+  /* 帰属表示と縮尺は地図の部品が出す。既定は白い箱で、**暗いカードの上では
+     貼り間違えた紙のように浮く**。この版下の中だけで暗い面に合わせる。
+     **消さない・薄くしない。**ODbL の帰属は読めることが条件で、
+     背景 #14161a に文字 #d8dce1 で 12:1 ある。 */
+  .card :is(.maplibregl-ctrl-attrib, .maplibregl-ctrl-scale) {
+    background: color-mix(in oklab, var(--bg) 82%, transparent);
+    color: var(--text);
+    border-color: color-mix(in oklab, var(--text) 30%, transparent);
+    font-size: 13px;
+  }
+
+  .card .maplibregl-ctrl-attrib a { color: var(--text); }
+
+  .card :is(.maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left) {
+    margin: 0 8px 8px;
+  }
+
+  /* 押せる部品はカードに要らない。**絵の中でボタンは押せない** */
+  .card .maplibregl-ctrl-group,
+  .card .maplibregl-ctrl-attrib-button {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <mmj-map id="map" center="135.5023,34.6937" zoom="12.4"></mmj-map>
+  <div class="veil"></div>
+
+  <div class="copy">
+    <div class="brand">
+      <span class="wordmark">MMJ</span>
+      <span class="eyebrow">OSS · MIT</span>
+    </div>
+    <h1>自分の地図を持つ</h1>
+    <p class="lead">
+      <b>API キーなし・従量課金なし・地図サーバーなし。</b>
+      手書きのスタイルと PMTiles 1 ファイルだけで、静的配信のまま地図を出します。
+    </p>
+    <div class="chips">
+      <span class="chip">HTML 3 行</span>
+      <span class="chip">大阪 62.8 MB</span>
+      <span class="chip">8 地域</span>
+    </div>
+  </div>
+
+  <p class="url">github.com/meta-taro/mmj-map</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script type="module">
+  // **属性を入れてから部品を読み込む。**逆にすると connectedCallback が先に走る。
+  const cfg = window.MMJ_CONFIG ?? {};
+  const map = document.getElementById('map');
+
+  // **配信元が無いときは、地図の無いカードを黙って撮らせない。**
+  // 撮る側（`pnpm shot`）は `notice` が出ていたら失敗として返す。
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    map.remove();
+    const notice = document.createElement('div');
+    notice.id = 'notice';
+    notice.textContent = 'タイルの配信元がありません。この絵は撮らないでください。';
+    notice.style.cssText = 'position:absolute;inset:auto 80px 120px;color:#d8dce1';
+    document.querySelector('.card').append(notice);
+  } else {
+    map.setAttribute('tiles', cfg.tilesUrl);
+    map.setAttribute('style-url', cfg.styleUrl);
+    await import('./elements/index.js');
+  }
+</script>
+</body>
+</html>

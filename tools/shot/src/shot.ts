@@ -12,14 +12,49 @@ export interface ShotArgs {
   readonly url: string;
   readonly out: string;
   readonly waitMs: number;
+  /** 撮る画面の幅（CSS ピクセル）。窓の大きさではなく、**出てくる絵の大きさ** */
+  readonly width: number;
+  readonly height: number;
 }
 
-const DEFAULTS: ShotArgs = { url: "http://localhost:8787/", out: "shot.png", waitMs: 25000 };
+const DEFAULTS: ShotArgs = {
+  url: "http://localhost:8787/",
+  out: "shot.png",
+  waitMs: 25000,
+  width: 1280,
+  height: 860,
+};
+
+const SIZE_FLAG = "--size=";
+
+/**
+ * `--size=1200x630` を読む。指定が無ければ既定。
+ *
+ * **読めない値で既定に落とさない。**SNS のカードは寸法が合っていないと
+ * 勝手に切られるので、違う大きさで撮れたことに気づけないのが一番困る。
+ */
+function readSize(args: readonly string[]): { width: number; height: number } {
+  const flag = args.find((arg) => arg.startsWith(SIZE_FLAG));
+  if (flag === undefined) return { width: DEFAULTS.width, height: DEFAULTS.height };
+
+  const match = /^(\d+)x(\d+)$/.exec(flag.slice(SIZE_FLAG.length));
+  if (match === null) {
+    throw new Error(`寸法は 幅x高さ の形で指定してください（例: --size=1200x630）: ${flag}`);
+  }
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (width < 1 || height < 1) {
+    throw new Error(`寸法は 1 以上で指定してください: ${flag}`);
+  }
+  return { width, height };
+}
 
 export function parseShotArgs(argv: readonly string[]): ShotArgs {
   // pnpm は `--` をそのまま実引数として渡してくる
   const args = argv.filter((arg) => arg !== "--");
-  const [url, out, wait] = args;
+  const size = readSize(args);
+  // 旗を位置引数と数えない。数えると `--size=…` が待ち時間として読まれて落ちる
+  const [url, out, wait] = args.filter((arg) => !arg.startsWith("--"));
 
   if (wait !== undefined && !/^\d+$/.test(wait)) {
     // 黙って既定へ戻さない。待っていないことに気づけなくなる
@@ -30,6 +65,7 @@ export function parseShotArgs(argv: readonly string[]): ShotArgs {
     url: url ?? DEFAULTS.url,
     out: out ?? DEFAULTS.out,
     waitMs: wait === undefined ? DEFAULTS.waitMs : Number(wait),
+    ...size,
   };
 }
 
