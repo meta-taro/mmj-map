@@ -26,6 +26,8 @@
  * maplibre-gl と pmtiles は、**読み込む側が `<script>` で入れる**（ゼロ構築の方針）。
  */
 import { applyTilesUrl, buildMapOptions, parseLngLat, parsePitch, parseZoom, hashOverridesPitch } from "./attrs.js";
+import { ensureControlContrast } from "./controls-dom.js";
+import { popupColorsFrom } from "./popup-dom.js";
 import { addExtrusion } from "./extrude.js";
 import { accentPalette, applyPalette, readDeclaredAccent, readTheme } from "./palette.js";
 import { applyLanguage, readLanguage } from "./lang.js";
@@ -202,6 +204,14 @@ export class MmjMap extends HTMLElement {
 
     this.map.addControl(new maplibregl.NavigationControl(), "top-right");
     this.map.addControl(new maplibregl.ScaleControl({ unit: "metric" }));
+
+    // **帰属表示と縮尺も、白い箱のまま暗い地図に乗っていた。**
+    // 吹き出しは D-019 で直したが、この 2 つは残っていて、暗い地図の隅に
+    // 紙が 2 枚浮いて見えた（2026-09-25・人が指摘）。
+    // **消さない・薄くしない。**`© OpenStreetMap contributors` は ODbL の条件で、
+    // ここでやるのは「読める形で地図に馴染ませる」ところまで。
+    // 色は吹き出しと同じ 3 つを借りる（`background` は地色ではなく surface）。
+    container.classList.add(ensureControlContrast(popupColorsFrom(this)));
     // 握り潰さない（§8）。グリフが 1 範囲でも 404 になると地図全体が白くなる
     this.map.on("error", (/** @type {any} */ event) => console.error("[mmj-map]", event?.error ?? event));
 

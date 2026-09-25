@@ -4,6 +4,7 @@
  * DOM もブラウザも触らないので、テストに jsdom のような依存が要らない。
  * 実際に描けることは、ブラウザで撮って確かめる（`pnpm shot`）。
  */
+import { isDarkColor } from "./palette.js";
 
 const NONE = null;
 
@@ -146,6 +147,65 @@ export const POPUP_COLORS = {
   /** 道路の線と同じ（`roads-minor` の line-color） */
   border: "#2E343B",
 };
+
+/** 配色を渡さないときのクラス名。**既定の見た目を変えないため** */
+const DEFAULT_CONTROL_CLASS = "mmj-ctrl";
+
+/**
+ * 地図の部品（帰属表示・縮尺）を、読み込んだ配色に合わせる CSS。**ここは純粋関数**。
+ *
+ * MapLibre の既定は**白い箱**で、暗い地図の隅に紙が 2 枚浮いて見える。
+ * 吹き出しは D-019 で直したが、**この 2 つは残っていた**
+ * （2026-09-25・人が指摘。公開デモ 10 枚すべてで出ていた）。
+ *
+ * **帰属表示は消さない・薄くしない。**`© OpenStreetMap contributors` は ODbL の条件で
+ * あって体裁ではない（`LICENSES.md`）。ここでやるのは
+ * **「読める形で地図に馴染ませる」ところまで**で、`display:none` も `opacity` も書かない。
+ * **テストで縛ってある**（書いたら落ちる）。
+ *
+ * 色は吹き出しと同じ 3 つを借りる。`background` には地色ではなく `surface`
+ * （ラベルの縁取り色＝**地図に対して読めるために選ばれている色**）が渡ってくる。
+ *
+ * `className` を分けるのは吹き出しと同じ理由で、**1 ページに配色違いを並べたときに
+ * 最初の 1 枚の色が全部へ効く**のを防ぐため（`themes.html` は 6 枚並ぶ）。
+ *
+ * @param {{ background: string, text: string, border: string }} [colors]
+ * @param {string} [className]
+ */
+export function buildControlStyle(colors = POPUP_COLORS, className = DEFAULT_CONTROL_CLASS) {
+  const plate =
+    `background:${colors.background};` +
+    `color:${colors.text};` +
+    // 地色に近い面を置くので、**縁が無いと地図との境目が消える**
+    `border:1px solid ${colors.border};` +
+    "border-radius:3px;";
+
+  // **黒い絵記号（＋ − 方位）は、暗い面の上では消える。**反転させる。
+  // 明るい面で反転すると今度はそちらで消えるので、**面の明暗で決める**。
+  const icons = isDarkColor(colors.background)
+    ? `.${className} .maplibregl-ctrl-group button .maplibregl-ctrl-icon{filter:invert(1);}`
+    : "";
+
+  return (
+    `.${className} .maplibregl-ctrl-attrib{${plate}}` +
+    // **リンクの色も変える。**既定の青のままだと、暗い面で沈んで読めない。
+    // 下線は消さない（リンクだと分かる手がかりを、色だけに頼らせないため）
+    `.${className} .maplibregl-ctrl-attrib a{color:${colors.text};}` +
+    `.${className} .maplibregl-ctrl-scale{${plate}}` +
+    // 開閉ボタンの丸も白地で来る。**箱だけ直すと、ボタンだけ白く残る**
+    `.${className} .maplibregl-ctrl-attrib-button{background-color:${colors.background};}` +
+    // **箱は 3 つある。**帰属表示・縮尺・操作ボタン。2 つだけ直すと、
+    // 残った 1 つが前より目立つ（実測: `themes.html` の Modern Dark と Neon で
+    // 右上に白い列が残った・2026-09-25）。
+    `.${className} .maplibregl-ctrl-group{${plate}}` +
+    `.${className} .maplibregl-ctrl-group button{background:transparent;}` +
+    // ボタン同士の仕切りも既定は薄い黒。暗い面では見えないので縁と同じ色にする
+    `.${className} .maplibregl-ctrl-group button+button{border-top-color:${colors.border};}` +
+    // 既定の hover は `rgba(0,0,0,.05)` で、**暗い面では押せることが分からない**
+    `.${className} .maplibregl-ctrl-group button:hover{background:${colors.border};}` +
+    icons
+  );
+}
 
 /** tip（三角）が向きごとに塗る辺。**1 つでも漏らすと、その向きだけ白い三角が残る。** */
 const TIP_SIDES = {
