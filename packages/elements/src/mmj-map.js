@@ -33,6 +33,7 @@ import {
   parseLngLat,
   parsePitch,
   parseZoom,
+  resolveStyleUrls,
 } from "./attrs.js";
 import { ensureControlContrast } from "./controls-dom.js";
 import { popupColorsFrom } from "./popup-dom.js";
@@ -159,7 +160,11 @@ export class MmjMap extends HTMLElement {
     // （実測: 梅田 z16 で 17 リクエスト / 735,015 バイト。2D と 1 バイトも変わらない）。
     // 手書きスタイルは書き換えず、読み込んだ後のオブジェクトへ 1 枚足すだけ。
     const wants3d = this.hasAttribute("3d");
-    const style = this.#relabel(await this.#recolor(JSON.parse(applied.text)));
+    // **`glyphs` は、スタイルの位置から解く。**MapLibre は頁の位置で解いてしまい、
+    // `/mmj-map/styles/x.json` の `../glyphs/` が `/glyphs/` になって 404 だった
+    // （2026-09-27・本番でだけ壊れた。手元は開発サーバーが root にも配っていて通った）。
+    const resolved = resolveStyleUrls(JSON.parse(applied.text), new URL(styleUrl, location.href).href);
+    const style = this.#relabel(await this.#recolor(resolved));
 
     // 子要素（目印・まとまり・自前 POI・ポップアップ）が借りる色。
     // **部品が色を持たないようにするため**、読み込んだスタイルから読む。

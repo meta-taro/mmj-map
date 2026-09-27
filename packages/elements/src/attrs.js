@@ -97,6 +97,52 @@ export function buildMapOptions(input) {
 }
 
 /**
+ * スタイルの中の相対 URL（`glyphs` / `sprite`）を、**スタイルの位置から解いて絶対にする**。
+ *
+ * **本番でだけ壊れた実例がある**（2026-09-27）。`glyphs` を
+ * `../glyphs/{fontstack}/{range}.pbf` にしたところ、**MapLibre は
+ * 「スタイルの位置」ではなく「頁の位置」で相対 URL を解決した**。
+ *
+ *     スタイル: https://example.com/mmj-map/styles/modern-dark.json
+ *     頁      : https://example.com/mmj-map/venue.html
+ *     期待    : https://example.com/mmj-map/glyphs/...
+ *     実際    : https://example.com/glyphs/...        ← 404
+ *
+ * **手元では通っていた。**開発サーバーが `/glyphs` を root に配っていたため
+ * （`pnpm serve -- --base=/mmj-map` なら再現できた）。
+ *
+ * **元のスタイルは書き換えない**（ECC coding-style）。新しい値を返す。
+ * **絶対 URL はそのまま**——外を指しているものを勝手に書き換えない。
+ *
+ * @param {any} style 読み込んだスタイル
+ * @param {string} styleUrl そのスタイルを取ってきた URL
+ * @returns {any} 新しいスタイル
+ */
+export function resolveStyleUrls(style, styleUrl) {
+  if (typeof styleUrl !== "string" || styleUrl === "") return style;
+
+  /** @param {string} value */
+  const resolve = (value) => {
+    if (value === "") return value;
+    try {
+      // **`new URL()` は `{` `}` を `%7B` `%7D` にする。**そのまま返すと
+      // MapLibre が置換子を見つけられず、**404 を別の 404 に置き換えるだけ**になる。
+      // 戻すのは安全——この 2 文字が出てくるのは置換子だけ（テストで縛ってある）
+      return new URL(value, styleUrl).href.replaceAll("%7B", "{").replaceAll("%7D", "}");
+    } catch {
+      // 解けないものは触らない。**地図を殺さない**
+      return value;
+    }
+  };
+
+  /** @type {any} */
+  const next = { ...style };
+  if (typeof style?.glyphs === "string") next.glyphs = resolve(style.glyphs);
+  if (typeof style?.sprite === "string") next.sprite = resolve(style.sprite);
+  return next;
+}
+
+/**
  * 現在地を出すかどうかと、その設定。**属性が無ければ `null`。**
  *
  *   <mmj-map locate>

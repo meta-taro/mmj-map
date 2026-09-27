@@ -9,6 +9,7 @@ import {
   buildControlStyle,
   buildLocateOptions,
   buildPopupStyle,
+  resolveStyleUrls,
   hashOverridesPitch,
   parseLngLat,
   parseZoom,
@@ -274,6 +275,61 @@ describe("buildPopupStyle に色を渡す", () => {
     for (const rule of css.split("}").filter((r) => r.trim() !== "")) {
       expect(rule).toContain(".mmj-popup-abc");
     }
+  });
+});
+
+/**
+ * **本番でだけ壊れた実例**（2026-09-27）。
+ *
+ * スタイルの `glyphs` を `../glyphs/{fontstack}/{range}.pbf` にしたところ、
+ * **MapLibre は「スタイルの位置」ではなく「頁の位置」で相対 URL を解決した**。
+ *
+ *   スタイル: https://example.com/mmj-map/styles/modern-dark.json
+ *   頁      : https://example.com/mmj-map/venue.html
+ *   期待    : https://example.com/mmj-map/glyphs/...
+ *   実際    : https://example.com/glyphs/...        ← 404
+ *
+ * **手元では通っていた。**開発サーバーが `/glyphs` を root に配っていたため。
+ * だから**こちらでスタイル URL から解いて、絶対 URL にしてから渡す**。
+ */
+describe("resolveStyleUrls", () => {
+  const styleUrl = "https://example.com/mmj-map/styles/modern-dark.json";
+
+  it("`glyphs` の相対 URL を、**スタイルの位置**から解く", () => {
+    const style = resolveStyleUrls({ glyphs: "../glyphs/{fontstack}/{range}.pbf" }, styleUrl);
+    expect(style.glyphs).toBe("https://example.com/mmj-map/glyphs/{fontstack}/{range}.pbf");
+  });
+
+  it("**`{fontstack}` と `{range}` を壊さない**（URL として解くと壊れる書き方がある）", () => {
+    const style = resolveStyleUrls({ glyphs: "../glyphs/{fontstack}/{range}.pbf" }, styleUrl);
+    expect(style.glyphs).toContain("{fontstack}");
+    expect(style.glyphs).toContain("{range}");
+  });
+
+  it("絶対 URL はそのまま（**外を指しているものを書き換えない**）", () => {
+    const abs = "https://other.example/fonts/{fontstack}/{range}.pbf";
+    expect(resolveStyleUrls({ glyphs: abs }, styleUrl).glyphs).toBe(abs);
+  });
+
+  it("`sprite` も同じ扱い", () => {
+    expect(resolveStyleUrls({ sprite: "../sprite" }, styleUrl).sprite).toBe(
+      "https://example.com/mmj-map/sprite",
+    );
+  });
+
+  it("**元のスタイルを書き換えない**（ECC coding-style の不変性）", () => {
+    const original = { glyphs: "../glyphs/{fontstack}/{range}.pbf" };
+    resolveStyleUrls(original, styleUrl);
+    expect(original.glyphs).toBe("../glyphs/{fontstack}/{range}.pbf");
+  });
+
+  it("`glyphs` が無ければ何もしない", () => {
+    expect(resolveStyleUrls({ layers: [] }, styleUrl)).toEqual({ layers: [] });
+  });
+
+  it("スタイル URL が読めなければ、そのまま返す（**地図を殺さない**）", () => {
+    const style = { glyphs: "../glyphs/{fontstack}/{range}.pbf" };
+    expect(resolveStyleUrls(style, "")).toEqual(style);
   });
 });
 
