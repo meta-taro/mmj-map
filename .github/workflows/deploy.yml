@@ -33,7 +33,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # デモは素の HTML。ビルド工程はまだ無い。
+      # **同梱するものが node_modules から来るので、install が要る。**
+      # 以前は素の HTML を配るだけで install は不要だったが、
+      # CDN をやめて MapLibre と pmtiles を同梱した時点で必要になった（2026-09-27）。
+      #
+      # **これを忘れて deploy を 1 回落とした。**`asset:check` は手元では通る——
+      # **手元には node_modules があるから**で、検査が素通しさせた。
+      # 版は `ci.yml` と同じに揃える（ずれると「CI は緑なのに本番だけ落ちる」になる）。
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # デモは素の HTML。ページ側のビルド工程はまだ無い。
       # ビルドが要るようになったらここに足す（このステップごと消さない）。
       - name: Check demo entrypoint
         run: test -f apps/demo/index.html
