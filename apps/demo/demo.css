@@ -17,6 +17,7 @@
   --text: #d8dce1;        /* label-place-city */
   --muted: #aab2bc;       /* label-place-neighbourhood */
   --code: #1e252a;        /* landcover */
+  --accent: #8fa9b8;      /* label-water。いまいる頁を示すのに使う */
 }
 
 html,
@@ -78,34 +79,70 @@ body {
 .site-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
-  margin-top: 0.5rem;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
   font-size: 0.85rem;
 }
 
+/* **押せることが、触る前に分かる形にする。**
+ *
+ * 以前は「hover したときだけ下線が出る」作りで、**静止時の手がかりがゼロ**だった
+ * （人が見て指摘・2026-09-27）。指で触る端末には hover が無いので、
+ * **スマホでは一生、ただの文字のまま**だった。的も 0.15rem（約 2px）しか無かった。
+ *
+ * 枠にしたのは、**下線だと 13 個並んだときに 1 本の線に見える**ため。
+ * LP（`lp.css`）と同じ考え方だが、**数が多いので余白は詰めてある**。
+ * **色は増やしていない**——既存のトークンだけ。 */
 .site-nav a {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid color-mix(in oklab, var(--line) 85%, transparent);
+  border-radius: 999px;
   color: var(--muted);
   text-decoration: none;
-  padding: 0.15rem 0;
-  border-bottom: 1px solid transparent;
-  transition: color 160ms ease, border-color 160ms ease;
+  white-space: nowrap;
+  transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
 }
 
 .site-nav a:hover {
   color: var(--text);
-  border-bottom-color: var(--line);
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
 }
 
-/* いまどこにいるかを示す。**示さないと、押しても何も起きなかったように見える** */
+/* 押した瞬間に沈む。**触った手応えが無いと、反応したか分からない** */
+.site-nav a:active {
+  transform: translateY(1px);
+}
+
+/* **いまどこにいるかを、塗りで示す。**
+ * 以前は下線 1 本だけで、**13 個の中から見つけるのが難しかった**。
+ * 示さないと「押しても何も起きなかった」ように見える。 */
 .site-nav a[aria-current="page"] {
-  color: var(--text);
-  border-bottom-color: var(--text);
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
 }
 
 .site-nav a:focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 2px;
+}
+
+/* **狭い画面では詰める。**`body` は `grid-template-rows: auto 1fr` なので、
+   ナビが伸びたぶんだけ地図が縮む。13 個が 6 行になると、
+   **スマホで地図が画面の半分以下**になった（実測・390px）。
+   押せる的は保ったまま、文字と余白だけ落とす。
+   **基本の規則より後に置くこと**（同じ詳細度なので、前に置くと負ける）。 */
+@media (max-width: 30rem) {
+  .site-nav {
+    gap: 0.3rem;
+    font-size: 0.78rem;
+  }
+
+  .site-nav a {
+    padding: 0.32rem 0.55rem;
+  }
 }
 
 /* --- 地図 --------------------------------------------------------------- */
