@@ -9,6 +9,7 @@
  *
  * **二重登録で落とさない。**同じページで 2 回読まれても、後勝ちにせず黙って通す。
  */
+import { MmjCircle } from "./mmj-circle.js";
 import { MmjCluster } from "./mmj-cluster.js";
 import { MmjMap } from "./mmj-map.js";
 import { MmjMarker } from "./mmj-marker.js";
@@ -26,9 +27,10 @@ function define(name, constructor) {
 
 define("mmj-map", MmjMap);
 define("mmj-marker", MmjMarker);
+define("mmj-circle", MmjCircle);
 define("mmj-cluster", MmjCluster);
 define("mmj-poi", MmjPoi);
 define("mmj-raster", MmjRaster);
 define("mmj-route", MmjRoute);
 
-export { MmjCluster, MmjMap, MmjMarker, MmjPoi, MmjRaster, MmjRoute };
+export { MmjCircle, MmjCluster, MmjMap, MmjMarker, MmjPoi, MmjRaster, MmjRoute };
