@@ -19,6 +19,7 @@
     "tiles:check-range": "pnpm --filter @mmj-map/tiles run check-range",
     "serve": "pnpm --filter @mmj-map/serve run dev",
     "glyphs:fetch": "pnpm --filter @mmj-map/glyphs run fetch",
+    "sample-raster": "pnpm --filter @mmj-map/sample-raster run generate",
     "style:check": "pnpm --filter @mmj-map/style-check run check",
     "shot": "pnpm --filter @mmj-map/shot run shot",
     "asset:check": "pnpm --filter @mmj-map/asset-check run check",

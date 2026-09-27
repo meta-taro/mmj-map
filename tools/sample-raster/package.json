@@ -1,0 +1,18 @@
+{
+  "name": "@mmj-map/sample-raster",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "見本のラスタタイルを作る。mmj-raster が重なることを見せるためだけの格子（実在のデータではない）",
+  "scripts": {
+    "generate": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}

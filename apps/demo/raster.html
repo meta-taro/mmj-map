@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>地図に重ねる — MMJ</title>
+<meta name="description" content="雨雲レーダー・ハザードマップ・地盤・震度・空中写真は、どれもラスタタイルで配られています。1 つの部品で全部乗ります。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="地図に重ねる — MMJ">
+<meta property="og:description" content="雨雲・ハザード・地盤・震度・空中写真が、1 つの部品で乗ります。データは MMJ が持ちません。">
+<link rel="icon" href="./favicon.svg">
+<link rel="stylesheet" href="./vendor/maplibre-gl/maplibre-gl.css">
+<link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>地図に重ねる</h1>
+  <p>
+    <strong>ここに出ている色は見本です。実在のハザード・雨雲・地盤ではありません。</strong>
+    <code>&lt;mmj-raster&gt;</code> が重なることを見せるためだけの格子で、
+    <strong>段階があること以外に意味はありません</strong>（<code>tools/sample-raster</code> が作っています）。
+    雨雲レーダー・ハザードマップ・地盤・震度・空中写真は<strong>どれもラスタタイル</strong>なので、
+    この 1 つで全部乗ります。<strong>データは MMJ が持ちません。</strong>
+  </p>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">はじめに</a>
+    <a href="./plain.html">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./3d.html">建物を立てる</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="./route.html">経路と案内</a>
+    <a href="./themes.html">配色を見くらべる</a>
+    <a href="./brand.html">サイトの色を当てる</a>
+    <a href="./regions.html">地域を切り替える</a>
+    <a href="./venue.html">会場の地図</a>
+    <a href="./circle.html">半径で囲む</a>
+    <a href="./raster.html" aria-current="page">重ねる</a>
+    <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
+  </nav>
+</header>
+
+<main class="map-area">
+  <mmj-map id="map" center="135.5023,34.6937" zoom="11" cooperative>
+    <mmj-raster src="./sample-raster/{z}/{x}/{y}.png"
+                attribution="見本（実在のデータではありません）"
+                opacity="0.55"></mmj-raster>
+  </mmj-map>
+
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+    </div>
+  </div>
+</main>
+
+<script src="./vendor/maplibre-gl/maplibre-gl.js"></script>
+<script src="./vendor/pmtiles/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script type="module">
+  /**
+   * **地名が読めることが、この頁で見てほしい点。**
+   *
+   * `<mmj-raster>` は既定で**いちばん手前のラベルの下**へ入る。上へ置くと
+   * 地名も駅名も消えるので、重ねた色が「どこの話か」読めなくなる。
+   * 同じ理由で**既定は透ける**（0.7。この頁は 0.55）。
+   *
+   * **出典は地図の中に出す**（右下）。持ち出された先では、配布元の頁は付いて来ない。
+   */
+  const cfg = window.MMJ_CONFIG ?? {};
+  const map = document.getElementById('map');
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    map.remove();
+    document.getElementById('notice').hidden = false;
+  } else {
+    map.setAttribute('tiles', cfg.tilesUrl);
+    map.setAttribute('style-url', cfg.styleUrl);
+    await import('./elements/index.js');
+  }
+</script>
+</body>
+</html>

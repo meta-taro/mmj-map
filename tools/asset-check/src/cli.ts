@@ -45,6 +45,8 @@ const PRODUCED_AT_DEPLOY: Readonly<Record<string, string | null>> = {
   // 通信が無いところで**地図が 1 ピクセルも出ない**のを直すために入れた
   "apps/demo/vendor/maplibre-gl": "node_modules/maplibre-gl/dist",
   "apps/demo/vendor/pmtiles": "node_modules/pmtiles/dist",
+  // **見本のラスタ。**deploy が `pnpm sample-raster` で作る（リポジトリには置かない）
+  "apps/demo/sample-raster": null,
   // Release から降ろすので、リポジトリにも他のどこにも無い。**存在検査の対象外**
   "apps/demo/tiles": null,
 };

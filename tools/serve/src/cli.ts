@@ -34,8 +34,8 @@ const mounts: Mount[] = withBasePath(
     // 通信が無いところで**地図が 1 ピクセルも出ない**。
     // 手元では node_modules をそのまま配る（**コピーを 2 か所に置かないため**）。
     // 公開先では `deploy.yml` が同じ dist を `apps/demo/vendor/` へ複製する。
-    // `<mmj-raster>` を確かめるための見本。**外部データに依存せずに重なりを見る**ため、
-    // 手元で作ったベタ塗りのタイルを配る（`dist/` なので commit されない）
+    // `raster.html` が重ねる見本。**実在のハザード・雨雲・地盤ではない**
+    // （`tools/sample-raster` が作る格子。`dist/` なので commit されない）
     { prefix: "/sample-raster", dir: resolve(repoRoot, "dist/sample-raster") },
     { prefix: "/vendor/maplibre-gl", dir: resolve(repoRoot, "node_modules/maplibre-gl/dist") },
     { prefix: "/vendor/pmtiles", dir: resolve(repoRoot, "node_modules/pmtiles/dist") },

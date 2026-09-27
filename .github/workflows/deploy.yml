@@ -91,6 +91,15 @@ jobs:
           test -f "apps/demo/glyphs/Noto Sans Regular/0-255.pbf"
           du -sh apps/demo/glyphs
 
+      # `raster.html` が重ねる見本。**実在のハザード・雨雲・地盤ではない**——
+      # OSM の公式タイルは商用と大量アクセスを認めておらず、国土地理院のものは
+      # 測量成果の利用にあたるかの判断が要る（PRD §2）。だから自前で格子を作る。
+      - name: Generate the sample raster overlay
+        run: |
+          pnpm sample-raster -- --out-dir=apps/demo/sample-raster
+          test -f apps/demo/sample-raster/12/3589/1626.png
+          du -sh apps/demo/sample-raster
+
       # 部品（Web Components）はビルドしない。素の ESM をそのまま同梱する。
       # **参照だけ足してアップロードを忘れると、elements.html だけが実行時に壊れる**（§23）。
       - name: Bundle the web components into the artifact
