@@ -10,12 +10,18 @@
  * **待たずに付けると、読み込み順で付いたり付かなかったりする**（再現しない不具合になる）。
  */
 import { buildPopupOptions, parseLngLat } from "./attrs.js";
+import { initialCardState, needsChrome } from "./card.js";
+import { mountCard } from "./card-dom.js";
 import { buildPopupContent } from "./popup.js";
-import { ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
+import { ensureCardContrast, ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
 
 export class MmjMarker extends HTMLElement {
   /** @type {any} */
   marker = null;
+
+  /** 中身が増えたときだけ持つ容れ物（`card-dom.js`）。短い吹き出しでは null */
+  /** @type {any} */
+  card = null;
 
   /**
    * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
@@ -36,6 +42,8 @@ export class MmjMarker extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.card?.destroy();
+    this.card = null;
     this.marker?.remove();
     this.marker = null;
   }
@@ -65,10 +73,28 @@ export class MmjMarker extends HTMLElement {
       imageAlt: this.getAttribute("image-alt"),
     });
     if (content.length > 0) {
-      const className = ensurePopupContrast(popupColorsFrom(parent));
-      this.marker.setPopup(
-        new maplibregl.Popup(buildPopupOptions(className)).setDOMContent(renderPopup(content)),
-      );
+      const colors = popupColorsFrom(parent);
+      const className = ensurePopupContrast(colors);
+      const popup = new maplibregl.Popup(buildPopupOptions(className));
+
+      // **短い吹き出しは今までどおり。**「大阪城」の 3 文字にボタンを並べると
+      // 箱がボタンで埋まる。中身が増えたときだけ容れ物にする。
+      if (needsChrome(content)) {
+        ensureCardContrast(colors, className);
+        this.card = mountCard({
+          body: renderPopup(content),
+          container: map.getContainer(),
+          popup,
+          className,
+          // **狭い画面では最大化から始める。**幅 360px に写真は入らない
+          initial: initialCardState({ width: window.innerWidth, rich: true }),
+        });
+        popup.setDOMContent(this.card.content);
+      } else {
+        popup.setDOMContent(renderPopup(content));
+      }
+
+      this.marker.setPopup(popup);
     }
 
     this.marker.addTo(map);

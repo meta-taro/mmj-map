@@ -8,6 +8,7 @@
  * 媒体が登録した文字列が HTML として解釈される経路が存在しない（baseline §21）。
  */
 import { buildPopupStyle, POPUP_COLORS } from "./attrs.js";
+import { buildCardStyle } from "./card-dom.js";
 import { themeClassName } from "./palette.js";
 
 /**
@@ -52,6 +53,26 @@ export function ensurePopupContrast(colors) {
     const style = document.createElement("style");
     style.id = className;
     style.textContent = buildPopupStyle(colors, className);
+    document.head.append(style);
+  }
+  return className;
+}
+
+/**
+ * カードの CSS を `<head>` へ入れる。**吹き出しの CSS とは別の `<style>`。**
+ *
+ * 分けるのは、**短い吹き出しにはカードの指定が要らない**ため。
+ * 同じ配色なら 1 回だけ入る（`id` で見ている）。
+ *
+ * @param {{ background: string, text: string, border: string }} colors
+ * @param {string} className 吹き出しと同じ配色のクラス名
+ */
+export function ensureCardContrast(colors, className) {
+  const id = `${className}-card`;
+  if (!document.getElementById(id)) {
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = buildCardStyle(colors, className);
     document.head.append(style);
   }
   return className;
