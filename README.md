@@ -7,11 +7,17 @@
 > not**: the old demo URL is a hard 404 (measured 2026-09-24). The demo now lives at
 > <https://meta-taro.github.io/mmj-map/> — update any link you have shared.
 
-> **Status: usable, early.** The components are on npm as
-> [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements), the demo is live
-> at <https://meta-taro.github.io/mmj-map/> (ten pages, all working) with **eight regions you
-> can switch between** — Osaka, Hanoi, Ho Chi Minh City, New York, Singapore, Shanghai,
-> Taipei, Seoul — and the install guide exists in five languages.
+> **Status: usable, early.** Two packages are on npm: the components as
+> [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements) and the extractor as
+> [`@mmj-map/tiles`](https://www.npmjs.com/package/@mmj-map/tiles) — run
+> `npx @mmj-map/tiles extract <name> --bbox=...` to **cut your own town without cloning this
+> repository**. The demo is live at <https://meta-taro.github.io/mmj-map/> (thirteen pages, all
+> working) with **eight regions you can switch between** — Osaka, Hanoi, Ho Chi Minh City, New
+> York, Singapore, Shanghai, Taipei, Seoul — and the install guide exists in five languages.
+>
+> **The venue page keeps working with the network switched off** (Maihama 1.9 MB + glyphs
+> 562 KB + the renderer 1.15 MB). **That works because a venue is small** — the whole of Japan
+> could not do the same.
 >
 > **What is not done:** there are no hosted tiles — you cut your own, which is the point;
 > there are no Japanese glyphs, so CJK labels fall back to the viewer's font and the

@@ -7,11 +7,16 @@
 > **GitHub Pages はリダイレクトしません。**旧デモ URL は 404 です（2026-09-24 実測）。
 > デモは <https://meta-taro.github.io/mmj-map/> です。**渡したリンクがあれば貼り替えてください。**
 
-> **状態: 使えます。ただし初期です。** 部品は npm にあり
-> （[`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements)）、
-> デモは <https://meta-taro.github.io/mmj-map/> で動いています（10 枚すべて）。
+> **状態: 使えます。ただし初期です。** npm にあるのは 2 つで、
+> 部品が [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements)、
+> 切り出しが [`@mmj-map/tiles`](https://www.npmjs.com/package/@mmj-map/tiles)
+> （`npx @mmj-map/tiles extract <名前> --bbox=...` で、**clone せずに自分の街を切り出せます**）。
+> デモは <https://meta-taro.github.io/mmj-map/> で動いています（13 枚すべて）。
 > **8 地域を切り替えられます**（大阪・ハノイ・ホーチミン・ニューヨーク・シンガポール・上海・台北・ソウル）。
 > 導入手順は 5 言語。
+>
+> **会場の頁は、通信を切っても地図が出ます**（舞浜 1.9 MB ＋ 字 562 KB ＋ 道具 1.15 MB）。
+> **会場ほどの範囲だからできること**で、日本全土では同じことはできません。
 >
 > **できていないこと**: **配信されたタイルはありません**（自分で切り出します。それが狙いです）。
 > **日本語のグリフがありません**——漢字かなは閲覧側のフォントで描くので、**字形が環境ごとに変わります**。
