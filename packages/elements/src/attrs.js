@@ -199,6 +199,9 @@ function toNumber(text) {
 /**
  * 目印のポップアップに渡す設定。
  *
+ * @param {string} [className]
+ * @param {string} [maxWidth] カードのときだけ渡す（既定の 240px では狭い）
+ *
  * **閉じるボタンを出さない。** MapLibre の既定は `closeButton: true` で、
  * `position: absolute; right: 0; top: 0` の × が箱の右上に乗る。
  * 「大阪城」のような短い文字だと箱が狭く、**× が文字に重なって潰れて見える**
@@ -207,12 +210,16 @@ function toNumber(text) {
  * **閉じる手段は奪っていない。**地図を押せば閉じる（`closeOnClick`）。
  * 目印をもう一度押しても閉じる。
  */
-export function buildPopupOptions(className = DEFAULT_POPUP_CLASS) {
+export function buildPopupOptions(className = DEFAULT_POPUP_CLASS, maxWidth) {
   return {
     offset: 24,
     className,
     closeButton: false,
     closeOnClick: true,
+    // **カードだけ広げる。**MapLibre の既定は 240px で、タブを 4 枚並べると
+    // 2 段に折れて中身が下で切れた（実測・2026-09-28）。
+    // **短い吹き出しは今までどおり**——「大阪城」の 3 文字に広い箱は要らない
+    ...(maxWidth === undefined ? {} : { maxWidth }),
   };
 }
 
@@ -370,6 +377,21 @@ export function buildPopupStyle(colors = POPUP_COLORS, className = DEFAULT_POPUP
     // **長文と星は折り返す。**短い名前と同じ扱いにすると、横へ伸び続ける
     `.${className} .mmj-popup-copy{white-space:normal;max-width:28em;margin-top:.35em;}` +
     `.${className} .mmj-popup-rating{white-space:nowrap;margin-top:.2em;opacity:.85;}` +
+    // タブの帯。**選んでいるものが見て分かる形**にする
+    // （下線だけだと、触る画面では押せることも、いまどれかも伝わらない——
+    //   デモの頁のメニューで 2 回やり直している）
+    `.${className} .mmj-popup-tabs{` +
+    "display:flex;gap:.25rem;margin:.5em 0 .4em;flex-wrap:wrap;" +
+    `border-bottom:1px solid ${colors.border};padding-bottom:.35em;}` +
+    `.${className} .mmj-popup-tab{` +
+    "min-height:30px;padding:.25em .6em;border-radius:6px;" +
+    `border:1px solid ${colors.border};background:transparent;color:${colors.text};` +
+    "font:inherit;font-size:12px;line-height:1.4;cursor:pointer;opacity:.75;}" +
+    `.${className} .mmj-popup-tab[aria-selected="true"]{` +
+    `background:${colors.border};opacity:1;font-weight:600;}` +
+    `.${className} .mmj-popup-tab:focus-visible{outline:2px solid ${colors.text};outline-offset:1px;}` +
+    // **改行を残す。**品書きもクーポンも、行で分かれているのが中身そのもの
+    `.${className} .mmj-popup-panel{white-space:pre-line;}` +
     // リンクは**押せると分かる形**にする（下線を消さない）
     `.${className} .mmj-popup-link{` +
     `display:inline-block;margin-top:.45em;color:${colors.text};` +

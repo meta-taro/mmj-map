@@ -10,9 +10,18 @@
         "reviews": 128,
         "description": "築 90 年の町家を改装した喫茶。日替わりの焼き菓子と、豆から挽く珈琲。二階は座敷で、窓から川と橋が見えます。※これは見本の文章です。この店は実在しません。",
         "photos": "./data/photos/akari-1.jpg,./data/photos/akari-2.jpg,./data/photos/akari-3.jpg",
-        "url": "https://example.com/akari"
+        "url": "https://example.com/akari",
+        "menu": "本日の珈琲　520 円\n深煎りのブレンド　560 円\n焼き菓子の盛り合わせ　640 円\n珈琲と菓子のセット　980 円",
+        "coupon": "この画面を見せると、焼き菓子をひとつ。\n（見本です。実在の店舗ではありません）",
+        "hours": "月〜金　10:00–18:00\n土日　9:00–19:00\n水曜　休み\n二階の座敷は 14 時から"
       },
-      "geometry": { "type": "Point", "coordinates": [135.5061, 34.6912] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.5061,
+          34.6912
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -23,9 +32,18 @@
         "reviews": 342,
         "description": "夜だけ開く小さな店。醤油と煮干し、替玉は半分から。カウンターは 8 席しかないので、雨の日は傘を畳んで入ってください。※これは見本の文章です。この店は実在しません。",
         "photos": "./data/photos/migiwa-1.jpg,./data/photos/migiwa-2.jpg,./data/photos/migiwa-3.jpg",
-        "url": "https://example.com/migiwa"
+        "url": "https://example.com/migiwa",
+        "menu": "醤油らーめん　850 円\n煮干し中華　900 円\n替玉（半分）　100 円\n味付け玉子　120 円",
+        "coupon": "21 時以降、替玉 1 回まで無料。\n（見本です。実在の店舗ではありません）",
+        "hours": "18:00–翌 1:00\n日曜　休み\nスープが終わり次第、閉めます"
       },
-      "geometry": { "type": "Point", "coordinates": [135.4987, 34.6938] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.4987,
+          34.6938
+        ]
+      }
     },
     {
       "type": "Feature",
@@ -36,9 +54,17 @@
         "reviews": 57,
         "description": "文庫と郷土資料。店先の棚は 100 円から。奥の通路は人がすれ違えないので、先に入った人が出るまで待つのが作法です。※これは見本の文章です。この店は実在しません。",
         "photos": "./data/photos/misaki-1.jpg,./data/photos/misaki-2.jpg,./data/photos/misaki-3.jpg",
-        "url": "https://example.com/misaki"
+        "url": "https://example.com/misaki",
+        "menu": "文庫　100 円から\n郷土資料　応相談\n買い取りは午前中のみ",
+        "hours": "11:00–19:00\n火曜　休み\n雨の日は店先の棚を出しません"
       },
-      "geometry": { "type": "Point", "coordinates": [135.5028, 34.6897] }
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          135.5028,
+          34.6897
+        ]
+      }
     }
   ]
 }

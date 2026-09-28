@@ -14,11 +14,13 @@
  */
 import { buildPopupOptions } from "./attrs.js";
 import {
+  buildTabs,
   indexOfShop,
   initialCardState,
   mapCardFields,
   needsChrome,
   panDelta,
+  parseTabs,
   readShopParam,
   stepIndex,
   writeShopParam,
@@ -26,8 +28,14 @@ import {
 import { mountCard } from "./card-dom.js";
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
 import { buildCardContent } from "./popup.js";
-import { ensureCardContrast, ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
+import { ensureCardContrast, ensurePopupContrast, popupColorsFrom, renderTabbed } from "./popup-dom.js";
 import { parseCount } from "./cluster.js";
+
+/**
+ * カードの幅。**狭い画面でははみ出さないように、画面の幅でも抑える。**
+ * MapLibre の既定（240px）ではタブが 2 段に折れる。
+ */
+const CARD_WIDTH = "min(20rem, 86vw)";
 
 /** 同じページに複数置ける。source 名が衝突すると後勝ちで消えるため、番号で分ける */
 let serial = 0;
@@ -241,7 +249,7 @@ export class MmjPoi extends HTMLElement {
     // **開いているなら、中身だけ差し替える。**閉じて開き直すと、
     // 最大化していたら縮み、めくった写真も戻る（**送るたびに元へ戻る**）
     if (this.card && this.popup) {
-      this.card.setBody(renderPopup(content));
+      this.card.setBody(this.#renderBody(content, feature));
       this.popup.setLngLat(where);
     } else {
       this.#mount(feature, content, where);
@@ -276,6 +284,16 @@ export class MmjPoi extends HTMLElement {
   }
 
   /**
+   * カードの中身を組む。**タブの指定が無ければ、いままでどおり。**
+   * @param {any[]} content
+   * @param {any} feature
+   */
+  #renderBody(content, feature) {
+    const tabs = buildTabs(feature.properties ?? {}, parseTabs(this.getAttribute("card-tabs")));
+    return renderTabbed({ parts: content, tabs });
+  }
+
+  /**
    * 吹き出しとカードを新しく作る。
    * @param {any} feature
    * @param {any[]} content
@@ -291,7 +309,7 @@ export class MmjPoi extends HTMLElement {
     const className = ensurePopupContrast(colors);
     ensureCardContrast(colors, className);
 
-    const popup = new maplibregl.Popup(buildPopupOptions(className)).setLngLat(where);
+    const popup = new maplibregl.Popup(buildPopupOptions(className, CARD_WIDTH)).setLngLat(where);
     this.popup = popup;
 
     // **閉じ方は 1 つではない。**見出しバーの ✕ でも、地図を押しても閉じる
@@ -306,7 +324,7 @@ export class MmjPoi extends HTMLElement {
     });
 
     this.card = mountCard({
-      body: renderPopup(content),
+      body: this.#renderBody(content, feature),
       container: map.getContainer(),
       popup,
       className,

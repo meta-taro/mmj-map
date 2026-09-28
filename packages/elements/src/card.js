@@ -193,6 +193,81 @@ export function keyAction(key, state) {
 }
 
 /**
+ * `card-tabs` の指定を読む。**「見出し:属性名」の組**を並べたもの。
+ *
+ *     card-tabs="品書き:menu,クーポン:coupon"
+ *
+ * **渡すのは属性名で、値ではない**（`card-*` と同じ）。
+ * **見出しだけは値**——媒体の属性名をそのまま画面に出すと `menu` と出てしまう。
+ *
+ * **壊れた指定で全部を捨てない。**書けている組だけ出す
+ * （1 か所の書き間違いで、タブが丸ごと消えるほうが分かりにくい）。
+ *
+ * @param {string | null | undefined} attribute
+ * @returns {{ label: string, key: string }[]}
+ */
+export function parseTabs(attribute) {
+  if (typeof attribute !== "string" || attribute.trim() === "") return [];
+
+  /** @type {{ label: string, key: string }[]} */
+  const tabs = [];
+  const seen = new Set();
+  for (const chunk of attribute.split(",")) {
+    const at = chunk.indexOf(":");
+    if (at < 0) continue;
+    const label = chunk.slice(0, at).trim();
+    const key = chunk.slice(at + 1).trim();
+    if (label === "" || key === "" || seen.has(key)) continue;
+    seen.add(key);
+    tabs.push({ label, key });
+  }
+  return tabs;
+}
+
+/**
+ * タブの中身を読む。**中身のあるタブだけ返す。**
+ *
+ * 押しても何も出ないタブを並べると、**壊れているのか空なのか分からない**
+ * （`controlsFor` と同じ理由）。店ごとにクーポンの有無が違うので、ここで効く。
+ *
+ * @param {Record<string, unknown>} properties
+ * @param {readonly { label: string, key: string }[]} spec
+ * @returns {{ label: string, text: string }[]}
+ */
+export function buildTabs(properties, spec) {
+  if (!Array.isArray(spec)) return [];
+  /** @type {{ label: string, text: string }[]} */
+  const tabs = [];
+  for (const { label, key } of spec) {
+    const value = properties?.[key];
+    if (value === undefined || value === null) continue;
+    const text = String(value).trim();
+    if (text === "") continue;
+    tabs.push({ label, text });
+  }
+  return tabs;
+}
+
+/**
+ * カードの中身を「いつも見えるぶん」と「タブの中へ入れるぶん」に分ける。
+ *
+ * **題と写真は、タブを切り替えても出したまま。**どの店を見ているかが消えると、
+ * **切り替えた先が何の店か分からなくなる**。
+ *
+ * **元の配列は変えない**（ECC coding-style）。
+ *
+ * @param {readonly any[]} parts `popup.js` が組んだ中身
+ * @returns {{ head: any[], rest: any[] }}
+ */
+export function splitForTabs(parts) {
+  if (!Array.isArray(parts)) return { head: [], rest: [] };
+  // 先頭から続く「題（text）と写真（image）」までが、いつも見えるぶん
+  let at = 0;
+  while (at < parts.length && (parts[at]?.kind === "text" || parts[at]?.kind === "image")) at += 1;
+  return { head: parts.slice(0, at), rest: parts.slice(at) };
+}
+
+/**
  * カードが地図の外へ出ているぶんを、`map.panBy` に渡す値にして返す。
  *
  * **吹き出しは地図の座標に貼り付いている。**端の点を押すと、そのぶん外へ出る。

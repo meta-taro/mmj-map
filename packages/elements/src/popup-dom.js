@@ -9,6 +9,7 @@
  */
 import { buildPopupStyle, POPUP_COLORS } from "./attrs.js";
 import { buildCardStyle } from "./card-dom.js";
+import { splitForTabs, stepIndex } from "./card.js";
 import { themeClassName } from "./palette.js";
 import { groupParts } from "./popup.js";
 
@@ -81,6 +82,100 @@ export function renderPopup(parts) {
     line.textContent = part.text ?? "";
     box.append(line);
   }
+  return box;
+}
+
+/** タブの通し番号。**同じ頁に複数の地図が載る**ので、id が衝突しないようにする */
+let tabSerial = 0;
+
+/**
+ * タブ付きのカードの中身を組む。
+ *
+ * **題と写真は上に残す**（`splitForTabs`）。タブを切り替えても、
+ * どの店を見ているかが消えない。
+ *
+ * **パネルは消さずに隠す。**作り直すと、**そのタブで読んでいた位置が毎回戻る**。
+ *
+ * **タブが 1 枚のときは帯を出さない。**押し先が 1 つしかないタブは、
+ * 押せると思わせるだけで何も起きない（`controlsFor` と同じ）。
+ *
+ * @param {{ parts: any[], tabs: { label: string, text: string }[] }} input
+ * @returns {HTMLElement}
+ */
+export function renderTabbed(input) {
+  const { head, rest } = splitForTabs(input.parts);
+  const box = renderPopup(head);
+
+  /** @type {{ label: string, node: HTMLElement }[]} */
+  const panels = [];
+  // **最初のタブは「概要」。**星・長文・リンクは、いままでどおり最初に見える
+  if (rest.length > 0) panels.push({ label: "概要", node: renderPopup(rest) });
+  for (const tab of input.tabs ?? []) {
+    const node = document.createElement("div");
+    node.className = "mmj-popup-copy mmj-popup-panel";
+    // **改行を残す。**品書きもクーポンも、行で分かれているのが中身そのもの
+    node.textContent = tab.text;
+    panels.push({ label: tab.label, node });
+  }
+
+  if (panels.length === 0) return box;
+  const only = panels[0];
+  if (panels.length === 1 && only) {
+    box.append(only.node);
+    return box;
+  }
+
+  const group = ++tabSerial;
+  const bar = document.createElement("div");
+  bar.className = "mmj-popup-tabs";
+  bar.setAttribute("role", "tablist");
+
+  /** @type {HTMLButtonElement[]} */
+  const buttons = [];
+
+  /** @param {number} at */
+  const select = (at) => {
+    for (const [index, button] of buttons.entries()) {
+      const on = index === at;
+      button.setAttribute("aria-selected", String(on));
+      // **選んでいるタブだけを Tab で拾う**（ARIA の作法。押せる物が増え続けない）
+      button.tabIndex = on ? 0 : -1;
+      const panel = panels[index];
+      if (panel) panel.node.hidden = !on;
+    }
+  };
+
+  for (const [index, panel] of panels.entries()) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "mmj-popup-tab";
+    button.textContent = panel.label;
+    button.id = `mmj-tab-${group}-${index}`;
+    button.setAttribute("role", "tab");
+    panel.node.id = `mmj-panel-${group}-${index}`;
+    panel.node.setAttribute("role", "tabpanel");
+    panel.node.setAttribute("aria-labelledby", button.id);
+    button.setAttribute("aria-controls", panel.node.id);
+    button.addEventListener("click", (event) => {
+      // **地図まで届かせない。**`closeOnClick` で、押した瞬間にカードが閉じる
+      event.stopPropagation();
+      event.preventDefault();
+      select(index);
+    });
+    button.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.stopPropagation();
+      event.preventDefault();
+      const next = stepIndex(index, event.key === "ArrowRight" ? 1 : -1, buttons.length);
+      select(next);
+      buttons[next]?.focus();
+    });
+    buttons.push(button);
+    bar.append(button);
+  }
+
+  box.append(bar, ...panels.map((p) => p.node));
+  select(0);
   return box;
 }
 

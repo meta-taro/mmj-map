@@ -14,6 +14,9 @@ import {
   indexOfShop,
   writeShopParam,
   panDelta,
+  parseTabs,
+  buildTabs,
+  splitForTabs,
 } from "../src/card.js";
 
 /**
@@ -411,5 +414,100 @@ describe("panDelta", () => {
   it("**壊れた値で落とさない**（地図は出す）", () => {
     expect(panDelta(/** @type {any} */ (null), map)).toEqual([0, 0]);
     expect(panDelta({ top: 200, bottom: 500, left: 100, right: 300 }, /** @type {any} */ (null))).toEqual([0, 0]);
+  });
+});
+
+/**
+ * **段階 4 — タブ。**
+ *
+ * クーポン・品書き・シフトのような「時間で変わる中身」を長文の下に足していくと、
+ * **開いた人は下まで読まない**。1 枚のカードに並べて、切り替えられるようにする。
+ *
+ * **渡すのは「見出し:属性名」で、値ではない**（`card-*` と同じ発想）。
+ */
+describe("parseTabs", () => {
+  it("見出しと属性名の組を読む", () => {
+    expect(parseTabs("品書き:menu,クーポン:coupon")).toEqual([
+      { label: "品書き", key: "menu" },
+      { label: "クーポン", key: "coupon" },
+    ]);
+  });
+
+  it("前後の空白を落とす", () => {
+    expect(parseTabs(" 品書き : menu , クーポン:coupon ")).toEqual([
+      { label: "品書き", key: "menu" },
+      { label: "クーポン", key: "coupon" },
+    ]);
+  });
+
+  /** **壊れた指定で全部を捨てない。**書ける組だけ出す */
+  it("組になっていないものは飛ばす", () => {
+    expect(parseTabs("品書き:menu,こわれ,:key,label:")).toEqual([{ label: "品書き", key: "menu" }]);
+  });
+
+  it("同じ属性を二度出さない", () => {
+    expect(parseTabs("品書き:menu,お品書き:menu")).toEqual([{ label: "品書き", key: "menu" }]);
+  });
+
+  it("無ければ空", () => {
+    expect(parseTabs("")).toEqual([]);
+    expect(parseTabs(null)).toEqual([]);
+    expect(parseTabs(/** @type {any} */ (undefined))).toEqual([]);
+  });
+});
+
+describe("buildTabs", () => {
+  const spec = [
+    { label: "品書き", key: "menu" },
+    { label: "クーポン", key: "coupon" },
+  ];
+
+  it("中身のあるタブだけ出す（**空のタブを押させない**）", () => {
+    expect(buildTabs({ menu: "珈琲 500 円", coupon: "   " }, spec)).toEqual([
+      { label: "品書き", text: "珈琲 500 円" },
+    ]);
+  });
+
+  it("数で入っていても出す", () => {
+    expect(buildTabs({ menu: 500 }, [{ label: "品書き", key: "menu" }])).toEqual([
+      { label: "品書き", text: "500" },
+    ]);
+  });
+
+  it("中身が無ければ空", () => {
+    expect(buildTabs({}, spec)).toEqual([]);
+    expect(buildTabs(/** @type {any} */ (null), spec)).toEqual([]);
+  });
+});
+
+/**
+ * **写真と題は、タブを切り替えても出したまま。**
+ * どの店を見ているかが消えると、**切り替えた先が何の店か分からなくなる**。
+ */
+describe("splitForTabs", () => {
+  const parts = [
+    { kind: "text", text: "町家カフェ 灯" },
+    { kind: "image", src: "./1.jpg" },
+    { kind: "image", src: "./2.jpg" },
+    { kind: "rating", text: "4.3 / 5" },
+    { kind: "body", text: "築 90 年" },
+    { kind: "link", href: "./a" },
+  ];
+
+  it("題と写真は上に残し、残りをタブの中へ入れる", () => {
+    const got = splitForTabs(parts);
+    expect(got.head.map((p) => p.kind)).toEqual(["text", "image", "image"]);
+    expect(got.rest.map((p) => p.kind)).toEqual(["rating", "body", "link"]);
+  });
+
+  it("写真が無くても題は残す", () => {
+    const got = splitForTabs([{ kind: "text", text: "灯" }, { kind: "body", text: "…" }]);
+    expect(got.head.map((p) => p.kind)).toEqual(["text"]);
+    expect(got.rest.map((p) => p.kind)).toEqual(["body"]);
+  });
+
+  it("空でも落ちない", () => {
+    expect(splitForTabs([])).toEqual({ head: [], rest: [] });
+    expect(splitForTabs(/** @type {any} */ (null))).toEqual({ head: [], rest: [] });
   });
 });

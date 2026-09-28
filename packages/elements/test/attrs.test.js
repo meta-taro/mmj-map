@@ -470,3 +470,20 @@ describe("buildMapOptions の ideographFonts", () => {
     expect(buildMapOptions({ ...base, ideographFonts: "" }).localIdeographFontFamily).toContain("Noto Sans JP");
   });
 });
+
+/**
+ * **カードは、短い吹き出しより広い。**
+ *
+ * MapLibre の既定は 240px。タブを 4 枚並べると**2 段に折れて、
+ * 中身が下で切れた**（実測・2026-09-28。撮って気づいた）。
+ * 広げるのはカードのときだけで、「大阪城」だけの箱は今までどおり。
+ */
+describe("buildPopupOptions の幅", () => {
+  it("既定では指定しない（**短い吹き出しの見た目を変えない**）", () => {
+    expect(buildPopupOptions().maxWidth).toBeUndefined();
+  });
+
+  it("渡されたら、その幅を使う", () => {
+    expect(buildPopupOptions("mmj-popup-abc", "20rem").maxWidth).toBe("20rem");
+  });
+});
