@@ -108,6 +108,24 @@ jobs:
           mkdir -p apps/demo/elements
           cp packages/elements/src/*.js apps/demo/elements/
 
+      # 掴んだものの版を、配るたびに変える。
+      #
+      # **手で上げる方式は漏れる。**`mmj-v1` と書いて「変えたら上げること」と
+      # コメントしていたが、一度も上がらなかった。その結果、一度でも開いた人には
+      # **古い部品の JS が配られ続け**、頁だけ新しくなって直したものが出なかった
+      # （2026-09-28・人からの指摘で発覚）。
+      #
+      # **目印が無ければ止める。**名前を変えたときに黙って素通りすると、
+      # 同じ壊れ方が戻ってくる。
+      - name: Stamp the service worker cache version
+        run: |
+          grep -q '__BUILD__' apps/demo/sw.js || {
+            echo "apps/demo/sw.js に __BUILD__ がありません。掴んだものの版が固定されます" >&2
+            exit 1
+          }
+          sed -i "s/__BUILD__/${GITHUB_SHA::7}/" apps/demo/sw.js
+          grep -n 'const CACHE' apps/demo/sw.js
+
       # デモが読むタイルを Release から取って同梱する。
       #
       # **タイルをリポジトリに置かない。**62.8 MB を git history へ入れると、

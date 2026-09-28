@@ -93,7 +93,9 @@
   // 握り潰さない（§8）。登録できなくても地図は出るので、**地図は殺さない**。
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker
-      .register('./sw.js')
+      // **この登録係そのものを控えから読まない。**古い sw.js が返ると、
+      // 版が上がったことに気づけず、**古い束を配り続ける**
+      .register('./sw.js', { updateViaCache: 'none' })
       .catch((error) => console.error('[mmj] オフライン用の登録ができませんでした', error));
   }
 </script>
