@@ -55,3 +55,94 @@ export function buildPopupContent(input) {
 
   return parts;
 }
+
+/**
+ * リンクとして通してよいか。
+ *
+ * **`javascript:` は押した瞬間に走る。**媒体が登録した文字列が `href` に入る
+ * 作りなので、ここを通すと**その地図を置いたページが乗っ取られる**。
+ * `data:` も同じ理由で通さない。
+ *
+ * **電話とメールは通す。**店の情報として普通に要るし、実行はされない。
+ * @param {string | null | undefined} value
+ */
+export function isSafeLink(value) {
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (trimmed === "") return false;
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(trimmed);
+  if (scheme === null) return true; // 相対パス
+  const name = scheme[1]?.toLowerCase();
+  return name === "http" || name === "https" || name === "mailto" || name === "tel";
+}
+
+/** 星の満点。**5 段階以外を使う媒体もあるが、揃えないと読み比べられない** */
+const RATING_MAX = 5;
+
+/**
+ * 星を、読める形にする。
+ *
+ * **星だけにしない。**読み上げには「★★★★☆」が伝わらない。
+ * そして**件数が無い評価は根拠が無い**ので、あれば必ず添える。
+ *
+ * **読めない値は出さない。**`0 件の星`を出すと、評価が無いのに有るように見える。
+ *
+ * @param {unknown} value
+ * @param {unknown} count
+ * @returns {string | null}
+ */
+export function formatRating(value, count) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  const clamped = Math.min(RATING_MAX, Math.max(0, value));
+  const shown = Number.isInteger(clamped) ? clamped : clamped.toFixed(1);
+  const times = typeof count === "number" && Number.isFinite(count) && count > 0
+    ? `（${count} 件）`
+    : "";
+  return `${shown} / ${RATING_MAX}${times}`;
+}
+
+/** リンクに文字が無いときの既定。**`undefined` と書かれたリンクを出さない** */
+const DEFAULT_LINK_LABEL = "詳しく見る";
+
+/**
+ * カードの中身を組む。**ここも純粋関数**で、DOM は要素側が作る。
+ *
+ * 並びは**見る順**——題 → 写真 → 星 → 長文 → リンク。
+ *
+ * **危ないものは落として、残りは出す。**写真 1 枚のせいでカード全部を
+ * 消すと、**なぜ出ないのかが誰にも分からない**。
+ *
+ * @param {{
+ *   title?: unknown, images?: unknown, body?: unknown,
+ *   rating?: unknown, ratingCount?: unknown,
+ *   href?: unknown, hrefLabel?: unknown,
+ * }} input
+ * @returns {any[]} **中身が無ければ空**（空の箱を開かないため）
+ */
+export function buildCardContent(input) {
+  /** @type {any[]} */
+  const parts = [];
+
+  const title = typeof input.title === "string" ? input.title.trim() : "";
+  if (title !== "") parts.push({ kind: "text", text: title });
+
+  const images = Array.isArray(input.images) ? input.images : [];
+  for (const src of images) {
+    if (typeof src !== "string" || !isSafeImage(src)) continue;
+    parts.push({ kind: "image", src: src.trim(), alt: title });
+  }
+
+  const rating = formatRating(input.rating, input.ratingCount);
+  if (rating !== null) parts.push({ kind: "rating", text: rating });
+
+  const body = typeof input.body === "string" ? input.body.trim() : "";
+  if (body !== "") parts.push({ kind: "body", text: body });
+
+  if (isSafeLink(/** @type {any} */ (input.href))) {
+    const label = typeof input.hrefLabel === "string" && input.hrefLabel.trim() !== ""
+      ? input.hrefLabel.trim()
+      : DEFAULT_LINK_LABEL;
+    parts.push({ kind: "link", href: String(input.href).trim(), label });
+  }
+
+  return parts;
+}

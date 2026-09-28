@@ -344,6 +344,13 @@ export function buildPopupStyle(colors = POPUP_COLORS, className = DEFAULT_POPUP
     // 「大阪梅田」の 4 文字が 2 行に割れると、箱が縦長になって読みにくい。
     // **箱ごとではなく文字の行だけに掛ける**（写真の下の説明が 1 行に伸びて溢れるため）
     `.${className} .mmj-popup-text{white-space:nowrap;}` +
+    // **長文と星は折り返す。**短い名前と同じ扱いにすると、横へ伸び続ける
+    `.${className} .mmj-popup-copy{white-space:normal;max-width:28em;margin-top:.35em;}` +
+    `.${className} .mmj-popup-rating{white-space:nowrap;margin-top:.2em;opacity:.85;}` +
+    // リンクは**押せると分かる形**にする（下線を消さない）
+    `.${className} .mmj-popup-link{` +
+    `display:inline-block;margin-top:.45em;color:${colors.text};` +
+    "text-decoration:underline;text-underline-offset:2px;}" +
     // 写真は原寸で来る。**抑えないと画面が埋まる**
     `.${className} .mmj-popup-body img{` +
     "display:block;max-width:220px;max-height:160px;width:100%;height:auto;" +

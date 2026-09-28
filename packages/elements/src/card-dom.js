@@ -35,11 +35,28 @@ const SHEET_CLASS = "mmj-card-sheet";
  */
 export function buildCardStyle(colors, className) {
   return (
+    // **吹き出しは伸び続ける。**写真 2 枚＋長文で画面の上へはみ出し、
+    // **見出しバーごと画面の外へ出た**（実測・2026-09-28。撮って気づいた）。
+    // 高さを止めて、**中身だけをスクロールさせる**（バーは残す）。
+    // **地図より背を高くしない。**画面基準（60vh）にしたら、地図の外へはみ出して
+    // **見出しバーごと頁のヘッダの下に潜った**（実測・2026-09-28。
+    // 吹き出しの上端が y=45、地図の上端が y=75 だった）。
+    // 地図は画面より小さいのが普通なので、**画面の半分より小さく**しておく。
+    // **ここは見た目の調整で詰め直す値**（地図の実寸から決めるのが本筋）。
+    `.${className} .maplibregl-popup-content{max-height:min(42vh,20rem);` +
+    "display:flex;flex-direction:column;overflow:hidden;}" +
+    `.${className} .maplibregl-popup-content > div{` +
+    "display:flex;flex-direction:column;min-height:0;}" +
+    `.${className} .maplibregl-popup-content .mmj-popup-body{overflow:auto;min-height:0;` +
+    "overscroll-behavior:contain;}" +
     // 見出しバー。**中身とボタンを分ける線を 1 本引く**
-    `.${className} .mmj-card-bar{` +
+    `.${className} .mmj-card-bar{flex:none;` +
     "display:flex;align-items:center;gap:.25rem;justify-content:flex-end;" +
     `border-bottom:1px solid ${colors.border};` +
-    "margin:-6px -10px 6px;padding:4px 6px;}" +
+    // **上へ負の余白を掛けない。**高さを止めた `overflow:hidden` に切り取られ、
+    // **バーごと消える**（実測・2026-09-28。撮って気づいた）。
+    // 横だけ広げて、吹き出しの内側の余白いっぱいに敷く
+    "margin:0 -10px 6px;padding:4px 6px;}" +
     `.${className} .mmj-card-btn{` +
     "display:inline-flex;align-items:center;justify-content:center;" +
     "min-width:32px;min-height:32px;padding:0 .4rem;" +

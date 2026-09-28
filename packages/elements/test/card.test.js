@@ -6,8 +6,10 @@ import {
   initialCardState,
   keyAction,
   NARROW_WIDTH,
+  mapCardFields,
   needsChrome,
   nextCardState,
+  readShopHash,
 } from "../src/card.js";
 
 /**
@@ -151,5 +153,95 @@ describe("keyAction", () => {
   it("**他のキーを奪わない**（地図の操作を邪魔しない）", () => {
     expect(keyAction("ArrowUp", "maximized")).toBeNull();
     expect(keyAction("Enter", "popup")).toBeNull();
+  });
+});
+
+/**
+ * **500 店を手書きしない。**「どの属性に何が入っているか」だけを受け取る
+ * （`<mmj-poi label-key="shop_name">` と同じ発想）。
+ *
+ * **媒体ごとに名前も書き出し方も違う。**推測すると当たらない。
+ */
+describe("mapCardFields", () => {
+  const keys = {
+    title: "shop_name", images: "photos", body: "description",
+    rating: "rating", ratingCount: "reviews", href: "url", hrefLabel: "お店のページ",
+  };
+
+  it("指定された属性から読む", () => {
+    const got = mapCardFields(
+      { shop_name: "灯", description: "築 90 年", rating: 4.3, reviews: 128, url: "/shops/akari" },
+      keys,
+    );
+    expect(got.title).toBe("灯");
+    expect(got.body).toBe("築 90 年");
+    expect(got.rating).toBe(4.3);
+    expect(got.ratingCount).toBe(128);
+    expect(got.href).toBe("/shops/akari");
+  });
+
+  it("**写真は配列でも受ける**", () => {
+    expect(mapCardFields({ photos: ["./1.jpg", "./2.jpg"] }, keys).images).toEqual(["./1.jpg", "./2.jpg"]);
+  });
+
+  /**
+   * **GeoJSON の属性に配列を入れられない書き出し方をする媒体がある。**
+   * 実際に多いので、区切り文字も受ける。
+   */
+  it("**写真は区切り文字でも受ける**（`,` と改行）", () => {
+    expect(mapCardFields({ photos: "./1.jpg, ./2.jpg" }, keys).images).toEqual(["./1.jpg", "./2.jpg"]);
+    expect(mapCardFields({ photos: "./1.jpg\n./2.jpg" }, keys).images).toEqual(["./1.jpg", "./2.jpg"]);
+  });
+
+  it("**空白では割らない**（将来ここを題名へ使い回したときに壊れる）", () => {
+    expect(mapCardFields({ photos: "./a b.jpg" }, keys).images).toEqual(["./a b.jpg"]);
+  });
+
+  it("**数が文字列で来ても読む**（媒体の書き出しは `\"4.3\"` のことがある）", () => {
+    const got = mapCardFields({ rating: "4.3", reviews: "128" }, keys);
+    expect(got.rating).toBe(4.3);
+    expect(got.ratingCount).toBe(128);
+  });
+
+  it("**数として読めないものは落とす**（`「よい」` を星にしない）", () => {
+    expect(mapCardFields({ rating: "よい" }, keys).rating).toBeUndefined();
+  });
+
+  it("属性名が指定されていなければ読まない（**推測しない**）", () => {
+    const got = mapCardFields({ name: "灯" }, { title: null, images: null, body: null, rating: null, ratingCount: null, href: null, hrefLabel: null });
+    expect(got.title).toBeUndefined();
+    expect(got.images).toEqual([]);
+  });
+
+  it("中身が無くても落ちない", () => {
+    expect(() => mapCardFields(/** @type {any} */ (null), keys)).not.toThrow();
+  });
+});
+
+/**
+ * **「この店いいよ」と送るのは頁の共有。**復元できないと、結局
+ * 店舗ページへ飛ばすことになり、**地図で完結させた意味が消える**。
+ */
+describe("readShopHash", () => {
+  it("`#shop=` を読む", () => {
+    expect(readShopHash("#shop=akari")).toBe("akari");
+  });
+
+  it("他の hash と混ざっていても読む（`#12/34.7/135.5` と共存する）", () => {
+    expect(readShopHash("#12/34.7/135.5&shop=akari")).toBe("akari");
+  });
+
+  it("**符号化された名前を戻す**（日本語の id が来る）", () => {
+    expect(readShopHash(`#shop=${encodeURIComponent("灯")}`)).toBe("灯");
+  });
+
+  it("無ければ null", () => {
+    expect(readShopHash("#12/34.7/135.5")).toBeNull();
+    expect(readShopHash("")).toBeNull();
+    expect(readShopHash(/** @type {any} */ (null))).toBeNull();
+  });
+
+  it("**壊れた URL で落とさない**（地図は出す）", () => {
+    expect(readShopHash("#shop=%E0%A4%A")).toBeNull();
   });
 });

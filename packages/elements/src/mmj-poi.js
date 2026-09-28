@@ -12,7 +12,12 @@
  *
  * 押したら `mmj-poi-click` が飛ぶ。**何を出すかは使う側が決める**（PRD §3・厚くしない）。
  */
+import { buildPopupOptions } from "./attrs.js";
+import { initialCardState, mapCardFields, needsChrome } from "./card.js";
+import { mountCard } from "./card-dom.js";
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
+import { buildCardContent } from "./popup.js";
+import { ensureCardContrast, ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
 import { parseCount } from "./cluster.js";
 
 /** 同じページに複数置ける。source 名が衝突すると後勝ちで消えるため、番号で分ける */
@@ -23,6 +28,13 @@ export class MmjPoi extends HTMLElement {
   map = null;
   /** @type {{ sourceId: string, source: any, layers: any[] } | null} */
   spec = null;
+
+  /** 開いているカード。**開き直すたびに片付ける**（重ねて開かない） */
+  /** @type {any} */
+  card = null;
+
+  /** @type {any} */
+  popup = null;
 
   /**
    * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
@@ -101,11 +113,71 @@ export class MmjPoi extends HTMLElement {
   #emit(event) {
     const feature = event.features?.[0];
     if (!feature) return;
+
+    // **出来事は出すだけで、どこへも送らない。**送り先を決めるのは媒体
+    // （「利用者がどこを見たかが第三者に渡らない」が MMJ の主張なので、
+    // 部品が勝手に送り始めたら、その主張が嘘になる）
     this.dispatchEvent(
       new CustomEvent("mmj-poi-click", {
         bubbles: true,
         detail: { properties: feature.properties, lngLat: feature.geometry.coordinates },
       }),
     );
+
+    this.#openCard(feature);
+  }
+
+  /** `card-*` で指定された属性名。**推測しない**（媒体ごとに名前が違う） */
+  #cardKeys() {
+    return {
+      title: this.getAttribute("card-title"),
+      images: this.getAttribute("card-images"),
+      body: this.getAttribute("card-body"),
+      rating: this.getAttribute("card-rating"),
+      ratingCount: this.getAttribute("card-rating-count"),
+      href: this.getAttribute("card-href"),
+      hrefLabel: this.getAttribute("card-href-label"),
+    };
+  }
+
+  /**
+   * 押された点のカードを開く。
+   *
+   * **`card-*` が 1 つも指定されていなければ何もしない。**
+   * 勝手に属性名を推測して、関係のない値をカードに出さない。
+   *
+   * @param {any} feature
+   */
+  #openCard(feature) {
+    const keys = this.#cardKeys();
+    if (Object.values(keys).every((value) => value === null)) return;
+
+    const content = buildCardContent(mapCardFields(feature.properties ?? {}, keys));
+    if (content.length === 0) return; // **空の箱を開かない**
+
+    const maplibregl = /** @type {any} */ (window).maplibregl;
+    const map = this.map;
+    const colors = popupColorsFrom(this.owner);
+    const className = ensurePopupContrast(colors);
+    ensureCardContrast(colors, className);
+
+    // 開き直すたびに前のものを片付ける。**重ねて開かない**
+    this.card?.destroy();
+    this.popup?.remove();
+
+    const popup = new maplibregl.Popup(buildPopupOptions(className)).setLngLat(
+      feature.geometry.coordinates,
+    );
+    this.popup = popup;
+
+    this.card = mountCard({
+      body: renderPopup(content),
+      container: map.getContainer(),
+      popup,
+      className,
+      // **狭い画面では最大化から始める。**幅 360px に写真は入らない
+      initial: initialCardState({ width: window.innerWidth, rich: needsChrome(content) }),
+    });
+    popup.setDOMContent(this.card.content).addTo(map);
   }
 }

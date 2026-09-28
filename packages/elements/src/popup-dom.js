@@ -13,7 +13,7 @@ import { themeClassName } from "./palette.js";
 
 /**
  * 組み立ての指示から DOM を作る。
- * @param {{ kind: string, src?: string, alt?: string, text?: string }[]} parts
+ * @param {{ kind: string, src?: string, alt?: string, text?: string, href?: string, label?: string }[]} parts
  * @returns {HTMLElement}
  */
 export function renderPopup(parts) {
@@ -30,8 +30,26 @@ export function renderPopup(parts) {
       box.append(img);
       continue;
     }
+    if (part.kind === "link") {
+      const link = document.createElement("a");
+      // **`href` は検証済みのものだけが来る**（`popup.js` の `isSafeLink`）。
+      // `javascript:` は押した瞬間に走るので、ここまで到達させない
+      link.href = part.href ?? "";
+      link.className = "mmj-popup-link";
+      link.textContent = part.label ?? "";
+      // **別ページへ飛ばすときは、元のページを触らせない**
+      if (/^https?:/i.test(link.href)) {
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+      }
+      box.append(link);
+      continue;
+    }
+
     const line = document.createElement("div");
-    line.className = "mmj-popup-text";
+    // 星と長文は、短い名前とは**折り返し方が違う**（`mmj-popup-text` は折り返さない）
+    line.className =
+      part.kind === "rating" ? "mmj-popup-rating" : part.kind === "body" ? "mmj-popup-copy" : "mmj-popup-text";
     line.textContent = part.text ?? "";
     box.append(line);
   }

@@ -129,3 +129,86 @@ export function keyAction(key, state) {
   if (state === "popup") return "close";
   return null;
 }
+
+/**
+ * 数として読む。**媒体の書き出しは文字列のことがある**（`"4.3"`）。
+ * @param {unknown} value
+ * @returns {number | undefined}
+ */
+function readNumberField(value) {
+  if (typeof value === "number") return value;
+  // 媒体の書き出しは文字列のことがある（`"4.3"`）。**数として読めるなら読む**
+  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
+    return Number(value);
+  }
+  return undefined;
+}
+
+/**
+ * GeoJSON の `properties` から、カードの中身へ割り当てる。
+ *
+ * **500 店を手書きしない。**`<mmj-poi label-key="shop_name">` と同じ発想で、
+ * 「どの属性に何が入っているか」だけを受け取る。
+ * **媒体ごとに名前が違う**（`name` / `title` / `shop_name`）ので、推測しない。
+ *
+ * ```html
+ * <mmj-poi src="./shops.geojson"
+ *          card-title="name" card-images="photos"
+ *          card-rating="rating" card-rating-count="reviews"
+ *          card-href="url" card-body="description"></mmj-poi>
+ * ```
+ *
+ * **写真は配列でも、区切り文字でも受ける。**GeoJSON の属性に配列を入れられない
+ * 書き出し方をする媒体があるため（実際に多い）。
+ *
+ * @param {Record<string, unknown>} properties
+ * @param {Record<string, string | null>} keys `card-*` で指定された属性名
+ * @returns {{
+ *   title: unknown, images: unknown[], body: unknown,
+ *   rating: number | undefined, ratingCount: number | undefined,
+ *   href: unknown, hrefLabel: string | undefined,
+ * }} `buildCardContent` へ渡す形
+ */
+export function mapCardFields(properties, keys) {
+  const read = (/** @type {string | null | undefined} */ key) =>
+    key === null || key === undefined || key === "" ? undefined : properties?.[key];
+
+  const rawImages = read(keys.images);
+  const images = Array.isArray(rawImages)
+    ? rawImages
+    : typeof rawImages === "string"
+      // 区切りは `,` と改行の両方。**空白では割らない**（URL に空白は入らないが、
+      // 題名に空白は入る——将来ここを使い回したときに壊れる）
+      ? rawImages.split(/[,\n]/).map((s) => s.trim()).filter((s) => s !== "")
+      : [];
+
+  return {
+    title: read(keys.title),
+    images,
+    body: read(keys.body),
+    rating: readNumberField(read(keys.rating)),
+    ratingCount: readNumberField(read(keys.ratingCount)),
+    href: read(keys.href),
+    hrefLabel: keys.hrefLabel ?? undefined,
+  };
+}
+
+/**
+ * URL の `#shop=<id>` から、開く店を読む。
+ *
+ * **「この店いいよ」と送るのは頁の共有。**復元できないと、結局
+ * 店舗ページへ飛ばすことになり、**地図で完結させた意味が消える**。
+ *
+ * @param {string} hash `location.hash`
+ * @returns {string | null}
+ */
+export function readShopHash(hash) {
+  const match = /(?:^#|[#&])shop=([^&]+)/.exec(typeof hash === "string" ? hash : "");
+  if (match?.[1] === undefined) return null;
+  try {
+    return decodeURIComponent(match[1]) || null;
+  } catch {
+    // 壊れた URL で落とさない。**地図は出す**
+    return null;
+  }
+}
