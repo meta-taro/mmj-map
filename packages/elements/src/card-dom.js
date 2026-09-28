@@ -79,7 +79,15 @@ export function buildCardStyle(colors, className) {
     // **高さの上限が要る。**幅だけ広げると、寸法を持たない SVG が
     // 画面いっぱいに膨らんで、下の文字が押し出される（実測・2026-09-28）。
     // 半分に収めれば、写真と文字が同時に見える
-    `.${SHEET_CLASS} .mmj-popup-body img{max-width:100%;max-height:50vh;object-fit:contain;}`
+    `.${SHEET_CLASS} .mmj-popup-body img{max-width:100%;max-height:50vh;object-fit:contain;}` +
+    // 大きくしても**横に流す**。縦に積むと、下の文字まで指が届かない。
+    // **枠の幅で割らない。**広い面では枠のほうが写真より大きくなり、
+    // 写真が枠の中央に浮いて、**隣の枠には何も映らない**
+    // （実測・2026-09-28。枠 802px に対し写真は 471px しか出ず、
+    // 3 枚あるのに 1 枚に見えた。撮らなければ数字は正しいままだった）。
+    // 高さだけ揃えて、幅は写真の形なりにする。**並べば、並んで見える**
+    `.${SHEET_CLASS} .mmj-popup-gallery img{` +
+    "flex:0 0 auto;width:auto;min-width:0;max-width:none;height:min(38vh,320px);}"
   );
 }
 

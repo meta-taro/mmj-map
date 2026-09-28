@@ -10,6 +10,7 @@
 import { buildPopupStyle, POPUP_COLORS } from "./attrs.js";
 import { buildCardStyle } from "./card-dom.js";
 import { themeClassName } from "./palette.js";
+import { groupParts } from "./popup.js";
 
 /**
  * 組み立ての指示から DOM を作る。
@@ -20,7 +21,34 @@ export function renderPopup(parts) {
   const box = document.createElement("div");
   box.className = "mmj-popup-body";
 
-  for (const part of parts) {
+  // **写真をまとめるかどうかは `popup.js` が決める。**ここは描くだけ
+  for (const part of groupParts(parts)) {
+    if (part.kind === "gallery") {
+      const strip = document.createElement("div");
+      strip.className = "mmj-popup-gallery";
+      const images = part.images ?? [];
+      // **横に流せることを、覗いている端以外にも出す。**
+      // 端が見えるのは目で見ている人だけで、読み上げには何も伝わらない。
+      // 帯そのものを読み、枚数を言う（`role="group"` + 名前）
+      strip.setAttribute("role", "group");
+      strip.setAttribute("aria-label", `写真 ${images.length} 枚`);
+      // **スクロールする場所はキーボードでも触れること。**
+      // Chrome は overflow だけでは焦点を当てないので、指でしかめくれなくなる
+      strip.tabIndex = 0;
+      for (const image of images) {
+        const img = document.createElement("img");
+        img.src = image.src ?? "";
+        img.alt = image.alt ?? "";
+        img.loading = "lazy";
+        strip.append(img);
+      }
+      // **地図に横の動きを取らせない。**取られると、めくったつもりが地図が動く
+      for (const type of ["wheel", "touchmove", "pointerdown"]) {
+        strip.addEventListener(type, (event) => event.stopPropagation(), { passive: true });
+      }
+      box.append(strip);
+      continue;
+    }
     if (part.kind === "image") {
       const img = document.createElement("img");
       img.src = part.src ?? "";

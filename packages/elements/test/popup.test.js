@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCardContent, buildPopupContent, formatRating, isSafeLink } from "../src/popup.js";
+import { buildCardContent, buildPopupContent, formatRating, groupParts, isSafeLink } from "../src/popup.js";
 
 /**
  * 吹き出しの中身。**ここは純粋関数**で、DOM は要素側が作る。
@@ -167,5 +167,50 @@ describe("buildCardContent", () => {
   it("**中身が無ければ空**（空の箱を開かない）", () => {
     expect(buildCardContent({})).toEqual([]);
     expect(buildCardContent({ title: "  " })).toEqual([]);
+  });
+});
+
+/**
+ * **写真が縦に積まると、星も長文もリンクも画面の外へ出る。**
+ * 実測（2026-09-28）: 写真 2 枚で吹き出しが 422px になり、
+ * 地図からはみ出して見出しバーがヘッダの下に潜った。
+ *
+ * **2 枚以上は横に流す。**1 枚なら流す必要がない（横スクロールの手がかりが邪魔になる）。
+ */
+/** @param {string} src */
+const img = (src) => ({ kind: "image", src, alt: "" });
+
+describe("groupParts", () => {
+
+  it("**2 枚以上は 1 つのまとまりにする**", () => {
+    const got = groupParts([img("a"), img("b"), { kind: "text", text: "灯" }]);
+    expect(got.map((p) => p.kind)).toEqual(["gallery", "text"]);
+    expect(got[0].images).toHaveLength(2);
+  });
+
+  it("**1 枚はそのまま**（横スクロールの手がかりが邪魔になる）", () => {
+    expect(groupParts([img("a"), { kind: "text", text: "灯" }]).map((p) => p.kind)).toEqual([
+      "image",
+      "text",
+    ]);
+  });
+
+  it("**並び順を変えない**（題が先、写真が後、の並びを壊さない）", () => {
+    const got = groupParts([{ kind: "text", text: "灯" }, img("a"), img("b"), { kind: "link" }]);
+    expect(got.map((p) => p.kind)).toEqual(["text", "gallery", "link"]);
+  });
+
+  it("**離れた写真はまとめない**（間に文字があるのは別の意図）", () => {
+    const got = groupParts([img("a"), { kind: "text", text: "x" }, img("b")]);
+    expect(got.map((p) => p.kind)).toEqual(["image", "text", "image"]);
+  });
+
+  it("写真が無ければ何もしない", () => {
+    const parts = [{ kind: "text", text: "灯" }];
+    expect(groupParts(parts)).toEqual(parts);
+  });
+
+  it("空でも落ちない", () => {
+    expect(groupParts([])).toEqual([]);
   });
 });

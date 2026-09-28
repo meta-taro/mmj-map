@@ -146,3 +146,46 @@ export function buildCardContent(input) {
 
   return parts;
 }
+
+/**
+ * 続いている写真を 1 つのまとまりにする。**ここも純粋関数。**
+ *
+ * **縦に積むと、星も長文もリンクも画面の外へ出る。**
+ * 実測（2026-09-28）: 写真 2 枚で吹き出しが 422px になり、地図からはみ出して
+ * **見出しバーがヘッダの下に潜った**。横に流せば、高さは写真 1 枚ぶんで済む。
+ *
+ * **1 枚のときはまとめない。**横スクロールの手がかりを出しても、流す先が無い。
+ *
+ * **離れた写真はまとめない。**間に文字が挟まっているのは、
+ * 「ここまでが 1 組」という別の意図。並び順は変えない。
+ *
+ * @param {any[]} parts
+ * @returns {any[]}
+ */
+export function groupParts(parts) {
+  if (!Array.isArray(parts)) return [];
+
+  /** @type {any[]} */
+  const out = [];
+  /** @type {any[]} */
+  let run = [];
+
+  const flush = () => {
+    if (run.length === 0) return;
+    // 2 枚以上のときだけ、横に流すまとまりにする
+    out.push(run.length >= 2 ? { kind: "gallery", images: run } : run[0]);
+    run = [];
+  };
+
+  for (const part of parts) {
+    if (part?.kind === "image") {
+      run.push(part);
+      continue;
+    }
+    flush();
+    out.push(part);
+  }
+  flush();
+
+  return out;
+}

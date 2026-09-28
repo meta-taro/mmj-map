@@ -344,6 +344,21 @@ export function buildPopupStyle(colors = POPUP_COLORS, className = DEFAULT_POPUP
     // 「大阪梅田」の 4 文字が 2 行に割れると、箱が縦長になって読みにくい。
     // **箱ごとではなく文字の行だけに掛ける**（写真の下の説明が 1 行に伸びて溢れるため）
     `.${className} .mmj-popup-text{white-space:nowrap;}` +
+    // **写真が 2 枚以上なら横に流す。**縦に積むと、星も長文もリンクも画面の外へ出る
+    // （実測・2026-09-28。写真 2 枚で吹き出しが 422px になり、地図からはみ出した）。
+    // **1 枚ぶんずつ止まる**ので、めくったことが分かる
+    `.${className} .mmj-popup-gallery{` +
+    "display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;" +
+    "overscroll-behavior-x:contain;scrollbar-width:thin;}" +
+    // **1 枚を幅いっぱいにしない。**ぴったり収めると、横に流せることが
+    // 画面のどこにも出ず、**写真 1 枚の店にしか見えない**
+    // （実測・2026-09-28。3 枚入れて撮ったら 1 枚目しか見えなかった）。
+    // 次の 1 枚の端を覗かせる。**続きがあることは、覗いている端が伝える**
+    `.${className} .mmj-popup-gallery img{` +
+    "flex:0 0 86%;scroll-snap-align:start;max-width:none;min-width:0;}" +
+    // 帯そのものがキーボードで触れる（`tabindex`）。**どこにいるか出す**
+    `.${className} .mmj-popup-gallery:focus-visible{` +
+    `outline:2px solid ${colors.text};outline-offset:2px;}` +
     // **長文と星は折り返す。**短い名前と同じ扱いにすると、横へ伸び続ける
     `.${className} .mmj-popup-copy{white-space:normal;max-width:28em;margin-top:.35em;}` +
     `.${className} .mmj-popup-rating{white-space:nowrap;margin-top:.2em;opacity:.85;}` +
