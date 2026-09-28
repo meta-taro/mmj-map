@@ -51,7 +51,11 @@ export function extractReferences(html: string): Reference[] {
 
   for (const [index, line] of lines.entries()) {
     // src="..." / href="..."
-    for (const match of line.matchAll(/\b(?:src|href)\s*=\s*["']([^"']*)["']/gi)) {
+    // **`card-href` や `data-src` を巻き込まない。**`\b` だけだと `-` の後ろでも
+    // 境目と見なされ、**属性名をファイルのパスとして拾う**。
+    // `<mmj-poi card-href="url">` は「GeoJSON の `url` 属性を見よ」という指定で、
+    // `url` というファイルは無い（実測・2026-09-28。`shops.html` で CI が止まった）。
+    for (const match of line.matchAll(/(?<![-\w])(?:src|href)\s*=\s*["']([^"']*)["']/gi)) {
       const raw = match[1] ?? "";
       if (!isExternal(raw)) found.push({ raw, line: index + 1 });
     }

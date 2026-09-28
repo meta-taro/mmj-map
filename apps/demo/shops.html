@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>お店を見て回る — MMJ</title>
+<meta name="description" content="ピンを押すとカードが開き、地図から離れずに次の店へ送れます。開いている店は URL に残ります。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="お店を見て回る — MMJ">
+<meta property="og:description" content="ピンを押すとカードが開き、地図から離れずに次の店へ送れます。開いている店は URL に残ります。">
+<link rel="icon" href="./favicon.svg">
+<link rel="stylesheet" href="./vendor/maplibre-gl/maplibre-gl.css">
+<link rel="stylesheet" href="./demo.css">
+</head>
+<body>
+
+<header class="site-header">
+  <h1>お店を見て回る</h1>
+  <p>
+    ピンを押すとカードが開きます。<strong>[‹] [›] で隣の店へ送れます</strong>——
+    閉じて別のピンを探さなくてよく、<strong>店舗ページへ飛ばないので地図が作り直されません</strong>。
+    <strong>[⤢] で地図いっぱいに広げられます</strong>（<kbd>Esc</kbd> で 1 段だけ戻る）。
+    開いている店は <code>?shop=</code> に残るので、<strong>その店を開いた状態で URL を送れます</strong>。
+    <strong>この 3 店は架空です。写真も生成した見本で、実在の店舗ではありません</strong>（<code>data/README.md</code>）。
+  </p>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">はじめに</a>
+    <a href="./plain.html">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./3d.html">建物を立てる</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="./shops.html" aria-current="page">お店を見て回る</a>
+    <a href="./route.html">経路と案内</a>
+    <a href="./themes.html">配色を見くらべる</a>
+    <a href="./brand.html">サイトの色を当てる</a>
+    <a href="./regions.html">地域を切り替える</a>
+    <a href="./venue.html">会場の地図</a>
+    <a href="./circle.html">半径で囲む</a>
+    <a href="./raster.html">重ねる</a>
+    <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
+  </nav>
+</header>
+
+<main class="map-area">
+  <mmj-map id="map" center="135.5025,34.6916" zoom="15" hash>
+    <!--
+      **渡すのは属性名で、値ではありません。**500 店のカードを手で書かないため。
+      媒体ごとにキーの名前が違うので、部品は推測しません。
+    -->
+    <mmj-poi id="shops" src="./data/shops.geojson" label-key="shop_name" min-zoom="12"
+             card-id="shop_id"
+             card-title="shop_name" card-images="photos" card-body="description"
+             card-rating="rating" card-rating-count="reviews"
+             card-href="url" card-href-label="お店のページ（見本）"
+             attribution="見本（架空の店舗です）"></mmj-poi>
+  </mmj-map>
+
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+    </div>
+  </div>
+</main>
+
+<script src="./vendor/maplibre-gl/maplibre-gl.js"></script>
+<script src="./vendor/pmtiles/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script type="module">
+  // **属性を入れてから部品を読み込む。**逆にすると connectedCallback が先に走る。
+  const cfg = window.MMJ_CONFIG ?? {};
+  const map = document.getElementById('map');
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    map.remove();
+    document.getElementById('notice').hidden = false;
+  } else {
+    map.setAttribute('tiles', cfg.tilesUrl);
+    map.setAttribute('style-url', cfg.styleUrl);
+
+    // **部品はどこへも送りません。**出来事を出すだけで、何を数えるかは受けた側が決める
+    // （「利用者がどこを見たかが第三者に渡らない」が MMJ の主張なので、
+    //   部品が勝手に送り始めたら、その主張が嘘になる）。
+    document.getElementById('shops').addEventListener('mmj-poi-click', (event) => {
+      console.log('[shops] 開いた店:', event.detail.properties.shop_name);
+    });
+
+    await import('./elements/index.js');
+  }
+</script>
+</body>
+</html>

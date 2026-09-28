@@ -1,0 +1,44 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "shop_id": "akari",
+        "shop_name": "町家カフェ 灯",
+        "rating": 4.3,
+        "reviews": 128,
+        "description": "築 90 年の町家を改装した喫茶。日替わりの焼き菓子と、豆から挽く珈琲。二階は座敷で、窓から川と橋が見えます。※これは見本の文章です。この店は実在しません。",
+        "photos": "./data/photos/akari-1.jpg,./data/photos/akari-2.jpg,./data/photos/akari-3.jpg",
+        "url": "https://example.com/akari"
+      },
+      "geometry": { "type": "Point", "coordinates": [135.5061, 34.6912] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "shop_id": "migiwa",
+        "shop_name": "らーめん 汀",
+        "rating": 4.1,
+        "reviews": 342,
+        "description": "夜だけ開く小さな店。醤油と煮干し、替玉は半分から。カウンターは 8 席しかないので、雨の日は傘を畳んで入ってください。※これは見本の文章です。この店は実在しません。",
+        "photos": "./data/photos/migiwa-1.jpg,./data/photos/migiwa-2.jpg,./data/photos/migiwa-3.jpg",
+        "url": "https://example.com/migiwa"
+      },
+      "geometry": { "type": "Point", "coordinates": [135.4987, 34.6938] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "shop_id": "misaki",
+        "shop_name": "古本 みさき",
+        "rating": 4.6,
+        "reviews": 57,
+        "description": "文庫と郷土資料。店先の棚は 100 円から。奥の通路は人がすれ違えないので、先に入った人が出るまで待つのが作法です。※これは見本の文章です。この店は実在しません。",
+        "photos": "./data/photos/misaki-1.jpg,./data/photos/misaki-2.jpg,./data/photos/misaki-3.jpg",
+        "url": "https://example.com/misaki"
+      },
+      "geometry": { "type": "Point", "coordinates": [135.5028, 34.6897] }
+    }
+  ]
+}

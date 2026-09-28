@@ -68,23 +68,85 @@ export function nextCardState(current, action) {
  * その状態で出すボタン。
  *
  * **最大化中に「最大化」を出さない。**押しても何も起きないボタンを置くと、
- * 壊れているのか仕様なのか分からない。
+ * 壊れているのか仕様なのか分からない。**送り先が無いときの「次へ」も同じ**。
  *
  * @param {CardState} state
- * @returns {("maximize" | "restore" | "close")[]}
+ * @param {number} [siblings] その地図にある点の数。2 件以上で送りボタンが出る
+ * @returns {("prev" | "next" | "maximize" | "restore" | "close")[]}
  */
-export function controlsFor(state) {
-  if (state === "popup") return ["maximize", "close"];
-  if (state === "maximized") return ["restore", "close"];
-  return [];
+export function controlsFor(state, siblings = 1) {
+  if (state === "closed") return [];
+  /** @type {("prev" | "next")[]} */
+  const nav = typeof siblings === "number" && siblings > 1 ? ["prev", "next"] : [];
+  return state === "maximized" ? [...nav, "restore", "close"] : [...nav, "maximize", "close"];
 }
 
 /** ボタンに出す文字。**記号だけにしない**（読み上げにも押す人にも伝わらない） */
 export const CONTROL_LABELS = {
+  prev: "前の地点",
+  next: "次の地点",
   maximize: "大きく表示",
   restore: "元の大きさに戻す",
   close: "閉じる",
 };
+
+/**
+ * 隣の点へ送る。**端まで行ったら反対側へ回る。**
+ *
+ * 端でボタンを消すと**バーの並びがずれて、押す場所が動く**。
+ * 端で無反応にすると、**壊れているのか端なのか区別がつかない**。
+ *
+ * @param {number} current いまの位置
+ * @param {number} delta 次へなら 1、前へなら -1
+ * @param {number} length 点の数
+ * @returns {number}
+ */
+export function stepIndex(current, delta, length) {
+  if (!Number.isInteger(length) || length <= 0) return 0;
+  const base = Number.isInteger(current) ? current : 0;
+  return (((base + delta) % length) + length) % length;
+}
+
+/**
+ * id で点を引く。**無ければ -1。**
+ *
+ * **数で書き出す媒体がある**（`"shop_id": 7`）。URL から来る値は必ず文字列なので、
+ * **文字に揃えてから比べる**。揃えないと「7 と "7" が別物」になり、
+ * 共有された URL が**その店だけ開けない**という形で壊れる。
+ *
+ * @param {readonly any[]} features
+ * @param {string | null | undefined} idKey
+ * @param {string | null | undefined} id
+ * @returns {number}
+ */
+export function indexOfShop(features, idKey, id) {
+  if (!Array.isArray(features)) return -1;
+  if (idKey === null || idKey === undefined || idKey === "") return -1;
+  if (id === null || id === undefined || id === "") return -1;
+  return features.findIndex((feature) => {
+    const value = feature?.properties?.[idKey];
+    return value !== undefined && value !== null && String(value) === String(id);
+  });
+}
+
+/**
+ * URL の query に、いま見ている点を書く。**新しい文字列を返す**（元は変えない）。
+ *
+ * **知らない値に触らない。**媒体は `?utm_source=...` のような値を付ける。
+ * 丸ごと差し替えると、**その頁がどこから来たかを消してしまう**。
+ * `&` で区切られた要素のうち `shop=` だけを入れ替える。
+ *
+ * @param {string} search いまの `location.search`
+ * @param {string | null} id 書く id。`null` で外す
+ * @returns {string} 新しい query（空なら空文字）
+ */
+export function writeShopParam(search, id) {
+  const body = typeof search === "string" ? search.replace(/^\?/, "") : "";
+  const kept = body.split("&").filter((part) => part !== "" && !part.startsWith("shop="));
+  // **記号も日本語も通す。**`&` が入った id をそのまま置くと、区切りとして読まれる
+  const parts = id === null || id === undefined ? kept : [...kept, `shop=${encodeURIComponent(id)}`];
+  return parts.length === 0 ? "" : `?${parts.join("&")}`;
+}
 
 /**
  * 見出しバーを付けるか。
@@ -128,6 +190,46 @@ export function keyAction(key, state) {
   if (state === "maximized") return "restore";
   if (state === "popup") return "close";
   return null;
+}
+
+/**
+ * カードが地図の外へ出ているぶんを、`map.panBy` に渡す値にして返す。
+ *
+ * **吹き出しは地図の座標に貼り付いている。**端の点を押すと、そのぶん外へ出る。
+ * **外へ出たカードは、押せないだけでは済まない。**実測（2026-09-28）では
+ * 地図の上端 y=265 に対し吹き出しの上端が y=168 になり、
+ * **頁のヘッダの下に潜って、カードのボタンを押したつもりが
+ * メニューのリンクを押していた**（別の頁へ飛ぶので、見ていた店も地図も消える）。
+ *
+ * **地図を送る向きと、画面で物が動く向きは逆。**カードを下へ出したいときは、
+ * 地図を上へ送る（`panBy([0, -n])`）。
+ *
+ * @param {{ top: number, bottom: number, left: number, right: number } | null} card
+ * @param {{ top: number, bottom: number, left: number, right: number } | null} map
+ * @param {number} [margin] 端に残す余白
+ * @returns {[number, number]} `map.panBy` に渡す値
+ */
+export function panDelta(card, map, margin = 8) {
+  if (card === null || card === undefined || map === null || map === undefined) return [0, 0];
+
+  /**
+   * 1 方向ぶん。**入りきらないときは手前側（上・左）を合わせる。**
+   * 見出しバーと題が上にあるので、**下が切れるより、バーが外にあるほうが困る**（閉じられない）。
+   * @param {number} near カードの手前側
+   * @param {number} far カードの奥側
+   * @param {number} limitNear 地図の手前側
+   * @param {number} limitFar 地図の奥側
+   */
+  const fit = (near, far, limitNear, limitFar) => {
+    if (near < limitNear + margin) return near - (limitNear + margin);
+    if (far > limitFar - margin) return far - (limitFar - margin);
+    return 0;
+  };
+
+  return [
+    fit(card.left, card.right, map.left, map.right),
+    fit(card.top, card.bottom, map.top, map.bottom),
+  ];
 }
 
 /**
@@ -194,16 +296,27 @@ export function mapCardFields(properties, keys) {
 }
 
 /**
- * URL の `#shop=<id>` から、開く店を読む。
+ * URL の `?shop=<id>` から、開く店を読む。
  *
  * **「この店いいよ」と送るのは頁の共有。**復元できないと、結局
  * 店舗ページへ飛ばすことになり、**地図で完結させた意味が消える**。
  *
- * @param {string} hash `location.hash`
+ * ## なぜ `#` ではなく `?` なのか
+ *
+ * **`#` は地図が持ち主。**`<mmj-map hash>` を付けると MapLibre が
+ * `#15/34.70/135.49` を書き込むが、**その実装は自分の形以外を捨てる**
+ * （`getHashString()` が `#${zoom}/${lat}/${lng}` を丸ごと返す・5.24.0 で確認）。
+ * `#shop=` に置くと、**地図を少し動かしただけで消える**。
+ * 消えたことは画面に出ないので、**共有して初めて壊れているのが分かる**。
+ *
+ * @param {string} search `location.search`
  * @returns {string | null}
  */
-export function readShopHash(hash) {
-  const match = /(?:^#|[#&])shop=([^&]+)/.exec(typeof hash === "string" ? hash : "");
+export function readShopParam(search) {
+  // **`#` から後ろは見ない。**地図の持ち物なので、そこに書かれた `shop=` は
+  // 次に地図が動いた瞬間に消える。**読めてしまうと、消えるものを当てにしてしまう**
+  const body = (typeof search === "string" ? search : "").split("#")[0] ?? "";
+  const match = /(?:^\?|[?&])shop=([^&]+)/.exec(body);
   if (match?.[1] === undefined) return null;
   try {
     return decodeURIComponent(match[1]) || null;

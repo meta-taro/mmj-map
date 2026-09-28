@@ -152,7 +152,10 @@ self.addEventListener("fetch", (event) => {
           }
           return fresh;
         } catch {
-          const cached = await caches.match(request, { cacheName: CACHE });
+          // **`?` から後ろを見ないで探す。**カードを開くと `?shop=akari` が付くので、
+          // そのまま照合すると**同じ頁なのに掴んだものが見つからない**。
+          // 共有された URL をオフラインで開くのは、いちばん効いてほしい場面
+          const cached = await caches.match(request, { cacheName: CACHE, ignoreSearch: true });
           if (cached !== undefined) return cached;
           throw new Error(`通信も掴んだものもありません: ${request.url}`);
         }

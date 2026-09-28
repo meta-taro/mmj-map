@@ -43,7 +43,9 @@ export function buildCardStyle(colors, className) {
     // 吹き出しの上端が y=45、地図の上端が y=75 だった）。
     // 地図は画面より小さいのが普通なので、**画面の半分より小さく**しておく。
     // **ここは見た目の調整で詰め直す値**（地図の実寸から決めるのが本筋）。
-    `.${className} .maplibregl-popup-content{max-height:min(42vh,20rem);` +
+    // **地図の高さから決める**（`--mmj-card-max` を地図の入れ物に入れている）。
+    // 画面基準の値は控えで、**地図が画面より小さいときに効かない**
+    `.${className} .maplibregl-popup-content{max-height:var(--mmj-card-max,min(42vh,20rem));` +
     "display:flex;flex-direction:column;overflow:hidden;}" +
     `.${className} .maplibregl-popup-content > div{` +
     "display:flex;flex-direction:column;min-height:0;}" +
@@ -63,6 +65,7 @@ export function buildCardStyle(colors, className) {
     `border:1px solid ${colors.border};border-radius:6px;` +
     `background:transparent;color:${colors.text};` +
     "font:inherit;font-size:13px;line-height:1;cursor:pointer;}" +
+    `.${className} .mmj-card-gap{flex:1;min-width:6px;}` +
     `.${className} .mmj-card-btn:hover{background:${colors.border};}` +
     `.${className} .mmj-card-btn:focus-visible{outline:2px solid ${colors.text};outline-offset:1px;}` +
     // 最大化した面。**地図の入れ物いっぱいに敷く**
@@ -86,6 +89,9 @@ export function buildCardStyle(colors, className) {
     // （実測・2026-09-28。枠 802px に対し写真は 471px しか出ず、
     // 3 枚あるのに 1 枚に見えた。撮らなければ数字は正しいままだった）。
     // 高さだけ揃えて、幅は写真の形なりにする。**並べば、並んで見える**
+    // 吹き出しでは帯の高さを固定しているが（**出した瞬間の高さで向きが決まる**ため）、
+    // 最大化した面は向きを持たないので、**大きく見せてよい**
+    `.${SHEET_CLASS} .mmj-popup-gallery{height:auto;}` +
     `.${SHEET_CLASS} .mmj-popup-gallery img{` +
     "flex:0 0 auto;width:auto;min-width:0;max-width:none;height:min(38vh,320px);}"
   );
@@ -93,14 +99,14 @@ export function buildCardStyle(colors, className) {
 
 /**
  * ボタンを 1 つ作る。
- * @param {"maximize" | "restore" | "close"} name
+ * @param {"prev" | "next" | "maximize" | "restore" | "close"} name
  * @param {() => void} onPress
  */
 function controlButton(name, onPress) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "mmj-card-btn";
-  button.textContent = { maximize: "⤢", restore: "⤡", close: "✕" }[name];
+  button.textContent = { prev: "‹", next: "›", maximize: "⤢", restore: "⤡", close: "✕" }[name];
   // **記号だけにしない。**読み上げにも、押す人にも伝わらない
   button.title = CONTROL_LABELS[name];
   button.setAttribute("aria-label", CONTROL_LABELS[name]);
@@ -116,13 +122,24 @@ function controlButton(name, onPress) {
 /**
  * 見出しバーの中身を組む。**状態が変わるたびに入れ替える。**
  *
- * @param {{ state: import("./card.js").CardState, act: (action: any) => void }} input
+ * @param {{
+ *   state: import("./card.js").CardState,
+ *   act: (action: any) => void,
+ *   siblings?: number,
+ * }} input
  * @returns {HTMLElement}
  */
 export function buildCardBar(input) {
   const bar = document.createElement("div");
   bar.className = "mmj-card-bar";
-  for (const name of controlsFor(input.state)) {
+  for (const name of controlsFor(input.state, input.siblings)) {
+    // 送りは左、窓の操作は右。**間に伸びる隙間を挟んで分ける**
+    // （並べてしまうと、「次へ」と「閉じる」が隣り合って押し間違える）
+    if (name === "maximize" || name === "restore") {
+      const gap = document.createElement("div");
+      gap.className = "mmj-card-gap";
+      bar.append(gap);
+    }
     bar.append(controlButton(name, () => input.act(name)));
   }
   return bar;
@@ -137,12 +154,16 @@ export function buildCardBar(input) {
  *   popup: any,
  *   className: string,
  *   initial: import("./card.js").CardState,
+ *   siblings?: number,
+ *   onStep?: (delta: number) => void,
  * }} input
  */
 export function mountCard(input) {
   let state = input.initial;
   /** @type {HTMLElement | null} */
   let sheet = null;
+  /** いま入っている中身。**送るたびに差し替える**（容れ物は作り直さない） */
+  let body = input.body;
 
   // **class は最初に付ける。**中身だけ入れ替えると `.mmj-card-bar` が付かず、
   // **バーの CSS が 1 つも当たらない**（実測・2026-09-28。撮って気づいた）
@@ -150,10 +171,11 @@ export function mountCard(input) {
   bar.className = "mmj-card-bar";
 
   const shell = document.createElement("div");
-  shell.append(bar, input.body);
+  shell.append(bar, body);
 
   /** 見出しバーを、いまの状態に合わせて描き直す */
-  const drawBar = () => bar.replaceChildren(...buildCardBar({ state, act }).childNodes);
+  const drawBar = () =>
+    bar.replaceChildren(...buildCardBar({ state, act, siblings: input.siblings ?? 1 }).childNodes);
 
   /**
    * 面の中の最初のボタンへフォーカスを移す。
@@ -172,7 +194,7 @@ export function mountCard(input) {
     if (sheet === null) return;
     sheet.remove();
     sheet = null;
-    shell.append(bar, input.body);
+    shell.append(bar, body);
     input.popup.setDOMContent(shell);
   };
 
@@ -185,10 +207,10 @@ export function mountCard(input) {
     // 地図は後ろで生きている。**閉じ込めない**（`aria-modal` にしない）
     sheet.setAttribute("aria-label", "カードを大きく表示しています");
 
-    const body = document.createElement("div");
-    body.className = "mmj-card-body";
-    body.append(input.body);
-    sheet.append(bar, body);
+    const pane = document.createElement("div");
+    pane.className = "mmj-card-body";
+    pane.append(body);
+    sheet.append(bar, pane);
 
     // **地図にホイールを取らせない。**取られると、読もうとして拡大してしまう
     for (const type of ["wheel", "touchmove", "dblclick", "mousedown", "pointerdown"]) {
@@ -200,8 +222,15 @@ export function mountCard(input) {
     input.container.append(sheet);
   };
 
-  /** @param {"open" | "maximize" | "restore" | "close"} action */
+  /** @param {"open" | "prev" | "next" | "maximize" | "restore" | "close"} action */
   function act(action) {
+    // **送りは状態を変えない。**開いたまま中身だけ入れ替える
+    // （閉じて開き直すと、最大化していたら縮み、見ていた位置も消える）
+    if (action === "prev" || action === "next") {
+      input.onStep?.(action === "next" ? 1 : -1);
+      return;
+    }
+
     const next = nextCardState(state, action);
     if (next === state) return;
     state = next;
@@ -231,10 +260,28 @@ export function mountCard(input) {
   return {
     content: shell,
     act,
-    /** 目印が外れたときに呼ぶ。**聞きっぱなしにしない** */
+    /**
+     * 中身だけ入れ替える。**容れ物は作り直さない。**
+     *
+     * 最大化していたら最大化のまま、吹き出しなら吹き出しのまま差し替わる。
+     * **隣の店へ送るのに閉じて開き直すと、状態が毎回戻る。**
+     *
+     * @param {HTMLElement} next
+     */
+    setBody(next) {
+      body.replaceWith(next);
+      body = next;
+    },
+    /**
+     * 目印が外れたときに呼ぶ。**聞きっぱなしにしない。**
+     *
+     * **吹き出しへは戻さない**（`collapse()` を呼ばない）。
+     * 閉じたあとの吹き出しに中身を入れ直そうとすることになる。
+     */
     destroy() {
       document.removeEventListener("keydown", onKey);
-      collapse();
+      sheet?.remove();
+      sheet = null;
     },
   };
 }

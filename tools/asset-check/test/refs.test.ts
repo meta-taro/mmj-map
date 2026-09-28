@@ -17,6 +17,22 @@ describe("extractReferences", () => {
     expect(extractReferences(html).map((r) => r.raw)).toEqual(["./style.css", "/elements/index.js"]);
   });
 
+  /**
+   * **`card-href` はパスではなく属性名。**`<mmj-poi card-href="url">` は
+   * 「GeoJSON の `url` という属性を見てください」という指定であって、
+   * `apps/demo/url` というファイルを指してはいない。
+   *
+   * 拾ってしまうと、**実在しないファイルとして CI が止まる**
+   * （実測・2026-09-28。`shops.html` で止まった）。
+   */
+  it("**`-href` / `-src` で終わる別の属性は拾わない**（パスではなく属性名）", () => {
+    const html = [
+      '<mmj-poi src="./data/shops.geojson" card-href="url" card-id="shop_id"></mmj-poi>',
+      '<img data-src="lazy_key">',
+    ].join("\n");
+    expect(extractReferences(html).map((r) => r.raw)).toEqual(["./data/shops.geojson"]);
+  });
+
   it("**外部 CDN は対象外**（向こうの都合で、こちらでは保証できない）", () => {
     const html = [
       '<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>',

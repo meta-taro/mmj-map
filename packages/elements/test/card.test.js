@@ -9,7 +9,11 @@ import {
   mapCardFields,
   needsChrome,
   nextCardState,
-  readShopHash,
+  readShopParam,
+  stepIndex,
+  indexOfShop,
+  writeShopParam,
+  panDelta,
 } from "../src/card.js";
 
 /**
@@ -222,26 +226,190 @@ describe("mapCardFields", () => {
  * **「この店いいよ」と送るのは頁の共有。**復元できないと、結局
  * 店舗ページへ飛ばすことになり、**地図で完結させた意味が消える**。
  */
-describe("readShopHash", () => {
-  it("`#shop=` を読む", () => {
-    expect(readShopHash("#shop=akari")).toBe("akari");
+describe("readShopParam", () => {
+  it("`?shop=` を読む", () => {
+    expect(readShopParam("?shop=akari")).toBe("akari");
   });
 
-  it("他の hash と混ざっていても読む（`#12/34.7/135.5` と共存する）", () => {
-    expect(readShopHash("#12/34.7/135.5&shop=akari")).toBe("akari");
+  it("他の値と混ざっていても読む（`?utm_source=mail` と共存する）", () => {
+    expect(readShopParam("?utm_source=mail&shop=akari")).toBe("akari");
   });
 
   it("**符号化された名前を戻す**（日本語の id が来る）", () => {
-    expect(readShopHash(`#shop=${encodeURIComponent("灯")}`)).toBe("灯");
+    expect(readShopParam(`?shop=${encodeURIComponent("灯")}`)).toBe("灯");
   });
 
   it("無ければ null", () => {
-    expect(readShopHash("#12/34.7/135.5")).toBeNull();
-    expect(readShopHash("")).toBeNull();
-    expect(readShopHash(/** @type {any} */ (null))).toBeNull();
+    expect(readShopParam("?utm_source=mail")).toBeNull();
+    expect(readShopParam("")).toBeNull();
+    expect(readShopParam(/** @type {any} */ (null))).toBeNull();
+  });
+
+  /** **`#` に置かない。**`<mmj-map hash>` の MapLibre が自分の形以外を捨てる */
+  it("hash に書かれていても読まない（地図が消すため置き場所にしない）", () => {
+    expect(readShopParam("#12/34.7/135.5&shop=akari")).toBeNull();
   });
 
   it("**壊れた URL で落とさない**（地図は出す）", () => {
-    expect(readShopHash("#shop=%E0%A4%A")).toBeNull();
+    expect(readShopParam("?shop=%E0%A4%A")).toBeNull();
+  });
+});
+
+/**
+ * **段階 3 — 地図から離れずに、隣の店へ送る。**
+ *
+ * 1 店見るたびに吹き出しを閉じて次のピンを探すのでは、**結局「一覧へ戻る」をやっている**。
+ * カードを開いたまま送れて、いま見ている店が URL に残ることまでが 1 組。
+ */
+describe("stepIndex", () => {
+  it("次へ・前へ", () => {
+    expect(stepIndex(0, 1, 3)).toBe(1);
+    expect(stepIndex(1, -1, 3)).toBe(0);
+  });
+
+  /**
+   * **端で止めない（巡回する）。**
+   * 端だけボタンを消すと**バーの並びがずれて**、押す場所が動く。
+   * 端で無反応にすると、**壊れているのか端なのか区別がつかない**（`controlsFor` と同じ理由）。
+   */
+  it("端まで行ったら反対側へ回る", () => {
+    expect(stepIndex(2, 1, 3)).toBe(0);
+    expect(stepIndex(0, -1, 3)).toBe(2);
+  });
+
+  it("1 件しかなければ動かない", () => {
+    expect(stepIndex(0, 1, 1)).toBe(0);
+    expect(stepIndex(0, -1, 1)).toBe(0);
+  });
+
+  it("**壊れた値で落とさない**（地図は出す）", () => {
+    expect(stepIndex(0, 1, 0)).toBe(0);
+    expect(stepIndex(/** @type {any} */ ("x"), 1, 3)).toBe(1);
+    expect(stepIndex(0, 1, /** @type {any} */ (null))).toBe(0);
+  });
+});
+
+describe("controlsFor（隣がいるとき）", () => {
+  it("隣がいれば「前へ」「次へ」を出す", () => {
+    expect(controlsFor("popup", 3)).toEqual(["prev", "next", "maximize", "close"]);
+    expect(controlsFor("maximized", 3)).toEqual(["prev", "next", "restore", "close"]);
+  });
+
+  /** **押しても何も起きないボタンを置かない**（1 件だけの地図で送り先は無い） */
+  it("1 件しかなければ出さない", () => {
+    expect(controlsFor("popup", 1)).toEqual(["maximize", "close"]);
+    expect(controlsFor("popup", 0)).toEqual(["maximize", "close"]);
+  });
+
+  it("閉じているときは何も出さない", () => {
+    expect(controlsFor("closed", 3)).toEqual([]);
+  });
+
+  it("**記号だけにしない**", () => {
+    for (const name of /** @type {const} */ (["prev", "next"])) {
+      expect(CONTROL_LABELS[name].length).toBeGreaterThan(1);
+    }
+  });
+});
+
+describe("indexOfShop", () => {
+  const features = [
+    { properties: { shop_id: "akari", name: "灯" } },
+    { properties: { shop_id: "hibi", name: "日々" } },
+  ];
+
+  it("id で引く", () => {
+    expect(indexOfShop(features, "shop_id", "hibi")).toBe(1);
+  });
+
+  /** **数で書き出す媒体がある。**`1` と `"1"` を別物にしない */
+  it("数で入っていても引ける", () => {
+    expect(indexOfShop([{ properties: { id: 7 } }], "id", "7")).toBe(0);
+  });
+
+  it("無ければ -1", () => {
+    expect(indexOfShop(features, "shop_id", "kumo")).toBe(-1);
+    expect(indexOfShop(features, "shop_id", null)).toBe(-1);
+    expect(indexOfShop(features, null, "akari")).toBe(-1);
+    expect(indexOfShop(/** @type {any} */ (null), "shop_id", "akari")).toBe(-1);
+  });
+});
+
+/**
+ * **「この店いいよ」と送れること。**
+ * 復元できないと、結局その店のページへ飛ばすことになり、地図で完結させた意味が消える。
+ */
+describe("writeShopParam", () => {
+  it("何も無いところへ足す", () => {
+    expect(writeShopParam("", "akari")).toBe("?shop=akari");
+  });
+
+  /** **媒体が付けた値を消さない**（どこから来た頁かが分からなくなる） */
+  it("ほかの値を残したまま足す", () => {
+    expect(writeShopParam("?utm_source=mail", "akari")).toBe("?utm_source=mail&shop=akari");
+  });
+
+  it("すでにあれば差し替える（増やさない）", () => {
+    expect(writeShopParam("?utm_source=mail&shop=akari", "hibi")).toBe("?utm_source=mail&shop=hibi");
+  });
+
+  it("閉じたら外す", () => {
+    expect(writeShopParam("?utm_source=mail&shop=akari", null)).toBe("?utm_source=mail");
+    expect(writeShopParam("?shop=akari", null)).toBe("");
+  });
+
+  it("知らない値には触らない", () => {
+    expect(writeShopParam("?a=1&shop=x&b=2", "y")).toBe("?a=1&b=2&shop=y");
+  });
+
+  /** **記号と日本語を通す。**`readShopParam` と往復できること */
+  it("読み書きが往復する", () => {
+    for (const id of ["灯", "a&b", "a b", "100%"]) {
+      expect(readShopParam(writeShopParam("?utm_source=mail", id))).toBe(id);
+    }
+  });
+});
+
+/**
+ * **カードは地図からはみ出す。**吹き出しは地図の座標に貼り付いているので、
+ * 端の点を押すと、そのぶん外へ出る。
+ *
+ * **外に出たカードは、押せないだけでは済まない。**実測（2026-09-28）では
+ * 地図の上端 y=265 に対して吹き出しの上端が y=168 になり、**頁のヘッダの下に潜って、
+ * カードのボタンを押したつもりがメニューのリンクを押していた**
+ * （別の頁へ飛ぶので、見ていた店も地図も消える）。
+ */
+describe("panDelta", () => {
+  const map = { top: 100, bottom: 600, left: 0, right: 800 };
+
+  it("収まっていれば動かさない", () => {
+    expect(panDelta({ top: 200, bottom: 500, left: 100, right: 300 }, map)).toEqual([0, 0]);
+  });
+
+  /** `panBy` に渡す値。**地図を送る向きと、画面で動く向きは逆** */
+  it("上へはみ出していたら、下へ出るように送る", () => {
+    expect(panDelta({ top: 50, bottom: 400, left: 100, right: 300 }, map, 8)).toEqual([0, -58]);
+  });
+
+  it("下へはみ出していたら、上へ出るように送る", () => {
+    expect(panDelta({ top: 300, bottom: 650, left: 100, right: 300 }, map, 8)).toEqual([0, 58]);
+  });
+
+  it("横も同じ", () => {
+    expect(panDelta({ top: 200, bottom: 500, left: -20, right: 200 }, map, 8)).toEqual([-28, 0]);
+    expect(panDelta({ top: 200, bottom: 500, left: 700, right: 820 }, map, 8)).toEqual([28, 0]);
+  });
+
+  /**
+   * **入りきらないときは上を優先する。**見出しバーと題が上にあるので、
+   * 下が切れるより、**バーが画面の外にあるほうが困る**（閉じられない）。
+   */
+  it("地図より大きいときは、上を合わせる", () => {
+    expect(panDelta({ top: 50, bottom: 900, left: 100, right: 300 }, map, 8)).toEqual([0, -58]);
+  });
+
+  it("**壊れた値で落とさない**（地図は出す）", () => {
+    expect(panDelta(/** @type {any} */ (null), map)).toEqual([0, 0]);
+    expect(panDelta({ top: 200, bottom: 500, left: 100, right: 300 }, /** @type {any} */ (null))).toEqual([0, 0]);
   });
 });
