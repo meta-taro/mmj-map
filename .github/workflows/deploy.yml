@@ -117,6 +117,31 @@ jobs:
       #
       # **目印が無ければ止める。**名前を変えたときに黙って素通りすると、
       # 同じ壊れ方が戻ってくる。
+      # 目次（sitemap）は配るときに作る。
+      #
+      # **手で持つと古くなる。**頁を足したときに書き足すのを忘れる方式は、
+      # 掴んだものの版と同じで必ず漏れる（この直前の commit で踏んだばかり）。
+      #
+      # **`og.html` は入れない。**あれは OG 画像の版下で、`noindex` にしてある。
+      # **`lastmod` を書かない。**嘘の更新日を出すより、書かないほうがよい。
+      - name: Build the sitemap
+        run: |
+          {
+            echo '<?xml version="1.0" encoding="UTF-8"?>'
+            echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            for f in apps/demo/*.html; do
+              n=$(basename "$f")
+              [ "$n" = "og.html" ] && continue
+              if [ "$n" = "index.html" ]; then
+                echo "  <url><loc>https://meta-taro.github.io/mmj-map/</loc></url>"
+              else
+                echo "  <url><loc>https://meta-taro.github.io/mmj-map/$n</loc></url>"
+              fi
+            done
+            echo '</urlset>'
+          } > apps/demo/sitemap.xml
+          grep -c '<loc>' apps/demo/sitemap.xml
+
       - name: Stamp the service worker cache version
         run: |
           grep -q '__BUILD__' apps/demo/sw.js || {
