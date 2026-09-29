@@ -414,7 +414,12 @@ export function buildPopupStyle(colors = POPUP_COLORS, className = DEFAULT_POPUP
     // リンクは**押せると分かる形**にする（下線を消さない）
     `.${className} .mmj-popup-link{` +
     `display:inline-block;margin-top:.45em;color:${colors.text};` +
-    "text-decoration:underline;text-underline-offset:2px;}" +
+    "text-decoration:underline;text-underline-offset:2px;margin-right:.6em;}" +
+    // 置く側が渡したアイコン。**大きさはこちらが決める**
+    // （ばらばらの寸法で来るので、揃えないと並びが読みにくい）
+    `.${className} .mmj-popup-link-icon{` +
+    "display:inline-block;width:1em;height:1em;margin-right:.3em;" +
+    "vertical-align:-0.12em;object-fit:contain;}" +
     // 写真は原寸で来る。**抑えないと画面が埋まる**
     `.${className} .mmj-popup-body img{` +
     "display:block;max-width:220px;max-height:160px;width:100%;height:auto;" +

@@ -239,6 +239,72 @@ export function parseTabs(attribute) {
 }
 
 /**
+ * `card-links` の指定を読む。**「見出し:属性名[:アイコンの URL]」の組。**
+ *
+ *     card-links="Instagram:ig_url:./icons/ig.svg,X:x_url"
+ *
+ * **MMJ はブランドのアイコンを配らない。**商標なので、こちらが持つと
+ * **使う側が意図しない形で配る**ことになる。置く側が自分のものを渡す。
+ * アイコンは省ける（省くと文字だけのリンクになる）。
+ *
+ * @param {string | null | undefined} attribute
+ * @returns {{ label: string, key: string, icon: string | null }[]}
+ */
+export function parseLinks(attribute) {
+  if (typeof attribute !== "string" || attribute.trim() === "") return [];
+
+  /** @type {{ label: string, key: string, icon: string | null }[]} */
+  const links = [];
+  for (const chunk of attribute.split(",")) {
+    const parts = chunk.split(":");
+    const label = (parts[0] ?? "").trim();
+    const key = (parts[1] ?? "").trim();
+    if (label === "" || key === "") continue;
+    // アイコンの URL に `:` が入る（`https://`）ので、**3 つ目から後ろは繋ぎ直す**
+    const icon = parts.slice(2).join(":").trim();
+    links.push({ label, key, icon: icon === "" ? null : icon });
+  }
+  return links;
+}
+
+/**
+ * リンクの中身を読む。**中身があって、安全なものだけ返す。**
+ *
+ * @param {Record<string, unknown>} properties
+ * @param {readonly { label: string, key: string, icon: string | null }[]} spec
+ * @param {(value: any) => boolean} isSafe URL を確かめる関数（`popup.js` の `isSafeLink`）
+ * @returns {{ label: string, href: string, icon: string | null }[]}
+ */
+export function buildLinks(properties, spec, isSafe = defaultIsSafe) {
+  if (!Array.isArray(spec)) return [];
+  /** @type {{ label: string, href: string, icon: string | null }[]} */
+  const links = [];
+  for (const { label, key, icon } of spec) {
+    const value = properties?.[key];
+    if (!isSafe(value)) continue;
+    // **アイコンも同じ目で見る。**`javascript:` を `img` の src に入れない
+    links.push({ label, href: String(value).trim(), icon: isSafe(icon) ? icon : null });
+  }
+  return links;
+}
+
+/**
+ * URL として通してよいか。**`popup.js` の `isSafeLink` と同じ約束。**
+ *
+ * **2 か所に同じものを書くのは、片方だけ直るから避けたい。**
+ * ただし `card.js` は DOM も他の部品も知らない純粋な層なので、
+ * **呼ぶ側が渡せる形**にしてあり、`mmj-poi` は `popup.js` のものを渡している。
+ *
+ * @param {unknown} value
+ */
+function defaultIsSafe(value) {
+  if (typeof value !== "string") return false;
+  const url = value.trim();
+  if (url === "") return false;
+  return /^(https?:|mailto:|tel:|[./#?])/i.test(url);
+}
+
+/**
  * タブの中身を読む。**中身のあるタブだけ返す。**
  *
  * 押しても何も出ないタブを並べると、**壊れているのか空なのか分からない**

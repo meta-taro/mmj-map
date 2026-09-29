@@ -115,6 +115,7 @@ const DEFAULT_LINK_LABEL = "詳しく見る";
  *   title?: unknown, images?: unknown, body?: unknown,
  *   rating?: unknown, ratingCount?: unknown,
  *   href?: unknown, hrefLabel?: unknown,
+ *   links?: { label: string, href: string, icon: string | null }[],
  * }} input
  * @returns {any[]} **中身が無ければ空**（空の箱を開かないため）
  */
@@ -142,6 +143,12 @@ export function buildCardContent(input) {
       ? input.hrefLabel.trim()
       : DEFAULT_LINK_LABEL;
     parts.push({ kind: "link", href: String(input.href).trim(), label });
+  }
+
+  // **SNS などへのリンク。**アイコンは置く側が渡したものだけ
+  // （MMJ は商標の絵を配らない）。**中身も URL も card.js 側で確かめ済み**
+  for (const link of Array.isArray(input.links) ? input.links : []) {
+    parts.push({ kind: "link", href: link.href, label: link.label, icon: link.icon ?? null });
   }
 
   return parts;

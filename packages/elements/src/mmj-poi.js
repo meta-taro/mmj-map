@@ -14,6 +14,7 @@
  */
 import { buildPopupOptions } from "./attrs.js";
 import {
+  buildLinks,
   buildTabs,
   indexOfShop,
   initialCardState,
@@ -21,6 +22,7 @@ import {
   nearestByPoint,
   needsChrome,
   panDelta,
+  parseLinks,
   parseTabs,
   readShopParam,
   stepIndex,
@@ -28,7 +30,7 @@ import {
 } from "./card.js";
 import { mountCard } from "./card-dom.js";
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
-import { buildCardContent } from "./popup.js";
+import { buildCardContent, isSafeLink } from "./popup.js";
 import { ensureCardContrast, ensurePopupContrast, popupColorsFrom, renderTabbed } from "./popup-dom.js";
 import { parseCount } from "./cluster.js";
 
@@ -212,12 +214,10 @@ export class MmjPoi extends HTMLElement {
     // **出来事は出すだけで、どこへも送らない。**送り先を決めるのは媒体
     // （「利用者がどこを見たかが第三者に渡らない」が MMJ の主張なので、
     // 部品が勝手に送り始めたら、その主張が嘘になる）
-    this.dispatchEvent(
-      new CustomEvent("mmj-poi-click", {
-        bubbles: true,
-        detail: { properties: feature.properties, lngLat: feature.geometry.coordinates },
-      }),
-    );
+    this.#announce("mmj-poi-click", {
+      properties: feature.properties,
+      lngLat: feature.geometry.coordinates,
+    });
 
     // **一覧の中の位置が分かるなら、そちらで開く**（次/前と URL が効く）。
     // 分からなければ、押された点そのものを開く（今までどおり）
@@ -227,6 +227,27 @@ export class MmjPoi extends HTMLElement {
     else {
       this.index = -1;
       this.#openCard(feature, false);
+    }
+  }
+
+  /**
+   * 出来事を出す。**どこへも送らない**（何を数えるかは受けた側が決める）。
+   *
+   * **2 か所へ出す。**親の <mmj-map> は描画時に子を DOM から外すので、
+   * この要素から出した出来事は**どこへも上がらない**。
+   * `document.addEventListener('mmj-card-open', ...)` で待っている人には
+   * **一生届かなかった**（実測・2026-09-29。要素に直接付けた人だけ受け取れていた）。
+   *
+   * 要素に付けた人・地図に付けた人・document で待つ人、**どれも 1 回だけ**受け取る。
+   *
+   * @param {string} name
+   * @param {any} detail
+   */
+  #announce(name, detail) {
+    this.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
+    // 親は DOM に残っている。**こちらから出すと document まで上がる**
+    if (this.owner && this.owner !== this) {
+      this.owner.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
     }
   }
 
@@ -256,7 +277,12 @@ export class MmjPoi extends HTMLElement {
     const keys = this.#cardKeys();
     if (Object.values(keys).every((value) => value === null)) return;
 
-    const content = buildCardContent(mapCardFields(feature.properties ?? {}, keys));
+    const properties = feature.properties ?? {};
+    const content = buildCardContent({
+      ...mapCardFields(properties, keys),
+      // **URL の確かめ方を 2 か所に書かない。**popup.js のものを渡す
+      links: buildLinks(properties, parseLinks(this.getAttribute("card-links")), isSafeLink),
+    });
     if (content.length === 0) return; // **空の箱を開かない**
 
     const map = this.map;
@@ -273,6 +299,19 @@ export class MmjPoi extends HTMLElement {
     }
 
     // **送られた URL では、その点まで寄せる。**画面の外に開いても何も見えない
+    // **開いたことを出すだけ。**どこへも送らない（何を数えるかは受けた側が決める）。
+    // `mmj-poi-click` は「点が押された」、こちらは「カードが開いた」——
+    // **URL から復元したときや、隣へ送ったときにも出る**ので、数えるならこちら
+    this.#announce("mmj-card-open", {
+      properties: feature.properties,
+      lngLat: where,
+      index: this.index,
+      total: this.features.length,
+      id: this.getAttribute("card-id")
+        ? String(feature.properties?.[String(this.getAttribute("card-id"))] ?? "")
+        : null,
+    });
+
     if (move) {
       map.easeTo({ center: where, duration: 400 });
       map.once("moveend", () => this.#fit());
@@ -382,7 +421,10 @@ export class MmjPoi extends HTMLElement {
       initial: initialCardState({ width: box.clientWidth, rich: needsChrome(content) }),
       // 一覧を読めているときだけ送りボタンを出す
       siblings: this.index >= 0 ? this.features.length : 1,
-      onStep: (delta) => this.#openAt(stepIndex(this.index, delta, this.features.length), true),
+      onStep: (delta) => {
+        this.#announce("mmj-card-step", { delta, index: this.index, total: this.features.length });
+        this.#openAt(stepIndex(this.index, delta, this.features.length), true);
+      },
     });
     popup.setDOMContent(this.card.content).addTo(map);
     // **地図へ足した後でないと吹き出しを掴めない。**面が出ているなら、ここで隠す

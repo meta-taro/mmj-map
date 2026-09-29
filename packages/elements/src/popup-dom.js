@@ -65,7 +65,16 @@ export function renderPopup(parts) {
       // `javascript:` は押した瞬間に走るので、ここまで到達させない
       link.href = part.href ?? "";
       link.className = "mmj-popup-link";
-      link.textContent = part.label ?? "";
+      // **アイコンは飾り。**文字が本体なので、読み上げからは外す（alt を空にする）。
+      // **URL は確かめ済みのものだけ**が来る（`card.js` の `buildLinks`）
+      if (typeof part.icon === "string" && part.icon !== "") {
+        const icon = document.createElement("img");
+        icon.src = part.icon;
+        icon.alt = "";
+        icon.className = "mmj-popup-link-icon";
+        link.append(icon);
+      }
+      link.append(document.createTextNode(part.label ?? ""));
       // **別ページへ飛ばすときは、元のページを触らせない**
       if (/^https?:/i.test(link.href)) {
         link.target = "_blank";

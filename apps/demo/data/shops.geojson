@@ -13,7 +13,9 @@
         "url": "https://example.com/akari",
         "menu": "本日の珈琲　520 円\n深煎りのブレンド　560 円\n焼き菓子の盛り合わせ　640 円\n珈琲と菓子のセット　980 円",
         "coupon": "この画面を見せると、焼き菓子をひとつ。\n（見本です。実在の店舗ではありません）",
-        "hours": "月〜金　10:00–18:00\n土日　9:00–19:00\n水曜　休み\n二階の座敷は 14 時から"
+        "hours": "月〜金　10:00–18:00\n土日　9:00–19:00\n水曜　休み\n二階の座敷は 14 時から",
+        "site_url": "https://example.com/akari",
+        "sns_url": "https://example.com/akari/photos"
       },
       "geometry": {
         "type": "Point",
@@ -35,7 +37,9 @@
         "url": "https://example.com/migiwa",
         "menu": "醤油らーめん　850 円\n煮干し中華　900 円\n替玉（半分）　100 円\n味付け玉子　120 円",
         "coupon": "21 時以降、替玉 1 回まで無料。\n（見本です。実在の店舗ではありません）",
-        "hours": "18:00–翌 1:00\n日曜　休み\nスープが終わり次第、閉めます"
+        "hours": "18:00–翌 1:00\n日曜　休み\nスープが終わり次第、閉めます",
+        "sns_url": "https://example.com/migiwa/posts",
+        "tel": "tel:+81-6-0000-0000"
       },
       "geometry": {
         "type": "Point",
@@ -56,7 +60,8 @@
         "photos": "./data/photos/misaki-1.jpg,./data/photos/misaki-2.jpg,./data/photos/misaki-3.jpg",
         "url": "https://example.com/misaki",
         "menu": "文庫　100 円から\n郷土資料　応相談\n買い取りは午前中のみ",
-        "hours": "11:00–19:00\n火曜　休み\n雨の日は店先の棚を出しません"
+        "hours": "11:00–19:00\n火曜　休み\n雨の日は店先の棚を出しません",
+        "site_url": "https://example.com/misaki"
       },
       "geometry": {
         "type": "Point",

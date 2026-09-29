@@ -18,6 +18,8 @@ import {
   parseTabs,
   buildTabs,
   splitForTabs,
+  parseLinks,
+  buildLinks,
 } from "../src/card.js";
 
 /**
@@ -598,5 +600,72 @@ describe("nearestByPoint", () => {
   it("点でないもの（線・面）は飛ばす", () => {
     const line = { geometry: { type: "LineString", coordinates: [[0, 0], [1, 1]] } };
     expect(nearestByPoint([line, at(50, 50)], { x: 0, y: 0 }, project)).toEqual(at(50, 50));
+  });
+});
+
+/**
+ * **段階 5 — SNS などへのリンク。**
+ *
+ * **MMJ はブランドのアイコンを配りません。**商標なので、こちらが持つと
+ * 使う側が意図しない形で配ることになります。**置く側が自分のものを渡す**形にします。
+ *
+ *     card-links="Instagram:ig_url:./icons/ig.svg,X:x_url"
+ *
+ * アイコンは省けます（省くと文字だけのリンクになります）。
+ */
+describe("parseLinks", () => {
+  it("見出しと属性名の組を読む", () => {
+    expect(parseLinks("Instagram:ig_url,X:x_url")).toEqual([
+      { label: "Instagram", key: "ig_url", icon: null },
+      { label: "X", key: "x_url", icon: null },
+    ]);
+  });
+
+  it("**アイコンは置く側が渡す**（MMJ は商標の絵を持たない）", () => {
+    expect(parseLinks("Instagram:ig_url:./icons/ig.svg")).toEqual([
+      { label: "Instagram", key: "ig_url", icon: "./icons/ig.svg" },
+    ]);
+  });
+
+  it("組になっていないものは飛ばす", () => {
+    expect(parseLinks("Instagram:ig_url,こわれ,:key")).toEqual([
+      { label: "Instagram", key: "ig_url", icon: null },
+    ]);
+  });
+
+  it("無ければ空", () => {
+    expect(parseLinks("")).toEqual([]);
+    expect(parseLinks(null)).toEqual([]);
+  });
+});
+
+describe("buildLinks", () => {
+  const spec = [
+    { label: "Instagram", key: "ig_url", icon: "./ig.svg" },
+    { label: "X", key: "x_url", icon: null },
+  ];
+
+  it("中身のあるものだけ出す", () => {
+    expect(buildLinks({ ig_url: "https://example.com/a" }, spec)).toEqual([
+      { label: "Instagram", href: "https://example.com/a", icon: "./ig.svg" },
+    ]);
+  });
+
+  /** **押した瞬間に走る URL を通さない**（`popup.js` の `isSafeLink` と同じ約束） */
+  it("危ない URL は落とす", () => {
+    expect(buildLinks({ x_url: "javascript:alert(1)" }, spec)).toEqual([]);
+    expect(buildLinks({ x_url: "data:text/html,<script>" }, spec)).toEqual([]);
+  });
+
+  it("**アイコンの URL も確かめる**（危ない src を img に入れない）", () => {
+    const bad = [{ label: "X", key: "x_url", icon: "javascript:alert(1)" }];
+    expect(buildLinks({ x_url: "https://example.com/x" }, bad)).toEqual([
+      { label: "X", href: "https://example.com/x", icon: null },
+    ]);
+  });
+
+  it("中身が無ければ空", () => {
+    expect(buildLinks({}, spec)).toEqual([]);
+    expect(buildLinks(/** @type {any} */ (null), spec)).toEqual([]);
   });
 });
