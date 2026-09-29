@@ -10,6 +10,7 @@
 import { buildPopupStyle, POPUP_COLORS } from "./attrs.js";
 import { buildCardStyle } from "./card-dom.js";
 import { splitForTabs, stepIndex } from "./card.js";
+import { formatRating } from "./popup.js";
 import { themeClassName } from "./palette.js";
 import { groupParts } from "./popup.js";
 
@@ -47,7 +48,35 @@ export function renderPopup(parts) {
       for (const type of ["wheel", "touchmove", "pointerdown"]) {
         strip.addEventListener(type, (event) => event.stopPropagation(), { passive: true });
       }
-      box.append(strip);
+      // **PC では指で払えない。**横スクロールは手間なので、送りボタンを重ねる
+      // （2026-09-29・人からの指摘「このスライドがスマホだといいけど PC だと UX 悪い」）。
+      // **触る画面では出さない**（指で払えるほうが速く、ボタンは写真を隠す）
+      const wrap = document.createElement("div");
+      wrap.className = "mmj-popup-gallery-wrap";
+      wrap.append(strip);
+      if (images.length > 1) {
+        for (const [name, label, delta] of /** @type {const} */ ([
+          ["prev", "前の写真", -1],
+          ["next", "次の写真", 1],
+        ])) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `mmj-popup-slide mmj-popup-slide-${name}`;
+          button.textContent = delta < 0 ? "‹" : "›";
+          // **記号だけにしない**（読み上げにも押す人にも伝わらない）
+          button.title = label;
+          button.setAttribute("aria-label", label);
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            // 1 枚ぶん送る。**幅は実寸から取る**（覗かせているぶんを数に書かない）
+            const step = strip.querySelector("img")?.getBoundingClientRect().width ?? strip.clientWidth;
+            strip.scrollBy({ left: delta * (step + 6), behavior: "smooth" });
+          });
+          wrap.append(button);
+        }
+      }
+      box.append(wrap);
       continue;
     }
     if (part.kind === "image") {
@@ -94,6 +123,88 @@ export function renderPopup(parts) {
   return box;
 }
 
+/**
+ * 口コミの並びを組む。**書いた人の言葉のまま出す**（要約しない・baseline §27）。
+ *
+ * **本文が主役。**星と名前は添えもので、無くても読める形にする。
+ *
+ * @param {{ text: string, rating?: number, name?: string, date?: string }[]} reviews
+ * @returns {HTMLElement}
+ */
+export function renderReviews(reviews) {
+  const box = document.createElement("div");
+  box.className = "mmj-popup-reviews";
+
+  for (const review of reviews) {
+    const item = document.createElement("div");
+    item.className = "mmj-popup-review";
+
+    const stars = formatRating(review.rating, undefined);
+    if (stars !== null) {
+      const line = document.createElement("div");
+      line.className = "mmj-popup-rating";
+      line.textContent = stars;
+      item.append(line);
+    }
+
+    const text = document.createElement("div");
+    // **改行を残す。**書いた人が行を分けたなら、その形に意味がある
+    text.className = "mmj-popup-copy mmj-popup-panel";
+    text.textContent = review.text;
+    item.append(text);
+
+    // 名前と日付は、**あるものだけ**。`undefined` と書かれた行を出さない
+    const by = [review.name, review.date].filter((v) => typeof v === "string" && v !== "").join(" · ");
+    if (by !== "") {
+      const line = document.createElement("div");
+      line.className = "mmj-popup-by";
+      line.textContent = by;
+      item.append(line);
+    }
+
+    box.append(item);
+  }
+  return box;
+}
+
+/**
+ * 曜日ごとの営業時間の表。
+ *
+ * **「営業中」とは書かない。**いま開いているかは、時差・祝日・臨時休業・
+ * ラストオーダーを知らないと言えない。**知らないまま出すのは嘘**で、
+ * その嘘は**閉まった店の前に人を立たせる**。
+ *
+ * 出すのは**書かれている時間**と、**今日がどの行か**まで。
+ *
+ * @param {{ key: string, label: string, spans: string[], closed: boolean }[]} days
+ * @param {string | null} today
+ * @returns {HTMLElement}
+ */
+export function renderHours(days, today) {
+  const box = document.createElement("div");
+  box.className = "mmj-popup-hours";
+
+  for (const day of days) {
+    const row = document.createElement("div");
+    row.className = "mmj-popup-hours-row";
+    // **今日の行だけ強くする。**これは判断ではなく暦
+    if (day.key === today) row.setAttribute("data-today", "");
+
+    const label = document.createElement("span");
+    label.className = "mmj-popup-hours-day";
+    label.textContent = day.key === today ? `${day.label}（今日）` : day.label;
+
+    const value = document.createElement("span");
+    value.className = "mmj-popup-hours-span";
+    // **空欄にしない。**休みなのか書き忘れなのか、読む人には区別がつかない
+    value.textContent = day.closed ? "休み" : day.spans.join(" / ");
+
+    row.append(label, value);
+    box.append(row);
+  }
+  return box;
+}
+
 /** タブの通し番号。**同じ頁に複数の地図が載る**ので、id が衝突しないようにする */
 let tabSerial = 0;
 
@@ -108,7 +219,7 @@ let tabSerial = 0;
  * **タブが 1 枚のときは帯を出さない。**押し先が 1 つしかないタブは、
  * 押せると思わせるだけで何も起きない（`controlsFor` と同じ）。
  *
- * @param {{ parts: any[], tabs: { label: string, text: string }[] }} input
+ * @param {{ parts: any[], tabs: { label: string, text?: string, node?: HTMLElement }[] }} input
  * @returns {HTMLElement}
  */
 export function renderTabbed(input) {
@@ -120,10 +231,15 @@ export function renderTabbed(input) {
   // **最初のタブは「概要」。**星・長文・リンクは、いままでどおり最初に見える
   if (rest.length > 0) panels.push({ label: "概要", node: renderPopup(rest) });
   for (const tab of input.tabs ?? []) {
+    // **組み上げた要素のタブも受ける**（口コミ・営業時間はただの文字ではない）
+    if (tab.node instanceof HTMLElement) {
+      panels.push({ label: tab.label, node: tab.node });
+      continue;
+    }
     const node = document.createElement("div");
     node.className = "mmj-popup-copy mmj-popup-panel";
     // **改行を残す。**品書きもクーポンも、行で分かれているのが中身そのもの
-    node.textContent = tab.text;
+    node.textContent = tab.text ?? "";
     panels.push({ label: tab.label, node });
   }
 

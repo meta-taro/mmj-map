@@ -21,6 +21,9 @@ import {
   parseLinks,
   buildLinks,
   dropAction,
+  buildReviews,
+  parseHours,
+  todayKey,
   parseLive,
   liveUrl,
   readLiveText,
@@ -781,5 +784,122 @@ describe("dropAction", () => {
   it("**壊れた値で落とさない**（地図は出す）", () => {
     expect(dropAction(/** @type {any} */ (null))).toBe("rest");
     expect(dropAction(Number.NaN)).toBe("rest");
+  });
+});
+
+/**
+ * **口コミ本文。**
+ *
+ * 星と件数だけでは「4.3 がなぜ 4.3 なのか」が分からない。
+ * 人からの指摘は「口コミないなとおもいました」（2026-09-29）。
+ *
+ * **MMJ は要約しません。**書いた人の言葉のまま出します
+ * （要約した時点で、書いた人が本当に困っていた所が落ちる・baseline §27）。
+ */
+describe("buildReviews", () => {
+  it("並びをそのまま読む", () => {
+    const got = buildReviews(
+      { reviews: [{ text: "二階の座敷がよい", rating: 5, name: "きの", date: "2026-09" }] },
+      "reviews",
+    );
+    expect(got).toEqual([{ text: "二階の座敷がよい", rating: 5, name: "きの", date: "2026-09" }]);
+  });
+
+  /** **媒体の書き出し方はまちまち。**文字列の並びでも受ける */
+  it("文字列の並びでも受ける", () => {
+    expect(buildReviews({ reviews: ["静かでよい", "珈琲が濃い"] }, "reviews")).toEqual([
+      { text: "静かでよい", rating: undefined, name: undefined, date: undefined },
+      { text: "珈琲が濃い", rating: undefined, name: undefined, date: undefined },
+    ]);
+  });
+
+  it("改行で区切った 1 つの文字列でも受ける", () => {
+    expect(buildReviews({ reviews: "静かでよい\n珈琲が濃い" }, "reviews").map((r) => r.text)).toEqual([
+      "静かでよい",
+      "珈琲が濃い",
+    ]);
+  });
+
+  it("**本文が無いものは出さない**（名前と星だけの口コミは読めない）", () => {
+    expect(buildReviews({ reviews: [{ rating: 5, name: "きの" }, { text: "  " }] }, "reviews")).toEqual([]);
+  });
+
+  it("**星は数として読む**（文字列で来る媒体がある）", () => {
+    expect(buildReviews({ reviews: [{ text: "よい", rating: "4" }] }, "reviews").map((r) => r.rating)).toEqual([4]);
+    expect(buildReviews({ reviews: [{ text: "よい", rating: "とても" }] }, "reviews").map((r) => r.rating)).toEqual([
+      undefined,
+    ]);
+  });
+
+  it("属性名が無ければ空（**推測しない**）", () => {
+    expect(buildReviews({ reviews: ["あ"] }, null)).toEqual([]);
+    expect(buildReviews({}, "reviews")).toEqual([]);
+    expect(buildReviews(/** @type {any} */ (null), "reviews")).toEqual([]);
+  });
+});
+
+/**
+ * **曜日ごとの営業時間**（Google マップと同じ形）。
+ *
+ * 人からの依頼は「gmap の仕様わかるよね。何曜日何時から何時とか」（2026-09-29）。
+ *
+ * ## 「営業中」とは書きません
+ *
+ * **MMJ は判断しません。**いま開いているかどうかは、時差・祝日・臨時休業・
+ * ラストオーダーを知らないと言えません。**知らないまま「営業中」と出すのは嘘**で、
+ * その嘘は**閉まった店の前に人を立たせます**。
+ *
+ * 出すのは**書かれている時間そのもの**と、**今日がどの行か**までです。
+ */
+describe("parseHours", () => {
+  const week = { mon: ["10:00-18:00"], tue: ["10:00-18:00"], wed: [], sat: ["09:00-19:00"] };
+
+  it("7 日ぶんを、月から順に返す", () => {
+    const got = parseHours(week);
+    expect(got.map((d) => d.key)).toEqual(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
+    expect(got.map((d) => d.label)).toEqual(["月", "火", "水", "木", "金", "土", "日"]);
+  });
+
+  it("時間をそのまま持つ", () => {
+    expect(parseHours(week).map((d) => d.spans)).toEqual([
+      ["10:00-18:00"], ["10:00-18:00"], [], [], [], ["09:00-19:00"], [],
+    ]);
+  });
+
+  /** **書かれていない日と、空の日は同じ「休み」。**勝手に営業していることにしない */
+  it("空の日と書かれていない日は休み", () => {
+    const got = parseHours(week);
+    expect(got.map((d) => d.closed)).toEqual([false, false, true, true, true, false, true]);
+  });
+
+  it("**1 日に 2 つの時間帯も持てる**（昼と夜で分かれる店）", () => {
+    expect(parseHours({ mon: ["11:00-14:00", "17:00-21:00"] }).map((d) => d.spans.length)).toEqual([
+      2, 0, 0, 0, 0, 0, 0,
+    ]);
+  });
+
+  it("文字列 1 本でも受ける（その曜日だけ）", () => {
+    expect(parseHours({ mon: "10:00-18:00" }).map((d) => d.spans)).toEqual([
+      ["10:00-18:00"], [], [], [], [], [], [],
+    ]);
+  });
+
+  it("**読めないものは休み扱いにせず、空で返す**（嘘の休業を出さない）", () => {
+    expect(parseHours(null)).toEqual([]);
+    expect(parseHours("月曜 10 時")).toEqual([]);
+    expect(parseHours([])).toEqual([]);
+  });
+});
+
+describe("todayKey", () => {
+  it("曜日の鍵を返す", () => {
+    expect(todayKey(new Date("2026-09-28T09:00:00"))).toBe("mon");
+    expect(todayKey(new Date("2026-09-29T09:00:00"))).toBe("tue");
+    expect(todayKey(new Date("2026-10-04T09:00:00"))).toBe("sun");
+  });
+
+  it("**壊れた日付で落とさない**（地図は出す）", () => {
+    expect(todayKey(new Date("こわれ"))).toBeNull();
+    expect(todayKey(/** @type {any} */ (null))).toBeNull();
   });
 });

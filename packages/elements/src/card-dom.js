@@ -86,6 +86,11 @@ export function buildCardStyle(colors, className) {
     // **つまめることを、形でも出す。**縦の動きはこちらで受けるので、ブラウザに渡さない
     "cursor:grab;touch-action:none;}" +
     `.${SHEET_CLASS}.${PART_CLASS} .mmj-card-bar:active{cursor:grabbing;}` +
+    // **部分表示の写真は、吹き出しと同じ扱い**（帯の高さいっぱいに敷く）。
+    // 面の `object-fit:contain` が勝つと、**枠の中に写真が浮いて細く見えた**
+    // （実測・2026-09-29）
+    `.${SHEET_CLASS}.${PART_CLASS} .mmj-popup-gallery img{` +
+    "height:100%;max-height:none;object-fit:cover;}" +
     // 最大化した面。**地図の入れ物いっぱいに敷く**
     `.${SHEET_CLASS}{` +
     "position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;" +
@@ -110,8 +115,11 @@ export function buildCardStyle(colors, className) {
     // 高さだけ揃えて、幅は写真の形なりにする。**並べば、並んで見える**
     // 吹き出しでは帯の高さを固定しているが（**出した瞬間の高さで向きが決まる**ため）、
     // 最大化した面は向きを持たないので、**大きく見せてよい**
-    `.${SHEET_CLASS} .mmj-popup-gallery{height:auto;}` +
-    `.${SHEET_CLASS} .mmj-popup-gallery img{` +
+    // **全面のときだけ大きくする。**下から出る面（部分）にも当たっていたため、
+    // **写真が中身を全部押し出して、タブが折り目の下へ沈んでいた**
+    // （実測・2026-09-29。携帯幅で題と写真しか見えなかった）
+    `.${SHEET_CLASS}:not(.${PART_CLASS}) .mmj-popup-gallery{height:auto;}` +
+    `.${SHEET_CLASS}:not(.${PART_CLASS}) .mmj-popup-gallery img{` +
     "flex:0 0 auto;width:auto;min-width:0;max-width:none;height:min(38vh,320px);}"
   );
 }

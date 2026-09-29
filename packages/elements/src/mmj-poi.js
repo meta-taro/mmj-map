@@ -15,6 +15,7 @@
 import { buildPopupOptions } from "./attrs.js";
 import {
   buildLinks,
+  buildReviews,
   buildTabs,
   indexOfShop,
   initialCardState,
@@ -24,17 +25,26 @@ import {
   needsChrome,
   panDelta,
   parseLinks,
+  parseHours,
   parseLive,
   parseTabs,
   readLiveText,
   readShopParam,
   stepIndex,
+  todayKey,
   writeShopParam,
 } from "./card.js";
 import { mountCard } from "./card-dom.js";
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
 import { buildCardContent, isSafeLink } from "./popup.js";
-import { ensureCardContrast, ensurePopupContrast, popupColorsFrom, renderTabbed } from "./popup-dom.js";
+import {
+  ensureCardContrast,
+  ensurePopupContrast,
+  popupColorsFrom,
+  renderHours,
+  renderReviews,
+  renderTabbed,
+} from "./popup-dom.js";
 import { parseCount } from "./cluster.js";
 
 /**
@@ -388,7 +398,20 @@ export class MmjPoi extends HTMLElement {
    * @param {{ label: string, text: string } | null} [live] 取ってきた「いまの情報」
    */
   #renderBody(content, feature, live = null) {
-    const tabs = buildTabs(feature.properties ?? {}, parseTabs(this.getAttribute("card-tabs")));
+    const properties = feature.properties ?? {};
+    const tabs = buildTabs(properties, parseTabs(this.getAttribute("card-tabs")));
+
+    // 曜日ごとの営業時間。**「営業中」とは書かない**（判断しない）
+    const hours = parseHours(properties[String(this.getAttribute("card-hours") ?? "")]);
+    if (hours.length > 0) {
+      tabs.push({ label: "営業時間", node: renderHours(hours, todayKey(new Date())) });
+    }
+
+    // 口コミ本文。**書いた人の言葉のまま**（要約しない）
+    const reviews = buildReviews(properties, this.getAttribute("card-reviews"));
+    if (reviews.length > 0) {
+      tabs.push({ label: `口コミ（${reviews.length}）`, node: renderReviews(reviews) });
+    }
     // **取れたときだけ足す。**取れなければタブそのものが出ない
     return renderTabbed({ parts: content, tabs: live === null ? tabs : [...tabs, live] });
   }
@@ -447,7 +470,7 @@ export class MmjPoi extends HTMLElement {
     const map = this.map;
     // **上限は地図の高さから決める。**地図が画面より小さいと、画面基準では収まらない
     const box = map.getContainer();
-    box.style.setProperty("--mmj-card-max", Math.round(box.clientHeight * 0.6) + "px");
+    box.style.setProperty("--mmj-card-max", Math.round(box.clientHeight * 0.72) + "px");
     const colors = popupColorsFrom(this.owner);
     const className = ensurePopupContrast(colors);
     ensureCardContrast(colors, className);

@@ -400,17 +400,47 @@ export function buildPopupStyle(colors = POPUP_COLORS, className = DEFAULT_POPUP
     // （下線だけだと、触る画面では押せることも、いまどれかも伝わらない——
     //   デモの頁のメニューで 2 回やり直している）
     `.${className} .mmj-popup-tabs{` +
-    "display:flex;gap:.25rem;margin:.5em 0 .4em;flex-wrap:wrap;" +
+    // **折り返さず、横へ流す。**6 枚で 2 段になり、そのぶん中身が折り目の下へ沈んだ
+    // （実測・2026-09-29。PC 幅で「星・長文・リンク」が最初の画面に出ていなかった）。
+    // **縮めることを許す**（`min-width` の既定だと、行の幅が箱を押し広げる）
+    "display:flex;gap:.25rem;margin:.5em 0 .4em;flex-wrap:nowrap;" +
+    "overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;min-width:0;" +
     `border-bottom:1px solid ${colors.border};padding-bottom:.35em;}` +
     `.${className} .mmj-popup-tab{` +
     "min-height:30px;padding:.25em .6em;border-radius:6px;" +
     `border:1px solid ${colors.border};background:transparent;color:${colors.text};` +
-    "font:inherit;font-size:12px;line-height:1.4;cursor:pointer;opacity:.75;}" +
+    "font:inherit;font-size:12px;line-height:1.4;cursor:pointer;opacity:.75;flex:0 0 auto;}" +
     `.${className} .mmj-popup-tab[aria-selected="true"]{` +
     `background:${colors.border};opacity:1;font-weight:600;}` +
     `.${className} .mmj-popup-tab:focus-visible{outline:2px solid ${colors.text};outline-offset:1px;}` +
     // **改行を残す。**品書きもクーポンも、行で分かれているのが中身そのもの
     `.${className} .mmj-popup-panel{white-space:pre-line;}` +
+    // 口コミ。**本文が主役**で、星と名前は添えもの
+    `.${className} .mmj-popup-review{padding:.4em 0;}` +
+    `.${className} .mmj-popup-review + .mmj-popup-review{border-top:1px solid ${colors.border};}` +
+    `.${className} .mmj-popup-by{margin-top:.2em;font-size:.85em;opacity:.7;}` +
+    // 曜日ごとの営業時間。**行で読ませる**（表の罫線は要らない）
+    `.${className} .mmj-popup-hours-row{display:flex;gap:.6em;padding:.15em 0;}` +
+    `.${className} .mmj-popup-hours-day{flex:0 0 4.5em;opacity:.8;}` +
+    // **今日の行だけ強くする。**これは判断ではなく暦
+    `.${className} .mmj-popup-hours-row[data-today]{font-weight:600;}` +
+    `.${className} .mmj-popup-hours-row[data-today] .mmj-popup-hours-day{opacity:1;}` +
+    // 写真の送りボタン。**指で払える画面では出さない**
+    // （指のほうが速く、ボタンは写真を隠す。2026-09-29・PC で払えないという指摘）
+    `.${className} .mmj-popup-gallery-wrap{position:relative;}` +
+    `.${className} .mmj-popup-slide{display:none;}` +
+    "@media (hover: hover) and (pointer: fine){" +
+    `.${className} .mmj-popup-slide{` +
+    "display:flex;align-items:center;justify-content:center;position:absolute;top:50%;" +
+    "transform:translateY(-50%);width:28px;height:44px;padding:0;" +
+    `border:1px solid ${colors.border};border-radius:6px;` +
+    `background:${colors.background};color:${colors.text};` +
+    "font:inherit;font-size:16px;line-height:1;cursor:pointer;opacity:.85;}" +
+    `.${className} .mmj-popup-slide:hover{opacity:1;}` +
+    `.${className} .mmj-popup-slide:focus-visible{outline:2px solid ${colors.text};outline-offset:1px;}` +
+    `.${className} .mmj-popup-slide-prev{left:2px;}` +
+    `.${className} .mmj-popup-slide-next{right:2px;}` +
+    "}" +
     // リンクは**押せると分かる形**にする（下線を消さない）
     `.${className} .mmj-popup-link{` +
     `display:inline-block;margin-top:.45em;color:${colors.text};` +

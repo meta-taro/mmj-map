@@ -206,6 +206,110 @@ export function keyAction(key, state) {
   return null;
 }
 
+/**
+ * 口コミ本文を読む。**中身のあるものだけ返す。**
+ *
+ * 星と件数だけでは「4.3 がなぜ 4.3 なのか」が分からない
+ * （2026-09-29・人からの指摘「口コミないなとおもいました」）。
+ *
+ * **MMJ は要約しません。**書いた人の言葉のまま出します——
+ * 要約した時点で、**書いた人が本当に困っていた所が落ちます**（baseline §27）。
+ *
+ * **媒体の書き出し方はまちまち**なので、次のどれでも受けます。
+ *
+ *     [{ text, rating?, name?, date? }, ...]
+ *     ["静かでよい", "珈琲が濃い"]
+ *     "静かでよい\n珈琲が濃い"
+ *
+ * @param {Record<string, unknown>} properties
+ * @param {string | null | undefined} key
+ * @returns {{ text: string, rating: number | undefined, name: string | undefined, date: string | undefined }[]}
+ */
+export function buildReviews(properties, key) {
+  if (key === null || key === undefined || key === "") return [];
+  const raw = properties?.[key];
+
+  /** @type {any[]} */
+  const list = Array.isArray(raw) ? raw : typeof raw === "string" ? raw.split("\n") : [];
+
+  /** @type {{ text: string, rating: number | undefined, name: string | undefined, date: string | undefined }[]} */
+  const reviews = [];
+  for (const item of list) {
+    const source = typeof item === "string" ? { text: item } : item;
+    const text = typeof source?.text === "string" ? source.text.trim() : "";
+    // **本文が無いものは出さない。**名前と星だけの口コミは読めない
+    if (text === "") continue;
+    reviews.push({
+      text,
+      rating: readNumberField(source?.rating),
+      name: typeof source?.name === "string" && source.name.trim() !== "" ? source.name.trim() : undefined,
+      date: typeof source?.date === "string" && source.date.trim() !== "" ? source.date.trim() : undefined,
+    });
+  }
+  return reviews;
+}
+
+/** 曜日の並びと見出し。**月から始める**（日本の掲示に合わせる） */
+const WEEK = /** @type {const} */ ([
+  ["mon", "月"],
+  ["tue", "火"],
+  ["wed", "水"],
+  ["thu", "木"],
+  ["fri", "金"],
+  ["sat", "土"],
+  ["sun", "日"],
+]);
+
+/**
+ * 曜日ごとの営業時間を読む。
+ *
+ *     { "mon": ["10:00-18:00"], "wed": [], "sat": ["09:00-19:00"] }
+ *     { "mon": ["11:00-14:00", "17:00-21:00"] }   // 昼と夜で分かれる店
+ *
+ * **書かれていない日と、空の日は同じ「休み」。**勝手に営業していることにしません。
+ *
+ * ## 「営業中」とは書きません
+ *
+ * **MMJ は判断しません。**いま開いているかどうかは、時差・祝日・臨時休業・
+ * ラストオーダーを知らないと言えません。**知らないまま「営業中」と出すのは嘘**で、
+ * その嘘は**閉まった店の前に人を立たせます**。
+ *
+ * 出すのは**書かれている時間そのもの**と、**今日がどの行か**までです。
+ *
+ * @param {unknown} value
+ * @returns {{ key: string, label: string, spans: string[], closed: boolean }[]}
+ */
+export function parseHours(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return [];
+
+  const table = /** @type {Record<string, unknown>} */ (value);
+  const days = WEEK.map(([key, label]) => {
+    const raw = table[key];
+    const spans = Array.isArray(raw)
+      ? raw.filter((s) => typeof s === "string" && s.trim() !== "").map((s) => String(s).trim())
+      : typeof raw === "string" && raw.trim() !== ""
+        ? [raw.trim()]
+        : [];
+    return { key, label, spans, closed: spans.length === 0 };
+  });
+
+  // **1 日も読めなければ、表そのものを出さない。**
+  // 全部「休み」の表は、**書き忘れと定休の区別がつかない**
+  return days.some((day) => !day.closed) ? days : [];
+}
+
+/**
+ * その日の曜日の鍵。**今日がどの行かを示すためだけ**に使います。
+ *
+ * @param {Date} date
+ * @returns {string | null}
+ */
+export function todayKey(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+  // `getDay()` は 0 が日曜。**月から始める並びへ直す**
+  return WEEK[(date.getDay() + 6) % 7]?.[0] ?? null;
+}
+
 /** ここより上まで引き上げたら全面。**数字は実測で決め直すこと** */
 const DROP_HIGH = 0.75;
 
@@ -338,7 +442,7 @@ function defaultIsSafe(value) {
  *
  * @param {Record<string, unknown>} properties
  * @param {readonly { label: string, key: string }[]} spec
- * @returns {{ label: string, text: string }[]}
+ * @returns {{ label: string, text?: string, node?: HTMLElement }[]}
  */
 export function buildTabs(properties, spec) {
   if (!Array.isArray(spec)) return [];

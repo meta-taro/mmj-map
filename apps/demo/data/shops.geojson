@@ -7,7 +7,6 @@
         "shop_id": "akari",
         "shop_name": "町家カフェ 灯",
         "rating": 4.3,
-        "reviews": 128,
         "description": "築 90 年の町家を改装した喫茶。日替わりの焼き菓子と、豆から挽く珈琲。二階は座敷で、窓から川と橋が見えます。※これは見本の文章です。この店は実在しません。",
         "photos": "./data/photos/akari-1.jpg,./data/photos/akari-2.jpg,./data/photos/akari-3.jpg",
         "url": "https://example.com/akari",
@@ -15,7 +14,49 @@
         "coupon": "この画面を見せると、焼き菓子をひとつ。\n（見本です。実在の店舗ではありません）",
         "hours": "月〜金　10:00–18:00\n土日　9:00–19:00\n水曜　休み\n二階の座敷は 14 時から",
         "site_url": "https://example.com/akari",
-        "sns_url": "https://example.com/akari/photos"
+        "sns_url": "https://example.com/akari/photos",
+        "open_hours": {
+          "mon": [
+            "10:00-18:00"
+          ],
+          "tue": [
+            "10:00-18:00"
+          ],
+          "wed": [],
+          "thu": [
+            "10:00-18:00"
+          ],
+          "fri": [
+            "10:00-18:00"
+          ],
+          "sat": [
+            "09:00-19:00"
+          ],
+          "sun": [
+            "09:00-19:00"
+          ]
+        },
+        "review_count": 128,
+        "review_items": [
+          {
+            "text": "二階の座敷が静かで、窓から川が見えます。長居してしまいました。",
+            "rating": 5,
+            "name": "きの",
+            "date": "2026-09"
+          },
+          {
+            "text": "焼き菓子は日替わり。行った日はレモンのケーキでした。\n珈琲は浅煎りが好みなら合うと思います。",
+            "rating": 4,
+            "name": "はる",
+            "date": "2026-08"
+          },
+          {
+            "text": "階段が急なので、荷物が多い日は一階の席が無難です。",
+            "rating": 4,
+            "name": "とみ",
+            "date": "2026-07"
+          }
+        ]
       },
       "geometry": {
         "type": "Point",
@@ -31,7 +72,6 @@
         "shop_id": "migiwa",
         "shop_name": "らーめん 汀",
         "rating": 4.1,
-        "reviews": 342,
         "description": "夜だけ開く小さな店。醤油と煮干し、替玉は半分から。カウンターは 8 席しかないので、雨の日は傘を畳んで入ってください。※これは見本の文章です。この店は実在しません。",
         "photos": "./data/photos/migiwa-1.jpg,./data/photos/migiwa-2.jpg,./data/photos/migiwa-3.jpg",
         "url": "https://example.com/migiwa",
@@ -39,7 +79,43 @@
         "coupon": "21 時以降、替玉 1 回まで無料。\n（見本です。実在の店舗ではありません）",
         "hours": "18:00–翌 1:00\n日曜　休み\nスープが終わり次第、閉めます",
         "sns_url": "https://example.com/migiwa/posts",
-        "tel": "tel:+81-6-0000-0000"
+        "tel": "tel:+81-6-0000-0000",
+        "open_hours": {
+          "mon": [
+            "18:00-25:00"
+          ],
+          "tue": [
+            "18:00-25:00"
+          ],
+          "wed": [
+            "18:00-25:00"
+          ],
+          "thu": [
+            "18:00-25:00"
+          ],
+          "fri": [
+            "18:00-26:00"
+          ],
+          "sat": [
+            "18:00-26:00"
+          ],
+          "sun": []
+        },
+        "review_count": 342,
+        "review_items": [
+          {
+            "text": "煮干しが強め。替玉は半分から頼めるのがよいです。",
+            "rating": 5,
+            "name": "しま",
+            "date": "2026-09"
+          },
+          {
+            "text": "22 時を過ぎると並びます。カウンター 8 席だけなので、時間はずらしたほうが。",
+            "rating": 4,
+            "name": "くら",
+            "date": "2026-09"
+          }
+        ]
       },
       "geometry": {
         "type": "Point",
@@ -55,13 +131,42 @@
         "shop_id": "misaki",
         "shop_name": "古本 みさき",
         "rating": 4.6,
-        "reviews": 57,
         "description": "文庫と郷土資料。店先の棚は 100 円から。奥の通路は人がすれ違えないので、先に入った人が出るまで待つのが作法です。※これは見本の文章です。この店は実在しません。",
         "photos": "./data/photos/misaki-1.jpg,./data/photos/misaki-2.jpg,./data/photos/misaki-3.jpg",
         "url": "https://example.com/misaki",
         "menu": "文庫　100 円から\n郷土資料　応相談\n買い取りは午前中のみ",
         "hours": "11:00–19:00\n火曜　休み\n雨の日は店先の棚を出しません",
-        "site_url": "https://example.com/misaki"
+        "site_url": "https://example.com/misaki",
+        "open_hours": {
+          "mon": [
+            "11:00-19:00"
+          ],
+          "tue": [],
+          "wed": [
+            "11:00-19:00"
+          ],
+          "thu": [
+            "11:00-19:00"
+          ],
+          "fri": [
+            "11:00-19:00"
+          ],
+          "sat": [
+            "11:00-19:00"
+          ],
+          "sun": [
+            "11:00-17:00"
+          ]
+        },
+        "review_count": 57,
+        "review_items": [
+          {
+            "text": "郷土資料の棚が奥にあります。店主に聞くと出してくれます。",
+            "rating": 5,
+            "name": "あお",
+            "date": "2026-06"
+          }
+        ]
       },
       "geometry": {
         "type": "Point",

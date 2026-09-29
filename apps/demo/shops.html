@@ -64,10 +64,11 @@
     <mmj-poi id="shops" src="./data/shops.geojson" label-key="shop_name" min-zoom="12"
              card-id="shop_id"
              card-title="shop_name" card-images="photos" card-body="description"
-             card-rating="rating" card-rating-count="reviews"
+             card-rating="rating" card-rating-count="review_count"
              card-href="url" card-href-label="お店のページ（見本）"
-             card-tabs="品書き:menu,クーポン:coupon,営業時間:hours"
+             card-tabs="品書き:menu,クーポン:coupon"
              card-links="写真:sns_url,公式:site_url,電話:tel"
+             card-hours="open_hours" card-reviews="review_items"
              card-live="いま:./data/live/{id}.json"
              attribution="見本（架空の店舗です）"></mmj-poi>
   </mmj-map>
