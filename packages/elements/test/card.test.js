@@ -20,6 +20,9 @@ import {
   splitForTabs,
   parseLinks,
   buildLinks,
+  parseLive,
+  liveUrl,
+  readLiveText,
 } from "../src/card.js";
 
 /**
@@ -667,5 +670,78 @@ describe("buildLinks", () => {
   it("中身が無ければ空", () => {
     expect(buildLinks({}, spec)).toEqual([]);
     expect(buildLinks(/** @type {any} */ (null), spec)).toEqual([]);
+  });
+});
+
+/**
+ * **時間で変わる中身**（クーポン・シフト・今日の品切れ）。
+ *
+ * GeoJSON に書くと、**地図と一緒に持ち歩かれて古くなる**。
+ * オフラインで開いた人に、**先月のクーポンが今日の顔で出る**。
+ * だから**開いたときに取りに行く**形を用意する。
+ *
+ *     card-live="いまの情報:./live/{id}.json"
+ *
+ * **これを使うと「どの店を開いたか」が配信元に伝わる。**
+ * MMJ の部品はどこへも送らないが、**取りに行く先は使う側のサーバー**なので、
+ * そこには残る。使うかどうかは置く側が決める。
+ */
+describe("parseLive", () => {
+  it("見出しと URL の型を読む", () => {
+    expect(parseLive("いまの情報:./live/{id}.json")).toEqual({
+      label: "いまの情報",
+      template: "./live/{id}.json",
+    });
+  });
+
+  it("URL に `:` が入っていても読む（`https://`）", () => {
+    expect(parseLive("今日:https://example.com/live/{id}.json")).toEqual({
+      label: "今日",
+      template: "https://example.com/live/{id}.json",
+    });
+  });
+
+  it("組になっていなければ null", () => {
+    expect(parseLive("こわれ")).toBeNull();
+    expect(parseLive(":./live/{id}.json")).toBeNull();
+    expect(parseLive("今日:")).toBeNull();
+    expect(parseLive(null)).toBeNull();
+  });
+});
+
+describe("liveUrl", () => {
+  it("`{id}` を差し替える", () => {
+    expect(liveUrl("./live/{id}.json", "akari")).toBe("./live/akari.json");
+  });
+
+  /** **記号と日本語を通す。**id がそのまま URL の一部になる */
+  it("符号化する", () => {
+    expect(liveUrl("./live/{id}.json", "灯 A/B")).toBe("./live/%E7%81%AF%20A%2FB.json");
+  });
+
+  it("**`{id}` が無い型は使わない**（全店で同じものを取りに行ってしまう）", () => {
+    expect(liveUrl("./live/all.json", "akari")).toBeNull();
+  });
+
+  it("id が無ければ null", () => {
+    expect(liveUrl("./live/{id}.json", null)).toBeNull();
+    expect(liveUrl("./live/{id}.json", "")).toBeNull();
+  });
+});
+
+describe("readLiveText", () => {
+  it("文字列をそのまま読む", () => {
+    expect(readLiveText("本日 17 時まで")).toBe("本日 17 時まで");
+  });
+
+  it("`text` を読む", () => {
+    expect(readLiveText({ text: "本日 17 時まで" })).toBe("本日 17 時まで");
+  });
+
+  it("**中身が無ければ null**（空のタブを出さない）", () => {
+    expect(readLiveText({ text: "   " })).toBeNull();
+    expect(readLiveText({})).toBeNull();
+    expect(readLiveText(null)).toBeNull();
+    expect(readLiveText(42)).toBeNull();
   });
 });

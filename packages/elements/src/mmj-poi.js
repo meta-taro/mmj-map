@@ -18,12 +18,15 @@ import {
   buildTabs,
   indexOfShop,
   initialCardState,
+  liveUrl,
   mapCardFields,
   nearestByPoint,
   needsChrome,
   panDelta,
   parseLinks,
+  parseLive,
   parseTabs,
+  readLiveText,
   readShopParam,
   stepIndex,
   writeShopParam,
@@ -78,6 +81,12 @@ export class MmjPoi extends HTMLElement {
 
   /** いま開いている点の座標。**地図を送って収めるのに要る** @type {[number, number]} */
   where = [0, 0];
+
+  /**
+   * 開いた回数。**取りに行った結果が遅れて返ったとき、古いものを捨てるため。**
+   * 送って回っている間に前の応答が返ると、**別の店の情報が今の店の顔で出る**。
+   */
+  opened = 0;
 
   /**
    * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
@@ -289,6 +298,8 @@ export class MmjPoi extends HTMLElement {
     const where = feature.geometry.coordinates;
     this.where = where;
 
+    this.opened += 1;
+
     // **開いているなら、中身だけ差し替える。**閉じて開き直すと、
     // 最大化していたら縮み、めくった写真も戻る（**送るたびに元へ戻る**）
     if (this.card && this.popup) {
@@ -320,6 +331,7 @@ export class MmjPoi extends HTMLElement {
       requestAnimationFrame(() => this.#fit());
     }
     this.#writeUrl(feature);
+    void this.#loadLive(feature, content);
   }
 
   /**
@@ -370,9 +382,58 @@ export class MmjPoi extends HTMLElement {
    * @param {any[]} content
    * @param {any} feature
    */
-  #renderBody(content, feature) {
+  /**
+   * @param {any[]} content
+   * @param {any} feature
+   * @param {{ label: string, text: string } | null} [live] 取ってきた「いまの情報」
+   */
+  #renderBody(content, feature, live = null) {
     const tabs = buildTabs(feature.properties ?? {}, parseTabs(this.getAttribute("card-tabs")));
-    return renderTabbed({ parts: content, tabs });
+    // **取れたときだけ足す。**取れなければタブそのものが出ない
+    return renderTabbed({ parts: content, tabs: live === null ? tabs : [...tabs, live] });
+  }
+
+  /**
+   * 時間で変わる中身を取りに行く。**開いたときだけ。控えない。**
+   *
+   * **これを使うと「どの店を開いたか」が配信元に伝わる。**
+   * MMJ の部品はどこへも送らないが、**取りに行く先は使う側のサーバー**なので
+   * そこには残る。**既定では取りに行かない**（属性が無ければ何もしない）。
+   *
+   * @param {any} feature
+   * @param {any[]} content
+   */
+  async #loadLive(feature, content) {
+    const spec = parseLive(this.getAttribute("card-live"));
+    const idKey = this.getAttribute("card-id");
+    if (spec === null || !idKey) return;
+
+    const url = liveUrl(spec.template, feature.properties?.[idKey]);
+    if (url === null) {
+      console.error("[mmj-poi] card-live の URL に {id} がありません（全店で同じものを取りに行きます）");
+      return;
+    }
+
+    const ticket = this.opened;
+    let text = null;
+    try {
+      // **控えない。**古いクーポンを今日の顔で出さないための機能なので、
+      // ここで掴むと目的そのものが消える
+      const response = await fetch(url, { cache: "no-store" });
+      // **404 は異常ではない。**「この店には、いまの情報が無い」ということ。
+      // ここで騒ぐと、**本当の異常（500・切断）が記録に埋もれる**
+      if (response.status === 404) return;
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      text = readLiveText(await response.json());
+    } catch (error) {
+      // 握り潰さない（§8）。**カードは出たままで、このタブだけが出ない**
+      console.error("[mmj-poi] いまの情報を取れませんでした", error);
+      return;
+    }
+
+    // **開き直された後なら捨てる。**別の店の情報を今の店の顔で出さない
+    if (text === null || ticket !== this.opened || this.card === null) return;
+    this.card.setBody(this.#renderBody(content, feature, { label: spec.label, text }));
   }
 
   /**

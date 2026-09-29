@@ -31,6 +31,7 @@
     閉じて別のピンを探さなくてよく、<strong>店舗ページへ飛ばないので地図が作り直されません</strong>。
     <strong>[⤢] で地図いっぱいに広げられます</strong>（<kbd>Esc</kbd> で 1 段だけ戻る）。
     <strong>品書き・クーポン・営業時間はタブ</strong>に入っています（中身のある店にだけ出ます）。
+    「いま」のタブだけは<strong>開いたときに取りに行きます</strong>——時間で変わるものを地図と一緒に配らないためです。
     開いている店は <code>?shop=</code> に残るので、<strong>その店を開いた状態で URL を送れます</strong>。
     <strong>この 3 店は架空です。写真も生成した見本で、実在の店舗ではありません</strong>（<code>data/README.md</code>）。
   </p>
@@ -66,6 +67,7 @@
              card-href="url" card-href-label="お店のページ（見本）"
              card-tabs="品書き:menu,クーポン:coupon,営業時間:hours"
              card-links="写真:sns_url,公式:site_url,電話:tel"
+             card-live="いま:./data/live/{id}.json"
              attribution="見本（架空の店舗です）"></mmj-poi>
   </mmj-map>
 

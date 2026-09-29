@@ -329,6 +329,69 @@ export function buildTabs(properties, spec) {
 }
 
 /**
+ * `card-live` の指定を読む。**「見出し:URL の型」。**
+ *
+ *     card-live="いまの情報:./live/{id}.json"
+ *
+ * ## なぜ別扱いなのか
+ *
+ * クーポン・シフト・今日の品切れは**時間で変わる**。GeoJSON に書くと
+ * **地図と一緒に持ち歩かれて古くなり**、オフラインで開いた人に
+ * **先月のクーポンが今日の顔で出る**。
+ *
+ * ## 代わりに払うもの
+ *
+ * **「どの店を開いたか」が配信元に伝わる。**MMJ の部品はどこへも送らないが、
+ * **取りに行く先は使う側のサーバー**なので、そこには残る。
+ * **使うかどうかは置く側が決める**（既定では取りに行かない）。
+ *
+ * @param {string | null | undefined} attribute
+ * @returns {{ label: string, template: string } | null}
+ */
+export function parseLive(attribute) {
+  if (typeof attribute !== "string" || attribute.trim() === "") return null;
+  const at = attribute.indexOf(":");
+  if (at < 0) return null;
+  const label = attribute.slice(0, at).trim();
+  // URL に `:` が入る（`https://`）ので、**最初の 1 つだけで割る**
+  const template = attribute.slice(at + 1).trim();
+  if (label === "" || template === "") return null;
+  return { label, template };
+}
+
+/**
+ * 取りに行く URL を組む。**`{id}` が無い型は使わない。**
+ *
+ * `{id}` を書き忘れると、**全部の店で同じものを取りに行く**。
+ * 画面には「何か出ている」ので、**間違いに気づけない**形になる。
+ *
+ * @param {string} template
+ * @param {string | null | undefined} id
+ * @returns {string | null}
+ */
+export function liveUrl(template, id) {
+  if (typeof template !== "string" || !template.includes("{id}")) return null;
+  if (id === null || id === undefined || String(id).trim() === "") return null;
+  return template.replaceAll("{id}", encodeURIComponent(String(id)));
+}
+
+/**
+ * 取ってきたものから文字を読む。**中身が無ければ null**（空のタブを出さない）。
+ *
+ * 文字列そのままでも、`{"text": "..."}` でも受ける。
+ * **形を 1 つに決めない**のは、置く側の既存の API に合わせられるようにするため。
+ *
+ * @param {unknown} json
+ * @returns {string | null}
+ */
+export function readLiveText(json) {
+  const raw = typeof json === "string" ? json : /** @type {any} */ (json)?.text;
+  if (typeof raw !== "string") return null;
+  const text = raw.trim();
+  return text === "" ? null : text;
+}
+
+/**
  * カードの中身を「いつも見えるぶん」と「タブの中へ入れるぶん」に分ける。
  *
  * **題と写真は、タブを切り替えても出したまま。**どの店を見ているかが消えると、
