@@ -142,3 +142,44 @@ describe("当たり判定の層", () => {
     expect(hit.minzoom).toBe(dot.minzoom);
   });
 });
+
+/**
+ * **矢印で送ったとき「いまここ」が分かること。**
+ *
+ * 人からの言葉は「移動しますね店舗矢印で。その時ここ！って分かる UX、
+ * 吹き出しはあっていいはず。地味だと密集してるなら前面に出るとかね」（2026-09-29）。
+ *
+ * 選ばれた点だけを**別の層**にする。同じ層の中では前後を選べないので、
+ * **密集しているところで隣の点の下に潜る**。
+ */
+describe("buildPoiSpec（選ばれた点）", () => {
+  const base = { id: "shops", src: "/shops.geojson" };
+
+  it("id のキーを渡すと、**点を id で引けるようにする**（feature-state に要る）", () => {
+    expect(buildPoiSpec({ ...base, idKey: "shop_id" }).source.promoteId).toBe("shop_id");
+  });
+
+  /** **id が無ければ選べない。**空の promoteId を置くと MapLibre が投げる */
+  it("id のキーが無ければ promoteId を付けない", () => {
+    expect(buildPoiSpec(base).source.promoteId).toBeUndefined();
+    expect(buildPoiSpec(base).pickedId).toBeNull();
+  });
+
+  it("選ばれた点の層は、**ただの点より後ろに並ぶ**（上に描かれる）", () => {
+    const spec = buildPoiSpec({ ...base, idKey: "shop_id" });
+    const ids = spec.layers.map((layer) => layer.id);
+    expect(ids.indexOf(spec.pickedId)).toBeGreaterThan(ids.indexOf("shops-dot"));
+  });
+
+  /** **名前は選ばれた点の上に出したい。**層の並びで、字が丸に隠れないようにする */
+  it("名前の層は、選ばれた点より後ろに並ぶ", () => {
+    const spec = buildPoiSpec({ ...base, idKey: "shop_id" });
+    const ids = spec.layers.map((layer) => layer.id);
+    expect(ids.indexOf("shops-label")).toBeGreaterThan(ids.indexOf(spec.pickedId));
+  });
+
+  it("選ばれていないうちは、**1 つも出さない**（半径 0）", () => {
+    const picked = buildPoiSpec({ ...base, idKey: "shop_id" }).layers.find((l) => l.id === "shops-picked");
+    expect(JSON.stringify(picked.paint["circle-radius"])).toContain("feature-state");
+  });
+});

@@ -40,6 +40,14 @@ const SIDE_CLASS = "mmj-card-sheet-side";
  */
 const WIDE_CLASS = "mmj-card-sheet-wide";
 
+/**
+ * 面が出ている間、**点の上に残す小さな吹き出し**の class。
+ *
+ * 面だけが差し替わると、**矢印で送ったときにどの点の話か分からない**。
+ * 中身は名前だけで、読むものは面にある。
+ */
+const MINI_CLASS = "mmj-card-mini";
+
 /** 吹き出しではなく、地図の上の面で出す状態か */
 const onPane = (/** @type {string} */ value) =>
   value === "maximized" || value === "sheet" || value === "panel";
@@ -168,7 +176,12 @@ export function buildCardStyle(colors, className) {
     // 題を 220px、本文を 28em で止めているが、面では余白として残ってしまう**
     // （実測・2026-09-29。708px の面で本文が 364px しか使っていなかった）
     `.${SHEET_CLASS}.${SIDE_CLASS} .mmj-popup-body:has(img) .mmj-popup-text{max-width:none;}` +
-    `.${SHEET_CLASS}.${SIDE_CLASS}.${WIDE_CLASS} .mmj-popup-copy{max-width:38em;}`
+    `.${SHEET_CLASS}.${SIDE_CLASS}.${WIDE_CLASS} .mmj-popup-copy{max-width:38em;}` +
+    // 面が出ている間の小さな吹き出し。**名前だけ。**読むものは面にある。
+    // **高さの上限を外す**（カード用の `--mmj-card-max` が効くと、1 行が切れる）
+    `.${MINI_CLASS} .maplibregl-popup-content{` +
+    "padding:5px 10px;max-height:none;overflow:visible;" +
+    "font-weight:600;white-space:nowrap;}"
   );
 }
 
@@ -232,6 +245,7 @@ export function buildCardBar(input) {
  *   siblings?: number,
  *   onStep?: (delta: number) => void,
  *   onShape?: (state: import("./card.js").CardState) => void,
+ *   mini?: () => Node | null,
  * }} input
  */
 export function mountCard(input) {
@@ -260,7 +274,22 @@ export function mountCard(input) {
    */
   const syncBalloon = () => {
     const balloon = input.popup?.getElement?.();
-    if (balloon) balloon.style.display = sheet === null ? "" : "none";
+    if (!balloon) return;
+
+    if (sheet === null) {
+      balloon.style.display = "";
+      balloon.classList.remove(MINI_CLASS);
+      return;
+    }
+
+    // **面が出ていても、点の上には名前を残す。**
+    // 面だけが差し替わると、**矢印で送ったときにどの点の話か分からない**
+    // （2026-09-29・人からの言葉「その時ここ！って分かる UX、吹き出しはあっていいはず」）。
+    // 吹き出しは DOM なので、**密集していても必ず前面に出る**。
+    const mini = input.mini?.() ?? null;
+    balloon.style.display = mini === null ? "none" : "";
+    balloon.classList.toggle(MINI_CLASS, mini !== null);
+    if (mini !== null) input.popup.setDOMContent(mini);
   };
 
   /** 見出しバーを、いまの状態に合わせて描き直す */

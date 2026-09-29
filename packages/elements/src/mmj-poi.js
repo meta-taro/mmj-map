@@ -66,7 +66,7 @@ let serial = 0;
 export class MmjPoi extends HTMLElement {
   /** @type {any} */
   map = null;
-  /** @type {{ sourceId: string, hitId: string, source: any, layers: any[] } | null} */
+  /** @type {{ sourceId: string, hitId: string, pickedId: string | null, source: any, layers: any[] } | null} */
   spec = null;
 
   /** 開いているカード。**開き直すたびに片付ける**（重ねて開かない） */
@@ -92,6 +92,17 @@ export class MmjPoi extends HTMLElement {
 
   /** いま開いている点の座標。**地図を送って収めるのに要る** @type {[number, number]} */
   where = [0, 0];
+
+  /**
+   * いま開いている点の名前。**面が出ている間、点の上の小さな吹き出しに出す。**
+   *
+   * **`title` という名前にしない。**`HTMLElement.title` は要素の吹き出し（tooltip）で、
+   * 上書きすると `<mmj-poi>` に触れただけでブラウザの吹き出しが出る。
+   */
+  openTitle = "";
+
+  /** いま「ここ」の印が立っている点の id。**降ろすのに要る** @type {string | null} */
+  picked = null;
 
   /**
    * 開いた回数。**取りに行った結果が遅れて返ったとき、古いものを捨てるため。**
@@ -147,6 +158,8 @@ export class MmjPoi extends HTMLElement {
         id: this.getAttribute("layer-id") || `mmj-poi-${++serial}`,
         src,
         labelKey: this.getAttribute("label-key") ?? undefined,
+        // **点を id で引けるようにする。**「いまここ」の印を立てるのに要る
+        idKey: this.getAttribute("card-id") ?? undefined,
         minZoom: parseCount(this.getAttribute("min-zoom"), POI_DEFAULTS.minZoom),
         // 指定が無ければ、サイトのテーマカラー（`<mmj-map accent>`）を既定にする。
         // 名前は地図のラベルと同じ色を借りる。**ここで色を作らない**
@@ -285,6 +298,44 @@ export class MmjPoi extends HTMLElement {
   }
 
   /**
+   * いま開いている点に「ここ」の印を立てる。**前のものは必ず降ろす。**
+   *
+   * 降ろし忘れると**開いた点が全部大きいまま**になり、
+   * かえってどれが今なのか分からなくなる。
+   *
+   * @param {unknown} id `card-id` が指す値。無ければ印は立たない
+   */
+  #mark(id) {
+    const map = this.map;
+    const source = this.spec?.sourceId;
+    if (!map || !source || this.spec?.pickedId === null) return;
+
+    // **同じ点なら触らない。**立て直すと、送るたびに一瞬消える
+    const next = id === null || id === undefined || id === "" ? null : String(id);
+    if (next === this.picked) return;
+
+    if (this.picked !== null) map.setFeatureState({ source, id: this.picked }, { picked: false });
+    if (next !== null) map.setFeatureState({ source, id: next }, { picked: true });
+    this.picked = next;
+  }
+
+  /**
+   * 面が出ている間、点の上に残す小さな吹き出しの中身。**名前だけ。**
+   *
+   * 読むものは面にある。ここは「どの点の話か」を示すためだけに出す。
+   * **文字列から DOM を作らない**（`popup.js` の頭に理由）。
+   *
+   * @returns {Node | null} 名前が無ければ `null`（空の吹き出しを出さない）
+   */
+  #miniBalloon() {
+    if (this.openTitle === "") return null;
+    const node = document.createElement("div");
+    node.className = "mmj-popup-text";
+    node.textContent = this.openTitle;
+    return node;
+  }
+
+  /**
    * 押された点のカードを開く。
    *
    * **`card-*` が 1 つも指定されていなければ何もしない。**
@@ -308,6 +359,9 @@ export class MmjPoi extends HTMLElement {
     const map = this.map;
     const where = feature.geometry.coordinates;
     this.where = where;
+    // **面の上に出す名前。**矢印で送ったとき、どの点の話かが分かるように
+    this.openTitle = String(properties[this.getAttribute("card-title") ?? ""] ?? "");
+    this.#mark(properties[this.getAttribute("card-id") ?? ""]);
 
     this.opened += 1;
 
@@ -316,6 +370,9 @@ export class MmjPoi extends HTMLElement {
     if (this.card && this.popup) {
       this.card.setBody(this.#renderBody(content, feature));
       this.popup.setLngLat(where);
+      // **点の上の名前も入れ替える。**入れ替えないと、送った先でも
+      // 前の店の名前が点に貼り付いたままになる（実測・2026-09-30）
+      this.card.sync?.();
     } else {
       this.#mount(feature, content, where);
     }
@@ -506,7 +563,13 @@ export class MmjPoi extends HTMLElement {
       },
       // **広げたら、点が面の裏へ入る。**幅が伸びきってから送る
       // （伸びている最中に測ると、伸びる前の幅で計算してしまう）
-      onShape: () => setTimeout(() => this.#fit(), 260),
+      onShape: (state) => {
+        // **閉じたら印を降ろす。**残すと、開いていないのに「ここ」が立ったままになる
+        if (state === "closed") return void this.#mark(null);
+        setTimeout(() => this.#fit(), 260);
+      },
+      // **面が出ていても、点の上に名前を残す**（どの点の話かが分かるように）
+      mini: () => this.#miniBalloon(),
     });
     popup.setDOMContent(this.card.content).addTo(map);
     // **地図へ足した後でないと吹き出しを掴めない。**面が出ているなら、ここで隠す

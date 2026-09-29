@@ -34,12 +34,13 @@ export const POI_DEFAULTS = {
  *   id: string,
  *   src: string,
  *   labelKey?: string,
+ *   idKey?: string,
  *   minZoom?: number,
  *   color?: string,
  *   textColor?: string,
  *   attribution?: string,
  * }} input
- * @returns {{ sourceId: string, hitId: string, source: any, layers: any[] }}
+ * @returns {{ sourceId: string, hitId: string, pickedId: string | null, source: any, layers: any[] }}
  */
 export function buildPoiSpec(input) {
   if (!input.id) throw new Error("id が要ります（source 名が衝突すると後勝ちで消えます）");
@@ -59,10 +60,23 @@ export function buildPoiSpec(input) {
   // 出どころを騙ることになる。MapLibre が `© OpenStreetMap contributors` の隣へ並べる。
   const attribution = typeof input.attribution === "string" ? input.attribution.trim() : "";
 
+  // **選ばれた点を、点そのもので引けるようにする。**
+  // `promoteId` を付けると GeoJSON の `properties[idKey]` がその点の id になり、
+  // `setFeatureState` で「いまここ」を立てられる。
+  // **id が無ければ付けない**（空の `promoteId` は MapLibre が投げる）。
+  const idKey = typeof input.idKey === "string" && input.idKey !== "" ? input.idKey : null;
+  const pickedId = idKey === null ? null : `${sourceId}-picked`;
+
   return {
     sourceId,
     hitId: `${sourceId}-hit`,
-    source: { type: "geojson", data: input.src, ...(attribution === "" ? {} : { attribution }) },
+    pickedId,
+    source: {
+      type: "geojson",
+      data: input.src,
+      ...(idKey === null ? {} : { promoteId: idKey }),
+      ...(attribution === "" ? {} : { attribution }),
+    },
     layers: [
       {
         // **指は点より太い。**見える点は直径 10px（縁を入れて 13px）で、
@@ -95,6 +109,32 @@ export function buildPoiSpec(input) {
           "circle-stroke-color": POI_DEFAULTS.haloColor,
         },
       },
+      // **いま開いている点。**矢印で送ったとき、どれの話なのかが分からないと、
+      // カードだけが差し替わって「何が起きたか分からない」状態になる
+      // （2026-09-29・人からの言葉「その時ここ！って分かる UX」）。
+      //
+      // **別の層にする理由は、密集しているところ。**同じ層の中では前後を選べないので、
+      // 隣の点の下に潜る。**1 枚上に置けば、必ず前面に出る。**
+      //
+      // 選ばれていないうちは半径 0 ＝ 何も出ない。**別の source を作らない**
+      // （同じ点を 2 回配ることになり、ずれる余地ができる）。
+      ...(pickedId === null
+        ? []
+        : [
+            {
+              id: pickedId,
+              type: "circle",
+              source: sourceId,
+              minzoom,
+              paint: {
+                "circle-radius": ["case", ["boolean", ["feature-state", "picked"], false], 9, 0],
+                "circle-color": color,
+                // **縁は太く。**色だけで差をつけると、配色によっては見分けが付かない
+                "circle-stroke-width": ["case", ["boolean", ["feature-state", "picked"], false], 3.5, 0],
+                "circle-stroke-color": POI_DEFAULTS.haloColor,
+              },
+            },
+          ]),
       {
         id: `${sourceId}-label`,
         type: "symbol",
@@ -115,6 +155,12 @@ export function buildPoiSpec(input) {
           // 地図の上の字は、縁が無いと背景に溶ける
           "text-halo-color": POI_DEFAULTS.haloColor,
           "text-halo-width": 1.2,
+          // **選ばれている点の名前は、地図には出さない。**
+          // 吹き出しが同じ名前を出しているので、**同じ文字が 2 つ並ぶ**
+          // （実測・2026-09-30。点の上と下に「らーめん 汀」が出ていた）
+          ...(pickedId === null
+            ? {}
+            : { "text-opacity": ["case", ["boolean", ["feature-state", "picked"], false], 0, 1] }),
         },
       },
     ],
