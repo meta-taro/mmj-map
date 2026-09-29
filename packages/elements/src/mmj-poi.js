@@ -32,6 +32,7 @@ import {
   readShopParam,
   stepIndex,
   todayKey,
+  visibleArea,
   writeShopParam,
 } from "./card.js";
 import { mountCard } from "./card-dom.js";
@@ -357,10 +358,10 @@ export class MmjPoi extends HTMLElement {
     const pane = this.card?.pane?.();
 
     if (pane?.isConnected) {
-      const paneRect = pane.getBoundingClientRect();
       // 全面のときは、送っても地図が見えない。**何もしない**
-      if (paneRect.top <= mapRect.top + 1) return;
-      // **下から出る面では、カードではなく「押した点」を見えるところへ。**
+      const area = visibleArea(mapRect, pane.getBoundingClientRect());
+      if (area === null) return;
+      // **面を出したら、カードではなく「押した点」を見えるところへ。**
       // 点が面の下に隠れると、**どこの店の話か分からなくなる**
       const at = map.project(this.where);
       const mark = {
@@ -369,13 +370,7 @@ export class MmjPoi extends HTMLElement {
         left: mapRect.left + at.x - MARK_HALF,
         right: mapRect.left + at.x + MARK_HALF,
       };
-      const visible = {
-        top: mapRect.top,
-        bottom: paneRect.top,
-        left: mapRect.left,
-        right: mapRect.right,
-      };
-      const [dx, dy] = panDelta(mark, visible, MARK_HALF);
+      const [dx, dy] = panDelta(mark, area, MARK_HALF);
       if (dx !== 0 || dy !== 0) map.panBy([dx, dy], { duration: 200 });
       return;
     }
@@ -509,6 +504,9 @@ export class MmjPoi extends HTMLElement {
         this.#announce("mmj-card-step", { delta, index: this.index, total: this.features.length });
         this.#openAt(stepIndex(this.index, delta, this.features.length), true);
       },
+      // **広げたら、点が面の裏へ入る。**幅が伸びきってから送る
+      // （伸びている最中に測ると、伸びる前の幅で計算してしまう）
+      onShape: () => setTimeout(() => this.#fit(), 260),
     });
     popup.setDOMContent(this.card.content).addTo(map);
     // **地図へ足した後でないと吹き出しを掴めない。**面が出ているなら、ここで隠す

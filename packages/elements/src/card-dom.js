@@ -27,6 +27,23 @@ const SHEET_CLASS = "mmj-card-sheet";
 /** 下から出る面（部分）の class。**これが付かなければ全面** */
 const PART_CLASS = "mmj-card-sheet-part";
 
+/** 横から出る面の class。**広い画面はこちら**（地図は横に残る） */
+const SIDE_CLASS = "mmj-card-sheet-side";
+
+/**
+ * 横から出る面を広げた状態の class。
+ *
+ * **広い画面では「全面」にしない。**1440px の幅いっぱいに文字を敷くと
+ * 1 行が長すぎて読めず、地図も消える
+ * （2026-09-29・人からの指摘「文字が上に幅を利かせて、体験お邪魔」）。
+ * 広げても**地図は必ず横に残す**。
+ */
+const WIDE_CLASS = "mmj-card-sheet-wide";
+
+/** 吹き出しではなく、地図の上の面で出す状態か */
+const onPane = (/** @type {string} */ value) =>
+  value === "maximized" || value === "sheet" || value === "panel";
+
 /**
  * カードの見た目。**色は読み込んだスタイルから借りる**（吹き出しと同じ 3 色）。
  *
@@ -120,7 +137,38 @@ export function buildCardStyle(colors, className) {
     // （実測・2026-09-29。携帯幅で題と写真しか見えなかった）
     `.${SHEET_CLASS}:not(.${PART_CLASS}) .mmj-popup-gallery{height:auto;}` +
     `.${SHEET_CLASS}:not(.${PART_CLASS}) .mmj-popup-gallery img{` +
-    "flex:0 0 auto;width:auto;min-width:0;max-width:none;height:min(38vh,320px);}"
+    "flex:0 0 auto;width:auto;min-width:0;max-width:none;height:min(38vh,320px);}" +
+    // **長い行は読めない。**広げたときに 1 行が 1400px になると目が戻れない
+    // （2026-09-29・人からの指摘「文字が上に幅を利かせて、体験お邪魔」）
+    `.${SHEET_CLASS} .mmj-popup-text,.${SHEET_CLASS} .mmj-popup-review{max-width:42rem;}` +
+    // 横から出る面。**地図を消さない。**押した点は右に見えたまま残る
+    `.${SHEET_CLASS}.${SIDE_CLASS}{` +
+    "right:auto;width:min(26rem,34%);transition:width .2s ease;" +
+    `border-right:1px solid ${colors.border};` +
+    "box-shadow:6px 0 28px rgba(0,0,0,.35);}" +
+    // 広げても**横いっぱいにしない**。地図が 38% 残る
+    `.${SHEET_CLASS}.${SIDE_CLASS}.${WIDE_CLASS}{width:min(46rem,62%);}` +
+    // **横から出る面に横スライダーは要らない。**縦に長いので、写真は敷き詰められる
+    // （2026-09-29・人からの指摘「このスライドが PC だと UX 悪いです」）。
+    // 1 枚目を大きく、残りを並べる——Google マップの店舗欄と同じ形
+    `.${SHEET_CLASS}.${SIDE_CLASS} .mmj-popup-slide{display:none;}` +
+    `.${SHEET_CLASS}.${SIDE_CLASS} .mmj-popup-gallery{` +
+    "display:grid;grid-template-columns:1fr 1fr;gap:6px;height:auto;overflow:visible;}" +
+    `.${SHEET_CLASS}.${SIDE_CLASS} .mmj-popup-gallery img{` +
+    "flex:none;width:100%;min-width:0;max-width:none;height:120px;object-fit:cover;}" +
+    `.${SHEET_CLASS}.${SIDE_CLASS} .mmj-popup-gallery img:first-child{` +
+    "grid-column:1/-1;height:min(34vh,240px);}" +
+    // **列は 2 のまま、写真だけ大きくする。**3 列にすると 2 枚目以降が 2 枚しか無く、
+    // 右に穴が空いて作りかけに見えた（実測・2026-09-29。`auto-fit` でも埋まらない——
+    // 1 枚目が全列にまたがっているぶん、空の列が潰れてくれない）
+    `.${SHEET_CLASS}.${SIDE_CLASS}.${WIDE_CLASS} .mmj-popup-gallery img{height:210px;}` +
+    `.${SHEET_CLASS}.${SIDE_CLASS}.${WIDE_CLASS} .mmj-popup-gallery img:first-child{` +
+    "height:min(38vh,300px);}" +
+    // 吹き出し用の幅の縛りを、面では外す。**吹き出しは 20rem しか無いので
+    // 題を 220px、本文を 28em で止めているが、面では余白として残ってしまう**
+    // （実測・2026-09-29。708px の面で本文が 364px しか使っていなかった）
+    `.${SHEET_CLASS}.${SIDE_CLASS} .mmj-popup-body:has(img) .mmj-popup-text{max-width:none;}` +
+    `.${SHEET_CLASS}.${SIDE_CLASS}.${WIDE_CLASS} .mmj-popup-copy{max-width:38em;}`
   );
 }
 
@@ -183,6 +231,7 @@ export function buildCardBar(input) {
  *   initial: import("./card.js").CardState,
  *   siblings?: number,
  *   onStep?: (delta: number) => void,
+ *   onShape?: (state: import("./card.js").CardState) => void,
  * }} input
  */
 export function mountCard(input) {
@@ -265,6 +314,19 @@ export function mountCard(input) {
     syncBalloon();
   };
 
+  /**
+   * 面の形を状態に合わせる。**広い画面は横から、狭い画面は下から。**
+   *
+   * 広げても横から出る面は横のまま（`SIDE` を外さない）。
+   * **外すと地図が消え、読む場所も長すぎる 1 行になる。**
+   */
+  const applyShape = () => {
+    const side = input.initial === "panel";
+    sheet?.classList.toggle(PART_CLASS, state === "sheet");
+    sheet?.classList.toggle(SIDE_CLASS, side && onPane(state));
+    sheet?.classList.toggle(WIDE_CLASS, side && state === "maximized");
+  };
+
   /** @param {"open" | "prev" | "next" | "maximize" | "restore" | "close"} action */
   function act(action) {
     // **送りは状態を変えない。**開いたまま中身だけ入れ替える
@@ -274,18 +336,21 @@ export function mountCard(input) {
       return;
     }
 
-    const next = nextCardState(state, action, input.initial === "sheet" ? "sheet" : "popup");
+    const next = nextCardState(state, action, input.initial);
     if (next === state) return;
     state = next;
 
-    if (state === "maximized" || state === "sheet") expand();
+    if (onPane(state)) expand();
     else collapse();
-    sheet?.classList.toggle(PART_CLASS, state === "sheet");
+    applyShape();
 
     // **描き直してから移す。**逆にすると、フォーカスした要素ごと作り直される
     drawBar();
     if (state === "maximized") focusFirst();
     if (state === "closed") input.popup.remove();
+    // **形が変われば、隠れる範囲も変わる。**広げた面の裏に点が入ると、
+    // どこの店の話か分からなくなる（実測・2026-09-29。広げた瞬間に点が隠れた）
+    input.onShape?.(state);
   }
 
   // **Escape は 1 段だけ戻す**（最大化 → 吹き出し → 閉じる）
@@ -311,6 +376,9 @@ export function mountCard(input) {
 
   const onDown = (/** @type {PointerEvent} */ event) => {
     if (sheet === null) return;
+    // **横から出る面を縦につまませない。**高さは地図いっぱいで固定されていて、
+    // 引いても何も起きない（**動かないものを掴ませない**）
+    if (input.initial === "panel") return;
     // **ボタンの上では始めない。**押したいのか動かしたいのか分からなくなる
     if (/** @type {Element} */ (event.target).closest(".mmj-card-btn")) return;
     const box = sheet.getBoundingClientRect();
@@ -365,8 +433,8 @@ export function mountCard(input) {
   bar.addEventListener("pointerup", onUp);
   bar.addEventListener("pointercancel", onUp);
 
-  if (state === "maximized" || state === "sheet") expand();
-  sheet?.classList.toggle(PART_CLASS, state === "sheet");
+  if (onPane(state)) expand();
+  applyShape();
   drawBar();
   // **下から出た面へは焦点を移さない。**開いた瞬間に読み上げが飛ぶと、
   // 地図を見ていた人の位置が分からなくなる。全面にしたときだけ移す

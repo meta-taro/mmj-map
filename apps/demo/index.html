@@ -120,7 +120,7 @@
 
     <!-- **すべて実測。**丸めた見栄えの数を置かない -->
     <table class="lp-table">
-      <thead><tr><th>範囲</th><th>大きさ</th><th>切り出し</th></tr></thead>
+      <thead><tr><th scope="col">範囲</th><th scope="col">大きさ</th><th scope="col">切り出し</th></tr></thead>
       <tbody>
         <tr><td>舞浜一帯（会場ひとつ）</td><td><b>1.9 MB</b></td><td>31 リクエスト・9.5 秒</td></tr>
         <tr><td>ハノイ中心部</td><td>10.9 MB</td><td>45 リクエスト・12.5 秒</td></tr>
@@ -214,29 +214,30 @@
     </ul>
   </section>
 
-  <footer class="lp-footer">
-    <p>
-      <strong>ベースデータは OpenStreetMap（ODbL 1.0）です。</strong>
-      <code>© OpenStreetMap contributors</code> を画面から消さないでください。
-      コードとスタイルは MIT です。
-    </p>
-    <p class="lp-footer-links">
-      <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
-      <a href="https://www.npmjs.com/package/@mmj-map/elements">npm</a>
-      <a href="https://github.com/meta-taro/mmj-map/blob/develop/LICENSES.md">ライセンス</a>
-      <a href="https://github.com/meta-taro/mmj-map/tree/develop/docs/install">導入手順</a>
-    </p>
-    <p class="lp-note">
-      <strong>この頁の地図は大阪です</strong>（62.8 MB の切り出し 1 つ）。
-      ほかに 7 地域——ハノイ・ホーチミン・ニューヨーク・シンガポール・上海・台北・ソウル——を
-      <a href="./regions.html">地域を切り替える</a>で出しています（合計 168 MB）。
-      <a href="./venue.html">会場の地図</a>は舞浜で、これだけは <strong>1.9 MB</strong> です。
-      <strong>日本全土（2.6 GB）は配っていません。</strong>1 ファイル 100 MB / サイト 1 GB の
-      上限に収まらないためで、<strong>自分で切り出せば出せます</strong>。
-    </p>
-  </footer>
 
 </main>
+
+<footer class="lp-footer">
+  <p>
+    <strong>ベースデータは OpenStreetMap（ODbL 1.0）です。</strong>
+    <code>© OpenStreetMap contributors</code> を画面から消さないでください。
+    コードとスタイルは MIT です。
+  </p>
+  <p class="lp-footer-links">
+    <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
+    <a href="https://www.npmjs.com/package/@mmj-map/elements">npm</a>
+    <a href="https://github.com/meta-taro/mmj-map/blob/develop/LICENSES.md">ライセンス</a>
+    <a href="https://github.com/meta-taro/mmj-map/tree/develop/docs/install">導入手順</a>
+  </p>
+  <p class="lp-note">
+    <strong>この頁の地図は大阪です</strong>（62.8 MB の切り出し 1 つ）。
+    ほかに 7 地域——ハノイ・ホーチミン・ニューヨーク・シンガポール・上海・台北・ソウル——を
+    <a href="./regions.html">地域を切り替える</a>で出しています（合計 168 MB）。
+    <a href="./venue.html">会場の地図</a>は舞浜で、これだけは <strong>1.9 MB</strong> です。
+    <strong>日本全土（2.6 GB）は配っていません。</strong>1 ファイル 100 MB / サイト 1 GB の
+    上限に収まらないためで、<strong>自分で切り出せば出せます</strong>。
+  </p>
+</footer>
 
 <script src="./vendor/maplibre-gl/maplibre-gl.js"></script>
 <script src="./vendor/pmtiles/pmtiles.js"></script>

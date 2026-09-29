@@ -24,15 +24,20 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>地図に重ねる</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     <strong>ここに出ている色は見本です。実在のハザード・雨雲・地盤ではありません。</strong>
     <code>&lt;mmj-raster&gt;</code> が重なることを見せるためだけの格子で、
     <strong>段階があること以外に意味はありません</strong>（<code>tools/sample-raster</code> が作っています）。
     雨雲レーダー・ハザードマップ・地盤・震度・空中写真は<strong>どれもラスタタイル</strong>なので、
     この 1 つで全部乗ります。<strong>データは MMJ が持ちません。</strong>
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -53,7 +58,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <mmj-map id="map" center="135.5023,34.6937" zoom="11" cooperative fullscreen>
     <mmj-raster src="./sample-raster/{z}/{x}/{y}.png"
                 attribution="見本（実在のデータではありません）"

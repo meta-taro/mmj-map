@@ -24,14 +24,19 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>地域を切り替える</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     <strong>コードは 1 行も変わりません。</strong>変わるのは <code>tiles</code> と <code>lang</code> の 2 つだけです。
     スタイルは 8 地域とも同じ <code>modern-dark.json</code> で、<strong>地域ごとにスタイルを増やしていません</strong>。
     切り出しは 1 都市あたり <strong>10〜60 MB・1 分未満</strong>で、上流の公開ビルドから
     必要な範囲だけを HTTP Range で取っています。
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -52,7 +57,7 @@
   </nav>
 </header>
 
-<main class="map-area region-main">
+<main id="main" class="map-area region-main">
   <div class="region-bar">
     <label for="region">地域</label>
     <select id="region"></select>

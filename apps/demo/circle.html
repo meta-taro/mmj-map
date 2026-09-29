@@ -24,15 +24,20 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>ここから半径◯ m</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     <strong>外部サービスもデータも要りません。</strong>幾何だけで出ます。
     内側が <strong>800 m</strong>、外側が <strong>1.6 km</strong> です——
     <strong>左下の縮尺バーで検算できます。</strong>
     画面上の円（<code>circle-radius</code>）は<strong>画面のピクセル</strong>なので使えません。
     倍率を変えると「800 m」が 800 m でなくなるため、<strong>地表の点を並べた多角形</strong>にしてあります。
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -53,7 +58,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <mmj-map id="map" center="135.5023,34.6937" zoom="13" cooperative fullscreen>
     <mmj-circle center="135.5023,34.6937" radius="800"></mmj-circle>
     <mmj-circle center="135.5023,34.6937" radius="1600" color="#ffa03c"></mmj-circle>

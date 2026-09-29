@@ -24,9 +24,13 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>面で塗り分ける</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     浸水深・地盤・震度・土砂災害の区域のような、<strong>値を持つ面</strong>を重ねます。
     <strong>色は置く側が渡します</strong>——ハザードマップの配色は国や自治体が決めた
     意味のある色なので、<strong>独自配色に置き換えると誤読を生みます</strong>。
@@ -34,7 +38,8 @@
     渡された値を渡された色で塗るところまでです。
     <strong class="warn">この面は架空です。四角が規則的に並んでいるのがその印で、
     実際の浸水想定は地形なりの形になります。防災の判断には使えません。</strong>
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -55,7 +60,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <mmj-map id="map" center="135.5000,34.6935" zoom="14" hash fullscreen>
     <!--
       **色はここで渡す。**MMJ は並べ替えて塗るだけで、色を作りません。

@@ -21,7 +21,7 @@
  */
 
 /**
- * @typedef {"closed" | "popup" | "sheet" | "maximized"} CardState
+ * @typedef {"closed" | "popup" | "sheet" | "panel" | "maximized"} CardState
  *
  * `sheet` は**狭い画面で下から出る面**。**地図は上に残る。**
  *
@@ -186,7 +186,47 @@ export function needsChrome(parts) {
 export function initialCardState(input) {
   if (!input.rich) return "popup";
   // **狭い画面は下から出る面。**全面にすると地図が消え、押した点とのつながりが切れる
-  return input.width < NARROW_WIDTH ? "sheet" : "popup";
+  if (input.width < NARROW_WIDTH) return "sheet";
+  // **広い画面は横から出る面。**吹き出しは地図の点に貼り付くぶん幅が取れず、
+  // 写真も口コミも読めない（2026-09-29・人からの指摘「PC のポップも狭いわ」
+  // 「GMAP みたいに横からぼーんと大きく表示してくれないと、見づらい」）。
+  // **地図は横に残る**ので、押した点とのつながりは切れない
+  return "panel";
+}
+
+/** 1px は縁取りと小数の丸めのぶん。**ぴったり一致を求めない** */
+const covers = (/** @type {number} */ a, /** @type {number} */ b) => a <= b + 1;
+
+/**
+ * 面に隠れていない、地図の見えている範囲。
+ *
+ * **面は地図の一部を覆う。**覆われた側へ点を送っても見えないので、
+ * 「どこへ送れば見えるか」をここで出す（`panDelta` へ渡す）。
+ *
+ * 下から出る面なら上が、横から出る面なら反対側が残る。
+ * **全面のときは残らない**ので `null`（送っても意味がない）。
+ *
+ * @param {{top:number,bottom:number,left:number,right:number} | null} map
+ * @param {{top:number,bottom:number,left:number,right:number} | null} [pane]
+ * @returns {{top:number,bottom:number,left:number,right:number} | null}
+ */
+export function visibleArea(map, pane) {
+  if (!map) return null;
+  if (!pane) return { top: map.top, bottom: map.bottom, left: map.left, right: map.right };
+
+  const wide = covers(pane.left, map.left) && covers(map.right, pane.right);
+  const tall = covers(pane.top, map.top) && covers(map.bottom, pane.bottom);
+  if (wide && tall) return null;
+
+  // 覆っている辺だけ削る。**面は 1 辺からしか出ない**前提で足りる
+  if (wide) {
+    return covers(pane.top, map.top)
+      ? { top: pane.bottom, bottom: map.bottom, left: map.left, right: map.right }
+      : { top: map.top, bottom: pane.top, left: map.left, right: map.right };
+  }
+  return covers(pane.left, map.left)
+    ? { top: map.top, bottom: map.bottom, left: pane.right, right: map.right }
+    : { top: map.top, bottom: map.bottom, left: map.left, right: pane.left };
 }
 
 /**
@@ -202,7 +242,7 @@ export function initialCardState(input) {
 export function keyAction(key, state) {
   if (key !== "Escape") return null;
   if (state === "maximized") return "restore";
-  if (state === "popup" || state === "sheet") return "close";
+  if (state === "popup" || state === "sheet" || state === "panel") return "close";
   return null;
 }
 

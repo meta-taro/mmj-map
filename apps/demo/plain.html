@@ -24,12 +24,17 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>素の MapLibre で描く</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     手書きのスタイル（<code>styles/modern-dark.json</code>）と PMTiles だけで描いています。
     地図サーバーは立てていません。
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html" aria-current="page">素の地図</a>
@@ -50,7 +55,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <div id="map"></div>
 
   <div id="notice" class="notice" hidden>

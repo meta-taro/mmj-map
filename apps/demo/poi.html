@@ -24,13 +24,18 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>自前の POI を重ねる</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     ベース地図（Protomaps / OSM）には触らず、<code>&lt;mmj-poi&gt;</code> で自分のデータを上に重ねます。
     名前は <code>name</code> ではなく <code>shop_name</code> から取っています（<code>label-key</code>）。
     <strong>この 8 点は合成データで、実在の店舗ではありません</strong>（<code>data/README.md</code>）。
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -51,7 +56,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <mmj-map id="map" center="135.4761,34.6693" zoom="15" hash fullscreen>
     <mmj-poi id="poi" src="./data/own-poi.geojson" label-key="shop_name" min-zoom="13"></mmj-poi>
   </mmj-map>

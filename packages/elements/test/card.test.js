@@ -22,6 +22,7 @@ import {
   buildLinks,
   dropAction,
   buildReviews,
+  visibleArea,
   parseHours,
   todayKey,
   parseLive,
@@ -140,8 +141,8 @@ describe("initialCardState", () => {
     expect(initialCardState({ width: 390, rich: true })).toBe("sheet");
   });
 
-  it("広い画面では吹き出しから", () => {
-    expect(initialCardState({ width: 1280, rich: true })).toBe("popup");
+  it("広い画面では横から出る面から", () => {
+    expect(initialCardState({ width: 1280, rich: true })).toBe("panel");
   });
 
   it("**短い吹き出しは、狭い画面でも広げない**（広げても中身が無い）", () => {
@@ -149,7 +150,7 @@ describe("initialCardState", () => {
   });
 
   it("境目は含まない（**ちょうど NARROW_WIDTH は広い側**）", () => {
-    expect(initialCardState({ width: NARROW_WIDTH, rich: true })).toBe("popup");
+    expect(initialCardState({ width: NARROW_WIDTH, rich: true })).toBe("panel");
     expect(initialCardState({ width: NARROW_WIDTH - 1, rich: true })).toBe("sheet");
   });
 });
@@ -901,5 +902,55 @@ describe("todayKey", () => {
   it("**壊れた日付で落とさない**（地図は出す）", () => {
     expect(todayKey(new Date("こわれ"))).toBeNull();
     expect(todayKey(/** @type {any} */ (null))).toBeNull();
+  });
+});
+
+/**
+ * **広い画面は、横から大きく出す**（Google マップの PC と同じ形）。
+ *
+ * 人からの言葉は「PC のポップも狭いわ」「GMAP みたいに横からぼーんと大きく
+ * 表示してくれないと、見づらい」（2026-09-29）。
+ *
+ * 面が地図の一部を覆うので、**押した点が隠れないよう地図を送る**。
+ * そのために「いま見えている範囲」を出す。
+ */
+describe("visibleArea", () => {
+  const map = { top: 100, bottom: 600, left: 0, right: 1000 };
+
+  it("左に縦長の面が出ていたら、その右から見えている", () => {
+    const pane = { top: 100, bottom: 600, left: 0, right: 380 };
+    expect(visibleArea(map, pane)).toEqual({ top: 100, bottom: 600, left: 380, right: 1000 });
+  });
+
+  it("下から面が出ていたら、その上まで見えている", () => {
+    const pane = { top: 400, bottom: 600, left: 0, right: 1000 };
+    expect(visibleArea(map, pane)).toEqual({ top: 100, bottom: 400, left: 0, right: 1000 });
+  });
+
+  /** **全面のときは、見えている範囲が無い。**送っても意味がない */
+  it("全面なら null", () => {
+    expect(visibleArea(map, { top: 100, bottom: 600, left: 0, right: 1000 })).toBeNull();
+  });
+
+  it("面が無ければ地図そのまま", () => {
+    expect(visibleArea(map, null)).toEqual(map);
+  });
+
+  it("**壊れた値で落とさない**（地図は出す）", () => {
+    expect(visibleArea(null, null)).toBeNull();
+  });
+});
+
+describe("initialCardState（広い画面）", () => {
+  it("広い画面は、横から出る面", () => {
+    expect(initialCardState({ width: 1280, rich: true })).toBe("panel");
+  });
+
+  it("狭い画面は、下から出る面のまま", () => {
+    expect(initialCardState({ width: 390, rich: true })).toBe("sheet");
+  });
+
+  it("**短い吹き出しは今までどおり**（大阪城の 3 文字に面は要らない）", () => {
+    expect(initialCardState({ width: 1280, rich: false })).toBe("popup");
   });
 });

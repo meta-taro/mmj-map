@@ -24,9 +24,13 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>お店を見て回る</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     ピンを押すとカードが開きます。<strong>[‹] [›] で隣の店へ送れます</strong>——
     閉じて別のピンを探さなくてよく、<strong>店舗ページへ飛ばないので地図が作り直されません</strong>。
     <strong>[⤢] で地図いっぱいに広げられます</strong>（<kbd>Esc</kbd> で 1 段だけ戻る）。
@@ -34,7 +38,8 @@
     「いま」のタブだけは<strong>開いたときに取りに行きます</strong>——時間で変わるものを地図と一緒に配らないためです。
     開いている店は <code>?shop=</code> に残るので、<strong>その店を開いた状態で URL を送れます</strong>。
     <strong>この 3 店は架空です。写真も生成した見本で、実在の店舗ではありません</strong>（<code>data/README.md</code>）。
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -55,7 +60,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <mmj-map id="map" center="135.5025,34.6916" zoom="15" hash fullscreen>
     <!--
       **渡すのは属性名で、値ではありません。**500 店のカードを手で書かないため。

@@ -24,13 +24,18 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>配色を見くらべる</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     6 枚とも<strong>同じタイル・同じレイヤ構成</strong>で、違うのは色だけです。
     切り替えに要るのは <code>style-url</code> を差し替えることだけで、タイルの作り直しも再取得も要りません。
     動かすと 6 枚が連動します（地図の操作は<strong>指 2 本 / Ctrl+ホイール</strong>。そうしないとページを送れません）。下 2 枚は<strong>道の序列を明るさではなく色相で分けた版</strong>です。<strong>この 6 枚はまだ提案です</strong>（<code>DESIGN.md</code> の配色欄は空のまま）。
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -51,7 +56,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <div class="theme-grid" id="grid">
     <figure class="theme-cell">
       <mmj-map data-theme="modern-dark" center="135.5023,34.6937" zoom="13" cooperative></mmj-map>

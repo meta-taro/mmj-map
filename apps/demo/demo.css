@@ -71,6 +71,68 @@ body {
   text-wrap: pretty;
 }
 
+/* **主役は地図。説明は畳んでおく。**
+ *
+ * 畳む前は、1440x900 の画面で**上 312px（35%）が文字とリンク**だった
+ * （実測・2026-09-29。人からの言葉は「文字が上に幅を利かせて、体験お邪魔」
+ * 「これが原因でずっと悪い」）。
+ *
+ * **狭い画面だけ直して終わらせない。**以前は `@media (max-width: 30rem)` の中だけで
+ * 説明文を抑えていたので、**PC では何も効いていなかった**。
+ * 同じ間違いを LP でもやっていた（`lp.css` の並び替えが 560px 以下だけだった）。
+ *
+ * **文は削らない。**読みたい人は開けば全部ある。 */
+.site-note {
+  margin: 0.15rem 0 0;
+}
+
+.site-note summary {
+  display: inline-flex;
+  align-items: center;
+  /* 指の的。**小さい三角だけを狙わせない** */
+  min-height: 36px;
+  padding: 0 0.2rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.site-note summary:hover {
+  color: var(--text);
+}
+
+.site-note summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 開いても地図を潰さない。**長い説明は、この中で送る** */
+.site-note[open] p {
+  max-height: 11em;
+  margin-top: 0.25rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* **キーボードで来た人が、まず地図へ行けるようにする。**
+ * 無いと、15 個のナビリンクを全部たどらないと地図に着かない。 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip-link:focus {
+  position: fixed;
+  inset: 0.75rem auto auto 0.75rem;
+  z-index: 10;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--bg);
+  text-decoration: none;
+}
+
 /* 見本であることの断り書き。**新しい色を作らない**（baseline §11）——
    配色の正本（styles/modern-dark.json）に警告色は無いので、
    **枠で囲んで目立たせる**。赤を足すのは人が決める領域。 */
@@ -96,10 +158,28 @@ body {
  * 他のページがあることを知る手段が無かった。 */
 .site-nav {
   display: flex;
-  flex-wrap: wrap;
+  /* **折り返さず、横へ流す。**15 個が 2 段に折れると、
+   * それだけで PC でも 70px 食う（実測・2026-09-29。上が 312px あった）。
+   * **狭い画面だけの対処にしない**——同じ形をどの幅でも使う。 */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  /* **縮めることを許す。**既定（min-width: auto）だと、折り返さない 15 個の幅が
+   * 格子の列そのものを広げ、地図の入れ物が 1343px になった（実測・2026-09-29） */
+  min-width: 0;
   gap: 0.35rem;
-  margin-top: 0.6rem;
+  margin-top: 0.4rem;
+  padding-bottom: 0.2rem;
   font-size: 0.85rem;
+}
+
+.site-nav a {
+  flex: 0 0 auto;
+  /* 指の的は 36px を割らない（縦は文字と余白で決まるので、下限を明示する） */
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
 }
 
 /* **押せることが、触る前に分かる形にする。**
@@ -162,39 +242,13 @@ body {
     padding: 0.32rem 0.55rem;
   }
 
-  /* 狭い画面では、主役は地図。
-     説明文とメニューで**画面の半分が埋まっていた**（実測・2026-09-29。
-     幅 390 の画面で、地図が始まるのは y=402 だった）。
-     人からの言葉は「冒頭文字が長くて、最後にマップなので、UI 工夫が要る」。
-
+  /* 狭い画面では、開いた説明も短く切る。
      **文を削らない。**読みたい人は読めるまま、
-     **入れ物の高さだけ抑えて、はみ出すぶんはその中で送る**。 */
-  .site-header p {
+     **入れ物の高さだけ抑えて、はみ出すぶんはその中で送る**。
+     （折り返さない・横へ流す・縮めることを許す、は**全幅の既定へ移した**。
+     狭い画面だけ直して PC を放置していたのが、そもそもの間違いだった） */
+  .site-note[open] p {
     max-height: 7em;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  /* メニューは**折り返さず、横へ流す**。
-     3 段に折れると、それだけで画面の 1/4 を食う。
-     **ヘッダごと高さで切ると、ボタンが途中で切れて壊れて見えた**
-     （実測・2026-09-29。2 段目が半分だけ出ていた）。 */
-  .site-nav {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    padding-bottom: 0.2rem;
-    /* **縮めることを許す。**既定（min-width: auto）のままだと、
-       折り返さない 15 個のボタンの幅が**格子の列そのものを広げ**、
-       地図の入れ物が 1343px になった（実測・2026-09-29。
-       画面は 390px なのに、部品は「広い画面」と判断していた）。
-       写真の帯で踏んだのと同じ罠。 */
-    min-width: 0;
-  }
-
-  .site-nav a {
-    flex: 0 0 auto;
   }
 }
 
@@ -377,12 +431,13 @@ mmj-map,
 
 .brand-samples {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.5rem;
 }
 
+/* 指の的は 36px。24px だと隣と押し間違える（間隔も 5.6px しか無かった） */
 .brand-samples button {
-  inline-size: 1.5rem;
-  block-size: 1.5rem;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 50%;

@@ -24,13 +24,18 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>建物を立てる</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     <code>&lt;mmj-map&gt;</code> に <code>3d</code> を付けただけです。
     <strong>タイルは 2D と同じもので、転送量は 1 バイトも増えません</strong>（実測 17 リクエスト / 735,015 B）。
     <strong>高さを持たない建物は平らなまま残ります</strong>（梅田で約 3 割）。データに無い高さを作っていません。
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -51,7 +56,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <mmj-map id="map" center="135.4959,34.7024" zoom="16" pitch="60" hash 3d fullscreen></mmj-map>
 
   <div id="notice" class="notice" hidden>

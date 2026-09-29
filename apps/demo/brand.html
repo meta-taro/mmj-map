@@ -24,14 +24,19 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>サイトの色を当てる</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     導入先にはたいていテーマカラーがあります。<strong>180 行のスタイル JSON を書かせません。</strong>
     <code>accent</code> に 1 色渡すだけで、高速道路・駅の丸・目印の色が変わります。
     <strong>地図全体は塗りません</strong>（塗ると陸・水・建物・道の区別が付かなくなります）。
     もっと広く変えたいときは <code>palette-url</code> で役割ごとに指定できます。
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -52,7 +57,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <form class="brand-bar" id="bar">
     <label for="accent">テーマカラー</label>
     <input type="color" id="accent" value="#0a5fff">

@@ -24,13 +24,18 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>点をまとめる</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     <code>&lt;mmj-cluster&gt;</code> に GeoJSON の URL を渡すだけ。200 点のサンプルを置いています。
     まとまりを押すと、そこが解ける倍率まで寄ります。
     <strong>この 200 点は合成データで、実在の場所ではありません</strong>（<code>data/README.md</code>）。
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -51,7 +56,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <!-- z11 だと、切り出した範囲の端が画面に入って左右が黒帯になる。
        まとまりの様子は z12 でも十分見えるので、**帯が出ない倍率を既定にする**。
        範囲外の見せ方そのものは未決。決まったらここではなく部品側で持つ。 -->

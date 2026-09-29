@@ -24,15 +24,20 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
 <header class="site-header">
   <h1>会場の地図を、手元に</h1>
-  <p>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
     ここに出ている舞浜一帯の地図は、<strong>1.9 MB</strong> です。写真 1 枚より小さい。
     切り出しは <strong>31 リクエスト・9.5 秒</strong>でした。
     <strong>配る単位は「日本の地図」ではなく「ここの地図」です。</strong>
     右上の丸いボタンを押すと現在地が出ます
     （<strong>測位は衛星からで、通信ではありません</strong>）。
-  </p>
+    </p>
+  </details>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
     <a href="./plain.html">素の地図</a>
@@ -53,7 +58,7 @@
   </nav>
 </header>
 
-<main class="map-area">
+<main id="main" class="map-area">
   <mmj-map id="map" center="139.8850,35.6305" zoom="15.5" locate cooperative fullscreen></mmj-map>
 
   <div id="notice" class="notice" hidden>
