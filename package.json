@@ -26,7 +26,8 @@
     "tile:inspect": "pnpm --filter @mmj-map/tile-inspect run inspect",
     "palette": "pnpm --filter @mmj-map/palette run make",
     "palette:mcp": "pnpm --filter @mmj-map/palette run mcp",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "smoke": "pnpm --filter @mmj-map/smoke run smoke"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "5.0.0",

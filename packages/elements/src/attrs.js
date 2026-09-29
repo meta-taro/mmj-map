@@ -311,6 +311,15 @@ export function buildControlStyle(colors = POPUP_COLORS, className = DEFAULT_CON
     // 残った 1 つが前より目立つ（実測: `themes.html` の Modern Dark と Neon で
     // 右上に白い列が残った・2026-09-25）。
     `.${className} .maplibregl-ctrl-group{${plate}}` +
+    // **操作ボタンは 29x29 しかない。**MapLibre の既定で、指の目安（Apple 44pt /
+    // Material 48dp）の 2/3 以下（実測・2026-09-30。全 15 頁で `pnpm smoke` が検出した）。
+    // **配色は変えていない。**大きさだけ。絵記号は中央に置き直す
+    `.${className} .maplibregl-ctrl-group button{` +
+    "width:36px;height:36px;display:flex;align-items:center;justify-content:center;}" +
+    // 目印も 27px 幅しかない。**絵は変えず、押せる幅だけ広げる**——
+    // 横の余白を足して同じだけ外へ戻すので、**見た目の位置は動かない**
+    // （MapLibre は目印を translate(-50%) で置くため、左右対称なら中心は変わらない）
+    `.${className} .maplibregl-marker{padding:0 5px;margin:0 -5px;}` +
     `.${className} .maplibregl-ctrl-group button{background:transparent;}` +
     // ボタン同士の仕切りも既定は薄い黒。暗い面では見えないので縁と同じ色にする
     `.${className} .maplibregl-ctrl-group button+button{border-top-color:${colors.border};}` +

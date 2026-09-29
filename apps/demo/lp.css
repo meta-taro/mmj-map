@@ -43,6 +43,10 @@
 .lp-skip {
   position: absolute;
   left: -9999px;
+  /* 指の的は 36px（実測・2026-09-30。65x24 しか無かった） */
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
 }
 
 .lp-skip:focus {
@@ -80,6 +84,10 @@
 }
 
 .lp .lp-brand {
+  /* 頁の入口へ戻る唯一のリンク。**的が 43x27 しか無かった**（実測・2026-09-30） */
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.14em;

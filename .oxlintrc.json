@@ -35,5 +35,5 @@
     "unicorn/no-array-sort": "off"
   },
 
-  "ignorePatterns": ["dist", "node_modules", "**/*.min.js"]
+  "ignorePatterns": ["dist", "node_modules", "**/*.min.js", ".shot-profile", ".smoke-profile"]
 }

@@ -120,6 +120,11 @@ body {
 .skip-link {
   position: absolute;
   left: -9999px;
+  /* 指の的は 36px。**焦点が当たっていないときも寸法は持つ**ので、ここで確保する
+     （実測・2026-09-30。65x24 しか無く、`pnpm smoke` が検出した） */
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
 }
 
 .skip-link:focus {
@@ -257,6 +262,12 @@ body {
 /* grid の行は既定で中身より小さくならない。0 を許さないと地図が画面から溢れる */
 .map-area {
   min-height: 0;
+  /* **列も同じ。**縦だけ 0 を許して、横を忘れていた。
+     `regions.html` は地図の上に `<code>` の 1 行（`white-space: nowrap`）を置くので、
+     **その行の幅が列ごと広げ、頁が 640px になっていた**
+     （実測・2026-09-30。画面は 390px。`pnpm smoke` が見つけた）。
+     `body` で同じ罠を踏んで直したのに、**こちらは直していなかった**。 */
+  min-width: 0;
   position: relative;
 }
 
@@ -529,6 +540,11 @@ mmj-map,
 .region-main {
   display: grid;
   grid-template-rows: auto 1fr;
+  /* **列を画面の幅に縛る。**既定（auto）だと列は中身なりに広がるので、
+     上に置いた `<code>`（`white-space: nowrap`）の 1 行が列ごと広げ、
+     **携帯幅で頁が 640px になっていた**（実測・2026-09-30。`pnpm smoke` が見つけた）。
+     `body` で踏んだ罠とまったく同じ。`1fr` では駄目で、最小値 0 を明示する。 */
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* **選ぶ所と、書く内容を並べる。**「これを書けばこれが出る」を 1 行で見せる */

@@ -1,0 +1,18 @@
+{
+  "name": "@mmj-map/smoke",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "デモの各頁をヘッドレスで開いて、人が見なくても分かる壊れ方を止める。撮るのは tools/shot、合否を出すのはこちら",
+  "scripts": {
+    "smoke": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}

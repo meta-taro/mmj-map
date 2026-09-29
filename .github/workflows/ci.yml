@@ -73,3 +73,25 @@ jobs:
       # 参照だけ足して中身を忘れると、ビルドもテストも通ったまま実行時にだけ空になる。
       - name: Style matches the pinned basemap build
         run: pnpm style:check
+
+      # **画面そのものを開いて見る**（ECC `ui-flow.md` 手順 3）。
+      #
+      # ここまでの 6 つは 1 つもブラウザを開いていません。2026-09-29 の 1 日で、
+      # **415 個の単体試験が 1 つも落ちないまま、人が見て初めて分かった不具合が 7 件**
+      # 出ました（上が 312px・頁が 1343px・的が 31px・地図へ飛べない…）。
+      # **人が気をつける方式は必ず漏れる**ので、個人情報の検出と同じく機械に入れます。
+      #
+      # 見るのは「人が見なくても分かること」だけ（`tools/smoke/src/checks.ts`）。
+      # 配色や余白の可否は人の領域（`DESIGN.md`）なので、ここでは判定しません。
+      #
+      # **タイルは要りません。**配信元が無いときデモは案内を出すのが正しい姿で、
+      # ここが見るのは頁の骨格です。地図そのものは deploy 後に本番で見ます。
+      - name: Demo pages are not broken (phone and desktop)
+        run: |
+          # ubuntu-latest には Chrome が入っている。**入れ直さない**（遅くなるだけ）
+          MMJ_BROWSER=$(command -v google-chrome || command -v chromium-browser || command -v chromium)
+          test -n "$MMJ_BROWSER"
+          export MMJ_BROWSER
+          pnpm serve &
+          for i in $(seq 1 30); do curl -sf http://localhost:8787/ > /dev/null && break; sleep 1; done
+          pnpm smoke

@@ -12,6 +12,7 @@ dist/tiles/
 
 # キャプチャ用ブラウザの作業領域（pnpm shot が作る）。撮った画像は docs/screenshots/ へ
 .shot-profile/
+.smoke-profile/
 .tmp-shot/
 
 # ローカル秘密控え（🟡 識別子のみ・🔴 token/key は置かない）— commit 禁止
