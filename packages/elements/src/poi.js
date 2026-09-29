@@ -10,6 +10,15 @@
  * `color` は MapLibre の Marker が元から使っている色、`textColor` と `haloColor` は
  * `styles/modern-dark.json` に既にある値。**新しい色を足していない。**
  */
+/**
+ * 押せる範囲の半径（px）。**見える点は 5 のまま。**
+ *
+ * 直径 36px。触る目標の目安（Apple 44pt / Material 48dp）にはまだ届かないが、
+ * **密集した地図で隣と重なりすぎない**ところで止めている。
+ * **数字は実測で決め直すこと。**
+ */
+const HIT_RADIUS = 18;
+
 export const POI_DEFAULTS = {
   color: "#3FB1CE",
   textColor: "#D8DCE1",
@@ -30,7 +39,7 @@ export const POI_DEFAULTS = {
  *   textColor?: string,
  *   attribution?: string,
  * }} input
- * @returns {{ sourceId: string, source: any, layers: any[] }}
+ * @returns {{ sourceId: string, hitId: string, source: any, layers: any[] }}
  */
 export function buildPoiSpec(input) {
   if (!input.id) throw new Error("id が要ります（source 名が衝突すると後勝ちで消えます）");
@@ -52,8 +61,28 @@ export function buildPoiSpec(input) {
 
   return {
     sourceId,
+    hitId: `${sourceId}-hit`,
     source: { type: "geojson", data: input.src, ...(attribution === "" ? {} : { attribution }) },
     layers: [
+      {
+        // **指は点より太い。**見える点は直径 10px（縁を入れて 13px）で、
+        // 触る目標の目安（Apple 44pt / Material 48dp）の 1/4 しかない
+        // （2026-09-29・人からの指摘「ぽっちがちいさくてたぷしにくい」）。
+        //
+        // **見た目は太らせない。**点を大きくすると地図が点で埋まる。
+        // 透明な層をもう 1 枚重ねて、**そちらを押す対象にする**。
+        //
+        // **いちばん下に置く。**上に重ねると、透明でも見える点の縁が濁る。
+        // 下にあっても、押す対象としては拾える。
+        //
+        // **広げると隣と重なる。**どれを開くかは
+        // 「指にいちばん近い点」で決める（`nearestByPoint`）。
+        id: `${sourceId}-hit`,
+        type: "circle",
+        source: sourceId,
+        minzoom,
+        paint: { "circle-radius": HIT_RADIUS, "circle-color": color, "circle-opacity": 0 },
+      },
       {
         id: `${sourceId}-dot`,
         type: "circle",

@@ -14,6 +14,7 @@ import {
   indexOfShop,
   writeShopParam,
   panDelta,
+  nearestByPoint,
   parseTabs,
   buildTabs,
   splitForTabs,
@@ -121,9 +122,13 @@ describe("initialCardState", () => {
    * **幅 360px の吹き出しに写真とタブは入らない。**
    * 吹き出しは地図の上に浮くので、画面が狭いほど
    * 「地図が見えない・中身も読めない」の両方が起きる。
+   *
+   * **だからといって全面にはしない。**地図が消えると、
+   * 「押した点」と「出てきた面」のつながりが切れる
+   * （2026-09-29・人からの指摘「なんおこっちゃとなりました」）。
    */
-  it("狭い画面では、中身があるものは最大化から始める", () => {
-    expect(initialCardState({ width: 390, rich: true })).toBe("maximized");
+  it("狭い画面では、中身があるものは下から出る面で始める", () => {
+    expect(initialCardState({ width: 390, rich: true })).toBe("sheet");
   });
 
   it("広い画面では吹き出しから", () => {
@@ -136,7 +141,7 @@ describe("initialCardState", () => {
 
   it("境目は含まない（**ちょうど NARROW_WIDTH は広い側**）", () => {
     expect(initialCardState({ width: NARROW_WIDTH, rich: true })).toBe("popup");
-    expect(initialCardState({ width: NARROW_WIDTH - 1, rich: true })).toBe("maximized");
+    expect(initialCardState({ width: NARROW_WIDTH - 1, rich: true })).toBe("sheet");
   });
 });
 
@@ -509,5 +514,89 @@ describe("splitForTabs", () => {
   it("空でも落ちない", () => {
     expect(splitForTabs([])).toEqual({ head: [], rest: [] });
     expect(splitForTabs(/** @type {any} */ (null))).toEqual({ head: [], rest: [] });
+  });
+});
+
+/**
+ * **狭い画面では、全面にしない。**
+ *
+ * 幅 480px 未満でいきなり地図いっぱいに広げていたが、**地図が消えると
+ * 「押した点」と「出てきた面」のつながりが切れる**。人からの言葉は
+ * 「マップ全体にひろがって見にくかったというか、なんおこっちゃとなりました」
+ * （2026-09-29）。
+ *
+ * Google マップも Apple マップも、スマホでは**下から出る面**で、
+ * 地図は上に残る。**帰る先が「吹き出し」か「下の面」か**を、状態の側に持たせる。
+ */
+describe("nextCardState（帰る先）", () => {
+  it("開くと、渡された帰る先になる", () => {
+    expect(nextCardState("closed", "open", "sheet")).toBe("sheet");
+    expect(nextCardState("closed", "open", "popup")).toBe("popup");
+  });
+
+  it("**既定は今までどおり吹き出し**（広い画面の見た目を変えない）", () => {
+    expect(nextCardState("closed", "open")).toBe("popup");
+  });
+
+  it("最大化から戻ると、帰る先へ戻る", () => {
+    expect(nextCardState("maximized", "restore", "sheet")).toBe("sheet");
+    expect(nextCardState("maximized", "restore", "popup")).toBe("popup");
+  });
+
+  it("下の面からでも広げられる・閉じられる", () => {
+    expect(nextCardState("sheet", "maximize", "sheet")).toBe("maximized");
+    expect(nextCardState("sheet", "close", "sheet")).toBe("closed");
+  });
+
+  it("**開いているものを開き直さない**（下の面でも同じ）", () => {
+    expect(nextCardState("sheet", "open", "sheet")).toBe("sheet");
+  });
+});
+
+describe("controlsFor / keyAction（下の面）", () => {
+  it("下の面のボタンは、吹き出しと同じ", () => {
+    expect(controlsFor("sheet")).toEqual(["maximize", "close"]);
+    expect(controlsFor("sheet", 3)).toEqual(["prev", "next", "maximize", "close"]);
+  });
+
+  it("Escape は下の面から閉じる（1 段だけ戻るのは変わらない）", () => {
+    expect(keyAction("Escape", "sheet")).toBe("close");
+    expect(keyAction("Escape", "maximized")).toBe("restore");
+  });
+});
+
+/**
+ * **指は点より太い。**いまの点は半径 5px（直径 10px、縁を入れて 13px）で、
+ * 触る目標の目安（Apple 44pt / Material 48dp）の 1/4 しかない。
+ * 人からの言葉は「店舗のぽっちがちいさくてたぷしにくい」（2026-09-29）。
+ *
+ * 当たり判定を広げると**隣と重なる**ので、**指にいちばん近い点**を選ぶ。
+ * 重なった候補の先頭を取ると、**目で見て選んだ点と違うものが開く**。
+ */
+/** 座標をそのまま画面の位置として扱う（試験用） @param {any} c */
+const project = (c) => ({ x: c[0], y: c[1] });
+/** @param {number} x @param {number} y */
+const at = (x, y) => ({ geometry: { coordinates: [x, y] } });
+
+describe("nearestByPoint", () => {
+
+  it("指にいちばん近い点を返す", () => {
+    const got = nearestByPoint([at(100, 100), at(10, 10), at(40, 40)], { x: 0, y: 0 }, project);
+    expect(got).toEqual(at(10, 10));
+  });
+
+  it("1 つしか無ければそれ", () => {
+    expect(nearestByPoint([at(99, 99)], { x: 0, y: 0 }, project)).toEqual(at(99, 99));
+  });
+
+  it("**壊れた値で落とさない**（地図は出す）", () => {
+    expect(nearestByPoint([], { x: 0, y: 0 }, project)).toBeNull();
+    expect(nearestByPoint(/** @type {any} */ (null), { x: 0, y: 0 }, project)).toBeNull();
+    expect(nearestByPoint([at(1, 1)], /** @type {any} */ (null), project)).toEqual(at(1, 1));
+  });
+
+  it("点でないもの（線・面）は飛ばす", () => {
+    const line = { geometry: { type: "LineString", coordinates: [[0, 0], [1, 1]] } };
+    expect(nearestByPoint([line, at(50, 50)], { x: 0, y: 0 }, project)).toEqual(at(50, 50));
   });
 });

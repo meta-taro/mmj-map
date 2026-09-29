@@ -18,6 +18,7 @@ import {
   indexOfShop,
   initialCardState,
   mapCardFields,
+  nearestByPoint,
   needsChrome,
   panDelta,
   parseTabs,
@@ -37,13 +38,19 @@ import { parseCount } from "./cluster.js";
  */
 const CARD_WIDTH = "min(20rem, 86vw)";
 
+/**
+ * 押した点を「見えている」と見なす余白（px）。
+ * 点の見た目（直径 13px）より少し広く取る。
+ */
+const MARK_HALF = 18;
+
 /** 同じページに複数置ける。source 名が衝突すると後勝ちで消えるため、番号で分ける */
 let serial = 0;
 
 export class MmjPoi extends HTMLElement {
   /** @type {any} */
   map = null;
-  /** @type {{ sourceId: string, source: any, layers: any[] } | null} */
+  /** @type {{ sourceId: string, hitId: string, source: any, layers: any[] } | null} */
   spec = null;
 
   /** 開いているカード。**開き直すたびに片付ける**（重ねて開かない） */
@@ -66,6 +73,9 @@ export class MmjPoi extends HTMLElement {
 
   /** いま開いている点の位置。開いていなければ -1 */
   index = -1;
+
+  /** いま開いている点の座標。**地図を送って収めるのに要る** @type {[number, number]} */
+  where = [0, 0];
 
   /**
    * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
@@ -132,10 +142,12 @@ export class MmjPoi extends HTMLElement {
     map.addSource(this.spec.sourceId, this.spec.source);
     for (const layer of this.spec.layers) map.addLayer(layer);
 
-    const dotId = this.spec.layers[0].id;
-    map.on("click", dotId, (/** @type {any} */ event) => this.#emit(event));
-    map.on("mouseenter", dotId, () => (map.getCanvas().style.cursor = "pointer"));
-    map.on("mouseleave", dotId, () => (map.getCanvas().style.cursor = ""));
+    // **押す対象は、見える点ではなく当たり判定の層**（直径 36px）。
+    // 見える点は 13px しかなく、指で狙うには小さい
+    const hitId = this.spec.hitId;
+    map.on("click", hitId, (/** @type {any} */ event) => this.#emit(event));
+    map.on("mouseenter", hitId, () => (map.getCanvas().style.cursor = "pointer"));
+    map.on("mouseleave", hitId, () => (map.getCanvas().style.cursor = ""));
 
     this.style.display = "none"; // 点は地図の上に出る。要素そのものは場所を取らない
 
@@ -190,7 +202,11 @@ export class MmjPoi extends HTMLElement {
 
   /** @param {any} event */
   #emit(event) {
-    const feature = event.features?.[0];
+    // **当たり判定を広げたぶん、隣と重なる。**先頭を取ると、
+    // 目で見て選んだ点と違うものが開く
+    const feature = nearestByPoint(event.features ?? [], event.point, (coordinates) =>
+      this.map.project(coordinates),
+    );
     if (!feature) return;
 
     // **出来事は出すだけで、どこへも送らない。**送り先を決めるのは媒体
@@ -245,6 +261,7 @@ export class MmjPoi extends HTMLElement {
 
     const map = this.map;
     const where = feature.geometry.coordinates;
+    this.where = where;
 
     // **開いているなら、中身だけ差し替える。**閉じて開き直すと、
     // 最大化していたら縮み、めくった写真も戻る（**送るたびに元へ戻る**）
@@ -273,14 +290,40 @@ export class MmjPoi extends HTMLElement {
    * カードだけずらすと、**指している点から離れてしまう**。
    */
   #fit() {
+    const map = this.map;
+    if (!map) return;
+    const mapRect = map.getContainer().getBoundingClientRect();
+    const pane = this.card?.pane?.();
+
+    if (pane?.isConnected) {
+      const paneRect = pane.getBoundingClientRect();
+      // 全面のときは、送っても地図が見えない。**何もしない**
+      if (paneRect.top <= mapRect.top + 1) return;
+      // **下から出る面では、カードではなく「押した点」を見えるところへ。**
+      // 点が面の下に隠れると、**どこの店の話か分からなくなる**
+      const at = map.project(this.where);
+      const mark = {
+        top: mapRect.top + at.y - MARK_HALF,
+        bottom: mapRect.top + at.y + MARK_HALF,
+        left: mapRect.left + at.x - MARK_HALF,
+        right: mapRect.left + at.x + MARK_HALF,
+      };
+      const visible = {
+        top: mapRect.top,
+        bottom: paneRect.top,
+        left: mapRect.left,
+        right: mapRect.right,
+      };
+      const [dx, dy] = panDelta(mark, visible, MARK_HALF);
+      if (dx !== 0 || dy !== 0) map.panBy([dx, dy], { duration: 200 });
+      return;
+    }
+
     const element = this.popup?.getElement();
-    if (!element || !this.map) return;
-    const [dx, dy] = panDelta(
-      element.getBoundingClientRect(),
-      this.map.getContainer().getBoundingClientRect(),
-    );
+    if (!element) return;
+    const [dx, dy] = panDelta(element.getBoundingClientRect(), mapRect);
     if (dx === 0 && dy === 0) return;
-    this.map.panBy([dx, dy], { duration: 200 });
+    map.panBy([dx, dy], { duration: 200 });
   }
 
   /**
@@ -328,13 +371,22 @@ export class MmjPoi extends HTMLElement {
       container: map.getContainer(),
       popup,
       className,
-      // **狭い画面では最大化から始める。**幅 360px に写真は入らない
-      initial: initialCardState({ width: window.innerWidth, rich: needsChrome(content) }),
+      // **窓ではなく、地図の入れ物の幅で決める。**
+      // 地図が頁の一部に小さく置かれていることがある（LP がまさにそれ）。
+      // **窓が広くても、地図が 360px なら、そこに吹き出しは入らない。**
+      //
+      // 窓の幅で決めていたときは、**頁の横はみ出しにも引きずられた**
+      // （実測・2026-09-29。画面 390px の頁が中身のせいで 1343px 幅になっており、
+      // スマホなのに「広い画面」と判断して吹き出しで開いていた）。
+      // 入れ物の幅なら、**その地図に何が入るか**だけを見ることになる。
+      initial: initialCardState({ width: box.clientWidth, rich: needsChrome(content) }),
       // 一覧を読めているときだけ送りボタンを出す
       siblings: this.index >= 0 ? this.features.length : 1,
       onStep: (delta) => this.#openAt(stepIndex(this.index, delta, this.features.length), true),
     });
     popup.setDOMContent(this.card.content).addTo(map);
+    // **地図へ足した後でないと吹き出しを掴めない。**面が出ているなら、ここで隠す
+    this.card.sync?.();
   }
 
   /**

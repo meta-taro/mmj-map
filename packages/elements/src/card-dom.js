@@ -21,8 +21,11 @@
  */
 import { controlsFor, CONTROL_LABELS, keyAction, nextCardState } from "./card.js";
 
-/** 最大化した面の class。CSS は `buildCardStyle` が出す */
+/** 地図の上に重ねる面の class。CSS は `buildCardStyle` が出す */
 const SHEET_CLASS = "mmj-card-sheet";
+
+/** 下から出る面（部分）の class。**これが付かなければ全面** */
+const PART_CLASS = "mmj-card-sheet-part";
 
 /**
  * カードの見た目。**色は読み込んだスタイルから借りる**（吹き出しと同じ 3 色）。
@@ -68,9 +71,22 @@ export function buildCardStyle(colors, className) {
     `.${className} .mmj-card-gap{flex:1;min-width:6px;}` +
     `.${className} .mmj-card-btn:hover{background:${colors.border};}` +
     `.${className} .mmj-card-btn:focus-visible{outline:2px solid ${colors.text};outline-offset:1px;}` +
+    // 下から出る面。**地図は上に残す。**
+    // 全面にすると、**「押した点」と「出てきた面」のつながりが切れる**
+    // （2026-09-29・人からの指摘「なんおこっちゃとなりました」）。
+    // Google マップも Apple マップも、スマホではこの形で地図を残している。
+    `.${SHEET_CLASS}.${PART_CLASS}{top:auto;height:58%;` +
+    `border-top:1px solid ${colors.border};border-radius:12px 12px 0 0;` +
+    "box-shadow:0 -8px 24px rgba(0,0,0,.35);}" +
+    // **つまんで動かせることを、見て分かる形にする**（上端の短い横棒）
+    `.${SHEET_CLASS}.${PART_CLASS} .mmj-card-bar::before{` +
+    `content:"";position:absolute;top:6px;left:50%;transform:translateX(-50%);` +
+    `width:36px;height:4px;border-radius:2px;background:${colors.border};}` +
+    `.${SHEET_CLASS}.${PART_CLASS} .mmj-card-bar{position:relative;padding-top:16px;}` +
     // 最大化した面。**地図の入れ物いっぱいに敷く**
     `.${SHEET_CLASS}{` +
     "position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;" +
+    "transition:height .18s ease;" +
     `background:${colors.background};color:${colors.text};` +
     "font:13px/1.6 system-ui,-apple-system,'Segoe UI','Hiragino Sans','Noto Sans JP',sans-serif;}" +
     // **中身だけがスクロールする。**面ごと動くと見出しバーが流れる
@@ -161,7 +177,7 @@ export function buildCardBar(input) {
 export function mountCard(input) {
   let state = input.initial;
   /** @type {HTMLElement | null} */
-  let sheet = null;
+  let sheet = /** @type {HTMLElement | null} */ (null);
   /** いま入っている中身。**送るたびに差し替える**（容れ物は作り直さない） */
   let body = input.body;
 
@@ -172,6 +188,20 @@ export function mountCard(input) {
 
   const shell = document.createElement("div");
   shell.append(bar, body);
+
+  /**
+   * 地図に貼り付いた吹き出しを、いまの状態に合わせて出し入れする。
+   *
+   * **空の吹き出しを地図に残さない。**面を出すと中身はそちらへ移るので、
+   * そのままだと**何も入っていない箱**が点の上に浮く。
+   *
+   * **地図へ足した後でないと掴めない。**`getElement()` は
+   * `addTo()` より前は空を返すので、**足した側からも呼べるようにしてある**。
+   */
+  const syncBalloon = () => {
+    const balloon = input.popup?.getElement?.();
+    if (balloon) balloon.style.display = sheet === null ? "" : "none";
+  };
 
   /** 見出しバーを、いまの状態に合わせて描き直す */
   const drawBar = () =>
@@ -194,6 +224,7 @@ export function mountCard(input) {
     if (sheet === null) return;
     sheet.remove();
     sheet = null;
+    syncBalloon();
     shell.append(bar, body);
     input.popup.setDOMContent(shell);
   };
@@ -220,6 +251,7 @@ export function mountCard(input) {
     sheet.addEventListener("click", (event) => event.stopPropagation());
 
     input.container.append(sheet);
+    syncBalloon();
   };
 
   /** @param {"open" | "prev" | "next" | "maximize" | "restore" | "close"} action */
@@ -231,12 +263,13 @@ export function mountCard(input) {
       return;
     }
 
-    const next = nextCardState(state, action);
+    const next = nextCardState(state, action, input.initial === "sheet" ? "sheet" : "popup");
     if (next === state) return;
     state = next;
 
-    if (state === "maximized") expand();
+    if (state === "maximized" || state === "sheet") expand();
     else collapse();
+    sheet?.classList.toggle(PART_CLASS, state === "sheet");
 
     // **描き直してから移す。**逆にすると、フォーカスした要素ごと作り直される
     drawBar();
@@ -253,13 +286,20 @@ export function mountCard(input) {
   };
   document.addEventListener("keydown", onKey);
 
-  if (state === "maximized") expand();
+  if (state === "maximized" || state === "sheet") expand();
+  sheet?.classList.toggle(PART_CLASS, state === "sheet");
   drawBar();
+  // **下から出た面へは焦点を移さない。**開いた瞬間に読み上げが飛ぶと、
+  // 地図を見ていた人の位置が分からなくなる。全面にしたときだけ移す
   if (state === "maximized") focusFirst();
 
   return {
     content: shell,
     act,
+    /** いま出ている面。**地図をどれだけ送るかを決めるのに要る**（無ければ null） */
+    pane: () => sheet,
+    /** 吹き出しを地図へ足した後に呼ぶ。**足す前は掴めない** */
+    sync: syncBalloon,
     /**
      * 中身だけ入れ替える。**容れ物は作り直さない。**
      *

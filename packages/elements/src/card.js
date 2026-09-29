@@ -20,7 +20,17 @@
  * ボタンを並べると、**箱がボタンで埋まる**（閉じるボタンを外したのと同じ理由）。
  */
 
-/** @typedef {"closed" | "popup" | "maximized"} CardState */
+/**
+ * @typedef {"closed" | "popup" | "sheet" | "maximized"} CardState
+ *
+ * `sheet` は**狭い画面で下から出る面**。**地図は上に残る。**
+ *
+ * 以前は狭い画面でもいきなり `maximized`（地図いっぱい）にしていたが、
+ * **地図が消えると「押した点」と「出てきた面」のつながりが切れる**。
+ * 人からの言葉は「マップ全体にひろがって見にくかったというか、
+ * なんおこっちゃとなりました」（2026-09-29）。
+ * Google マップも Apple マップも、スマホでは下から出る面で地図を残している。
+ */
 
 /**
  * 見出しバーを付けはじめる中身の数。
@@ -45,18 +55,20 @@ export const NARROW_WIDTH = 480;
  *
  * @param {CardState} current
  * @param {"open" | "maximize" | "restore" | "close"} action
+ * @param {CardState} [rest] 最大化から戻る先。狭い画面では "sheet"
  * @returns {CardState}
  */
-export function nextCardState(current, action) {
+export function nextCardState(current, action, rest = "popup") {
   switch (action) {
     case "open":
       // **開いているものを開き直さない。**最大化中に目印を押しても縮まない
-      return current === "closed" ? "popup" : current;
+      return current === "closed" ? rest : current;
     case "maximize":
       // 閉じているものは広げない（**中身が無い箱を開かない**）
       return current === "closed" ? "closed" : "maximized";
     case "restore":
-      return current === "maximized" ? "popup" : current;
+      // **帰る先は画面で違う。**広い画面は吹き出し、狭い画面は下から出る面
+      return current === "maximized" ? rest : current;
     case "close":
       return "closed";
     default:
@@ -78,6 +90,7 @@ export function controlsFor(state, siblings = 1) {
   if (state === "closed") return [];
   /** @type {("prev" | "next")[]} */
   const nav = typeof siblings === "number" && siblings > 1 ? ["prev", "next"] : [];
+  // **下から出る面も、吹き出しと同じボタン。**押す人にとっては同じ「小さいほう」
   return state === "maximized" ? [...nav, "restore", "close"] : [...nav, "maximize", "close"];
 }
 
@@ -172,7 +185,8 @@ export function needsChrome(parts) {
  */
 export function initialCardState(input) {
   if (!input.rich) return "popup";
-  return input.width < NARROW_WIDTH ? "maximized" : "popup";
+  // **狭い画面は下から出る面。**全面にすると地図が消え、押した点とのつながりが切れる
+  return input.width < NARROW_WIDTH ? "sheet" : "popup";
 }
 
 /**
@@ -188,7 +202,7 @@ export function initialCardState(input) {
 export function keyAction(key, state) {
   if (key !== "Escape") return null;
   if (state === "maximized") return "restore";
-  if (state === "popup") return "close";
+  if (state === "popup" || state === "sheet") return "close";
   return null;
 }
 
@@ -265,6 +279,50 @@ export function splitForTabs(parts) {
   let at = 0;
   while (at < parts.length && (parts[at]?.kind === "text" || parts[at]?.kind === "image")) at += 1;
   return { head: parts.slice(0, at), rest: parts.slice(at) };
+}
+
+/**
+ * 指にいちばん近い点を選ぶ。**無ければ `null`。**
+ *
+ * **指は点より太い。**点は半径 5px（縁を入れて 13px）で、触る目標の目安
+ * （Apple 44pt / Material 48dp）の 1/4 しかない。人からの言葉は
+ * 「店舗のぽっちがちいさくてたぷしにくい」（2026-09-29）。
+ *
+ * そこで**見えない当たり判定を広げる**が、広げると**隣と重なる**。
+ * 重なった候補の先頭を取ると、**目で見て選んだ点と違うものが開く**ので、
+ * **押した位置にいちばん近い点**を選ぶ。
+ *
+ * **点だけを見る。**線や面は中心が意味を持たないので飛ばす。
+ *
+ * @param {readonly any[]} features 重なって返ってきた候補
+ * @param {{ x: number, y: number } | null} point 押された画面上の位置
+ * @param {(coordinates: any) => { x: number, y: number }} project 座標を画面へ写す関数
+ * @returns {any | null}
+ */
+export function nearestByPoint(features, point, project) {
+  if (!Array.isArray(features) || features.length === 0) return null;
+
+  const points = features.filter((feature) => {
+    const geometry = feature?.geometry;
+    if (!geometry || !Array.isArray(geometry.coordinates)) return false;
+    // `type` を持たない見本もあるので、**持っているときだけ弾く**
+    return geometry.type === undefined || geometry.type === "Point";
+  });
+  if (points.length === 0) return null;
+  if (points.length === 1 || point === null || point === undefined) return points[0];
+
+  let best = points[0];
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const feature of points) {
+    const at = project(feature.geometry.coordinates);
+    // **平方根を取らない。**比べるだけなので、二乗のままで順番は同じ
+    const distance = (at.x - point.x) ** 2 + (at.y - point.y) ** 2;
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = feature;
+    }
+  }
+  return best;
 }
 
 /**
