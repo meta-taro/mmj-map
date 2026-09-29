@@ -122,11 +122,13 @@
       map.setAttribute('zoom', region.zoom);
       if (region.lang !== undefined) map.setAttribute('lang', region.lang);
       if (region.fonts !== undefined) map.setAttribute('ideograph-fonts', region.fonts);
+      // **下に出すコード例と揃える。**片方だけ直すと、画面が嘘になる
+      map.setAttribute('fullscreen', '');
       stage.replaceChildren(map);
 
       // 画面に出ているものと、書く内容を一致させる。**片方だけ直すと嘘になる**
       const lang = region.lang === undefined ? '' : ` lang="${region.lang}"`;
-      snippet.textContent = `<mmj-map tiles="./tiles/${region.file}.pmtiles" style-url="./styles/modern-dark.json"${lang}>`;
+      snippet.textContent = `<mmj-map tiles="./tiles/${region.file}.pmtiles" style-url="./styles/modern-dark.json"${lang} fullscreen>`;
     };
 
     select.addEventListener('change', () => {

@@ -206,6 +206,32 @@ export function keyAction(key, state) {
   return null;
 }
 
+/** ここより上まで引き上げたら全面。**数字は実測で決め直すこと** */
+const DROP_HIGH = 0.75;
+
+/** ここより下まで引き下げたら閉じる */
+const DROP_LOW = 0.25;
+
+/**
+ * つまんで動かした面を、指を離したところの高さで落ち着かせる。
+ *
+ * **横棒を出しておきながら動かなかった**（人からの指摘・2026-09-29
+ * 「お店下から出る風で、実際動かないんで窓サイズ変えられない」）。
+ * **触れそうに見えるのに触れないのは、横棒が無いより悪い。**
+ *
+ * **端は「戻る」側に寄せてある。**少し動かしただけで全面になったり
+ * 閉じたりすると、**触るのが怖くなる**。
+ *
+ * @param {number} ratio 地図の高さに対する、面の高さの割合（0〜1）
+ * @returns {"maximize" | "close" | "rest"}
+ */
+export function dropAction(ratio) {
+  if (typeof ratio !== "number" || !Number.isFinite(ratio)) return "rest";
+  if (ratio > DROP_HIGH) return "maximize";
+  if (ratio < DROP_LOW) return "close";
+  return "rest";
+}
+
 /**
  * `card-tabs` の指定を読む。**「見出し:属性名」の組**を並べたもの。
  *

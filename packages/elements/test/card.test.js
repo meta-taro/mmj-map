@@ -20,6 +20,7 @@ import {
   splitForTabs,
   parseLinks,
   buildLinks,
+  dropAction,
   parseLive,
   liveUrl,
   readLiveText,
@@ -743,5 +744,42 @@ describe("readLiveText", () => {
     expect(readLiveText({})).toBeNull();
     expect(readLiveText(null)).toBeNull();
     expect(readLiveText(42)).toBeNull();
+  });
+});
+
+/**
+ * **つまんで動かす。**
+ *
+ * 下から出る面の上端に横棒を出しておきながら、**実際には動かなかった**
+ * （人からの指摘・2026-09-29「お店下から出る風で、実際動かないんで窓サイズ変えられない」）。
+ * **触れそうに見えるのに触れないのは、横棒が無いより悪い。**
+ *
+ * 指を離したところの高さで、次の状態を決める。
+ */
+describe("dropAction", () => {
+  it("上まで引き上げたら全面", () => {
+    expect(dropAction(0.8)).toBe("maximize");
+    expect(dropAction(1)).toBe("maximize");
+  });
+
+  it("下まで引き下げたら閉じる", () => {
+    expect(dropAction(0.2)).toBe("close");
+    expect(dropAction(0)).toBe("close");
+  });
+
+  it("途中で離したら、元の高さへ戻る", () => {
+    expect(dropAction(0.5)).toBe("rest");
+    expect(dropAction(0.58)).toBe("rest");
+  });
+
+  /** **端は「戻る」側に寄せる。**いきなり閉じる・いきなり全面、を起こしにくくする */
+  it("境目は、戻る側", () => {
+    expect(dropAction(0.75)).toBe("rest");
+    expect(dropAction(0.25)).toBe("rest");
+  });
+
+  it("**壊れた値で落とさない**（地図は出す）", () => {
+    expect(dropAction(/** @type {any} */ (null))).toBe("rest");
+    expect(dropAction(Number.NaN)).toBe("rest");
   });
 });

@@ -19,7 +19,7 @@
  * 2. **`closeOnClick` が効く。**中のボタンを押しただけで吹き出しが閉じる
  * 3. **フォーカスが地図に残る。**最大化しても Tab が後ろの地図へ行ってしまう
  */
-import { controlsFor, CONTROL_LABELS, keyAction, nextCardState } from "./card.js";
+import { controlsFor, CONTROL_LABELS, dropAction, keyAction, nextCardState } from "./card.js";
 
 /** 地図の上に重ねる面の class。CSS は `buildCardStyle` が出す */
 const SHEET_CLASS = "mmj-card-sheet";
@@ -82,7 +82,10 @@ export function buildCardStyle(colors, className) {
     `.${SHEET_CLASS}.${PART_CLASS} .mmj-card-bar::before{` +
     `content:"";position:absolute;top:6px;left:50%;transform:translateX(-50%);` +
     `width:36px;height:4px;border-radius:2px;background:${colors.border};}` +
-    `.${SHEET_CLASS}.${PART_CLASS} .mmj-card-bar{position:relative;padding-top:16px;}` +
+    `.${SHEET_CLASS}.${PART_CLASS} .mmj-card-bar{position:relative;padding-top:16px;` +
+    // **つまめることを、形でも出す。**縦の動きはこちらで受けるので、ブラウザに渡さない
+    "cursor:grab;touch-action:none;}" +
+    `.${SHEET_CLASS}.${PART_CLASS} .mmj-card-bar:active{cursor:grabbing;}` +
     // 最大化した面。**地図の入れ物いっぱいに敷く**
     `.${SHEET_CLASS}{` +
     "position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;" +
@@ -285,6 +288,74 @@ export function mountCard(input) {
     act(action);
   };
   document.addEventListener("keydown", onKey);
+
+  /**
+   * 見出しバーをつまんで、面の高さを変える。
+   *
+   * **横棒を出しておきながら動かなかった**（人からの指摘・2026-09-29
+   * 「お店下から出る風で、実際動かないんで窓サイズ変えられない」）。
+   * **触れそうに見えるのに触れないのは、横棒が無いより悪い。**
+   *
+   * **指に追いてから決める。**しきい値だけで切り替えると、
+   * 離すまで何も起きず、**やはり動かないものに見える**。
+   */
+  let drag = /** @type {{ y: number, height: number, mapHeight: number } | null} */ (null);
+
+  const onDown = (/** @type {PointerEvent} */ event) => {
+    if (sheet === null) return;
+    // **ボタンの上では始めない。**押したいのか動かしたいのか分からなくなる
+    if (/** @type {Element} */ (event.target).closest(".mmj-card-btn")) return;
+    const box = sheet.getBoundingClientRect();
+    const mapHeight = input.container.getBoundingClientRect().height;
+    if (mapHeight <= 0) return;
+    drag = { y: event.clientY, height: box.height, mapHeight };
+    // 動かしている間は追従を優先する（**変化に間が入ると、指から離れて見える**）
+    sheet.style.transition = "none";
+    // **全面のときは上下が留められていて、高さを変えても動かない**
+    // （実測・2026-09-29。上へ引くのは効いたが、下へ引いても戻らなかった）。
+    // つまんでいる間だけ「下に張り付いた高さ」に切り替える
+    sheet.style.top = "auto";
+    sheet.style.height = `${box.height}px`;
+    /** @type {Element} */ (event.currentTarget).setPointerCapture?.(event.pointerId);
+  };
+
+  const onMove = (/** @type {PointerEvent} */ event) => {
+    if (drag === null || sheet === null) return;
+    event.preventDefault();
+    // 上へ動かすと高くなる（画面の y は下へ増える）
+    const height = Math.min(drag.mapHeight, Math.max(0, drag.height + (drag.y - event.clientY)));
+    sheet.style.height = `${height}px`;
+  };
+
+  const onUp = (/** @type {PointerEvent} */ event) => {
+    if (drag === null || sheet === null) return;
+    const height = sheet.getBoundingClientRect().height;
+    const settled = drag;
+    drag = null;
+    sheet.style.transition = "";
+    // **つまんで付けた指定を外す。**外さないと、次に開いたときも同じ形で出る
+    sheet.style.height = "";
+    sheet.style.top = "";
+    /** @type {Element} */ (event.currentTarget).releasePointerCapture?.(event.pointerId);
+
+    // ほとんど動いていなければ、押しただけ。**勝手に状態を変えない**
+    if (Math.abs(height - settled.height) < 4) return;
+
+    const next = dropAction(height / settled.mapHeight);
+    // **「元の高さへ」は、何もしないことではない。**
+    // 全面から下へ引いて途中で離したとき、何もしないと**全面のまま**になり、
+    // 「引いても戻らない」ように見える（実測・2026-09-29）。
+    if (next === "rest") {
+      if (state === "maximized") act("restore");
+      return;
+    }
+    act(next);
+  };
+
+  bar.addEventListener("pointerdown", onDown);
+  bar.addEventListener("pointermove", onMove);
+  bar.addEventListener("pointerup", onUp);
+  bar.addEventListener("pointercancel", onUp);
 
   if (state === "maximized" || state === "sheet") expand();
   sheet?.classList.toggle(PART_CLASS, state === "sheet");
