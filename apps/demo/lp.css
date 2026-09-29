@@ -534,7 +534,35 @@
   color: var(--muted);
 }
 
+/* 狭い画面では、**題のすぐ下に地図を出す**。
+ *
+ * それまでは、出自の行・題・導入文・ボタンで **488px** 使ってから地図だった
+ * （実測・2026-09-29。画面 390×800 で、地図の高さは 267px しか残らない）。
+ * 人からの言葉は「冒頭文字が長くて、最後にマップなので、UI 工夫が要る。
+ * マップって全画面で見たりすると思うんで」。
+ *
+ * **文は削らない。**読む順番を入れ替えて、**動くものを先に見せる**だけ。
+ * HTML は触らない（読み上げと検索の順番は、文章として正しいまま残す）。 */
 @media (max-width: 560px) {
+  .lp-hero {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lp-eyebrow { order: 1; }
+  .lp-title { order: 2; }
+  .lp-stage { order: 3; }
+  .lp-lead { order: 4; margin-top: 1rem; }
+  .lp-actions { order: 5; }
+  .lp-stage-note { order: 6; }
+
+  /* 地図を主役の大きさにする。**縦横比では足りない** */
+  .lp-stage-map {
+    aspect-ratio: auto;
+    height: 52vh;
+    min-height: 16rem;
+  }
+
   .lp-steps > li {
     grid-template-columns: 1fr;
     gap: 0.35rem;

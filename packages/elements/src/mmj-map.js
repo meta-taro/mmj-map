@@ -28,6 +28,7 @@
 import {
   applyTilesUrl,
   buildLocateOptions,
+  wantsFullscreen,
   buildMapOptions,
   hashOverridesPitch,
   parseLngLat,
@@ -224,6 +225,14 @@ export class MmjMap extends HTMLElement {
     const locate = buildLocateOptions(this.getAttribute("locate"));
     if (locate !== null) {
       this.map.addControl(new maplibregl.GeolocateControl(locate), "top-right");
+    }
+
+    // **`fullscreen` を付けたときだけ全画面ボタンを出す。**
+    // 頁の一部に置かれた地図は周りの文字より小さいことが多く、
+    // **広げる手段が無いと、指で動かすたびに周りの文字が邪魔をする**
+    // （2026-09-29・人の言葉「まっぷって、ぜんがめんでみたりするとおもうんで」）。
+    if (wantsFullscreen(this.getAttribute("fullscreen"))) {
+      this.map.addControl(new maplibregl.FullscreenControl(), "top-right");
     }
 
     // **帰属表示と縮尺も、白い箱のまま暗い地図に乗っていた。**

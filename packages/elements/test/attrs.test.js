@@ -6,6 +6,7 @@ import {
   parsePitch,
   buildMapOptions,
   buildPopupOptions,
+  wantsFullscreen,
   buildControlStyle,
   buildLocateOptions,
   buildPopupStyle,
@@ -485,5 +486,27 @@ describe("buildPopupOptions の幅", () => {
 
   it("渡されたら、その幅を使う", () => {
     expect(buildPopupOptions("mmj-popup-abc", "20rem").maxWidth).toBe("20rem");
+  });
+});
+
+/**
+ * **地図は全画面で見る。**人からの言葉は
+ * 「まっぷって、ぜんがめんでみたりするとおもうんで」（2026-09-29）。
+ *
+ * 頁の一部に置かれた地図は、**周りの文字より小さいことが多い**。
+ * 広げる手段が無いと、**指で動かすたびに周りの文字が邪魔をする**。
+ *
+ * **勝手には出さない。**`locate` と同じで、置く側が決める
+ * （地図を並べた頁では、1 枚ずつに全画面ボタンが並ぶと騒がしい）。
+ */
+describe("wantsFullscreen", () => {
+  it("属性があれば出す（空文字でよい）", () => {
+    expect(wantsFullscreen("")).toBe(true);
+    expect(wantsFullscreen("true")).toBe(true);
+  });
+
+  it("**無ければ出さない**（既定の見た目を変えない）", () => {
+    expect(wantsFullscreen(null)).toBe(false);
+    expect(wantsFullscreen(undefined)).toBe(false);
   });
 });

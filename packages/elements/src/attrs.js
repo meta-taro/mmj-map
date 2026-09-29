@@ -184,6 +184,25 @@ export function buildLocateOptions(attribute) {
 }
 
 /**
+ * 全画面ボタンを出すか。**属性があるときだけ。**
+ *
+ *   <mmj-map fullscreen>
+ *
+ * 頁の一部に置かれた地図は、**周りの文字より小さいことが多い**。
+ * 広げる手段が無いと、**指で動かすたびに周りの文字が邪魔をする**
+ * （2026-09-29・人からの言葉「まっぷって、ぜんがめんでみたりするとおもうんで」）。
+ *
+ * **勝手には出さない。**`locate` と同じで、置く側が決める
+ * （地図を並べた頁では、1 枚ずつにボタンが並ぶと騒がしい）。
+ *
+ * @param {string | null | undefined} attribute
+ * @returns {boolean}
+ */
+export function wantsFullscreen(attribute) {
+  return attribute !== null && attribute !== undefined;
+}
+
+/**
  * 10 進数として読む。空文字や "12px" を数にしない。
  * @param {string | undefined} text
  * @returns {number | null}
