@@ -11,6 +11,7 @@
  */
 import { MmjCircle } from "./mmj-circle.js";
 import { MmjCluster } from "./mmj-cluster.js";
+import { MmjFill } from "./mmj-fill.js";
 import { MmjMap } from "./mmj-map.js";
 import { MmjMarker } from "./mmj-marker.js";
 import { MmjPoi } from "./mmj-poi.js";
@@ -29,8 +30,9 @@ define("mmj-map", MmjMap);
 define("mmj-marker", MmjMarker);
 define("mmj-circle", MmjCircle);
 define("mmj-cluster", MmjCluster);
+define("mmj-fill", MmjFill);
 define("mmj-poi", MmjPoi);
 define("mmj-raster", MmjRaster);
 define("mmj-route", MmjRoute);
 
-export { MmjCircle, MmjCluster, MmjMap, MmjMarker, MmjPoi, MmjRaster, MmjRoute };
+export { MmjCircle, MmjCluster, MmjFill, MmjMap, MmjMarker, MmjPoi, MmjRaster, MmjRoute };

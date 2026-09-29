@@ -71,6 +71,18 @@ body {
   text-wrap: pretty;
 }
 
+/* 見本であることの断り書き。**新しい色を作らない**（baseline §11）——
+   配色の正本（styles/modern-dark.json）に警告色は無いので、
+   **枠で囲んで目立たせる**。赤を足すのは人が決める領域。 */
+.site-header p .warn {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+}
+
 .site-header code,
 .notice code {
   background: var(--code);

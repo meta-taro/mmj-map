@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>地図に重ねる — MMJ</title>
-<meta name="description" content="雨雲レーダー・ハザードマップ・地盤・震度・空中写真は、どれもラスタタイルで配られています。1 つの部品で全部乗ります。">
+<title>面で塗り分ける — MMJ</title>
+<meta name="description" content="浸水深・地盤・震度のような「値を持つ面」を重ねます。色は置く側が渡し、MMJ は判断しません。">
 <meta property="og:type" content="website">
-<meta property="og:title" content="地図に重ねる — MMJ">
-<meta property="og:description" content="雨雲・ハザード・地盤・震度・空中写真が、1 つの部品で乗ります。データは MMJ が持ちません。">
+<meta property="og:title" content="面で塗り分ける — MMJ">
+<meta property="og:description" content="浸水深・地盤・震度のような「値を持つ面」を重ねます。色は置く側が渡し、MMJ は判断しません。">
 <meta property="og:site_name" content="MMJ">
 <meta property="og:locale" content="ja_JP">
-<meta property="og:url" content="https://meta-taro.github.io/mmj-map/raster.html">
+<meta property="og:url" content="https://meta-taro.github.io/mmj-map/flood.html">
 <meta property="og:image" content="https://meta-taro.github.io/mmj-map/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="MMJ「ここの地図を、手元に。」。大阪市街の暗色の地図に、つながらなくても出る・API キーなし・地図サーバーなし と書かれたカード。右下に © OpenStreetMap contributors。">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://meta-taro.github.io/mmj-map/og.png">
-<link rel="canonical" href="https://meta-taro.github.io/mmj-map/raster.html">
+<link rel="canonical" href="https://meta-taro.github.io/mmj-map/flood.html">
 <link rel="icon" href="./favicon.svg">
 <link rel="stylesheet" href="./vendor/maplibre-gl/maplibre-gl.css">
 <link rel="stylesheet" href="./demo.css">
@@ -25,13 +25,15 @@
 <body>
 
 <header class="site-header">
-  <h1>地図に重ねる</h1>
+  <h1>面で塗り分ける</h1>
   <p>
-    <strong>ここに出ている色は見本です。実在のハザード・雨雲・地盤ではありません。</strong>
-    <code>&lt;mmj-raster&gt;</code> が重なることを見せるためだけの格子で、
-    <strong>段階があること以外に意味はありません</strong>（<code>tools/sample-raster</code> が作っています）。
-    雨雲レーダー・ハザードマップ・地盤・震度・空中写真は<strong>どれもラスタタイル</strong>なので、
-    この 1 つで全部乗ります。<strong>データは MMJ が持ちません。</strong>
+    浸水深・地盤・震度・土砂災害の区域のような、<strong>値を持つ面</strong>を重ねます。
+    <strong>色は置く側が渡します</strong>——ハザードマップの配色は国や自治体が決めた
+    意味のある色なので、<strong>独自配色に置き換えると誤読を生みます</strong>。
+    <strong>MMJ は判断しません。</strong>「ここは危ない」とも「逃げろ」とも言わず、
+    渡された値を渡された色で塗るところまでです。
+    <strong class="warn">この面は架空です。四角が規則的に並んでいるのがその印で、
+    実際の浸水想定は地形なりの形になります。防災の判断には使えません。</strong>
   </p>
   <nav class="site-nav" aria-label="デモの一覧">
     <a href="./index.html">はじめに</a>
@@ -47,17 +49,22 @@
     <a href="./regions.html">地域を切り替える</a>
     <a href="./venue.html">会場の地図</a>
     <a href="./circle.html">半径で囲む</a>
-    <a href="./raster.html" aria-current="page">重ねる</a>
-    <a href="./flood.html">面で塗り分ける</a>
+    <a href="./raster.html">重ねる</a>
+    <a href="./flood.html" aria-current="page">面で塗り分ける</a>
     <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
   </nav>
 </header>
 
 <main class="map-area">
-  <mmj-map id="map" center="135.5023,34.6937" zoom="11" cooperative>
-    <mmj-raster src="./sample-raster/{z}/{x}/{y}.png"
-                attribution="見本（実在のデータではありません）"
-                opacity="0.55"></mmj-raster>
+  <mmj-map id="map" center="135.5000,34.6935" zoom="14" hash fullscreen>
+    <!--
+      **色はここで渡す。**MMJ は並べ替えて塗るだけで、色を作りません。
+      浸水深の青の段階を、**この頁の作者が**選んでいます。
+    -->
+    <mmj-fill src="./data/flood-sample.geojson" value-key="depth"
+              steps="0.5:#cfe8ff,1:#8ec6ff,3:#3b82f6,5:#1e3a8a"
+              legend="浸水深（m・架空）"
+              attribution="架空の見本です（実際のハザードマップではありません）"></mmj-fill>
   </mmj-map>
 
   <div id="notice" class="notice" hidden>
@@ -71,15 +78,7 @@
 <script src="./vendor/pmtiles/pmtiles.js"></script>
 <script src="./config.js"></script>
 <script type="module">
-  /**
-   * **地名が読めることが、この頁で見てほしい点。**
-   *
-   * `<mmj-raster>` は既定で**いちばん手前のラベルの下**へ入る。上へ置くと
-   * 地名も駅名も消えるので、重ねた色が「どこの話か」読めなくなる。
-   * 同じ理由で**既定は透ける**（0.7。この頁は 0.55）。
-   *
-   * **出典は地図の中に出す**（右下）。持ち出された先では、配布元の頁は付いて来ない。
-   */
+  // **属性を入れてから部品を読み込む。**逆にすると connectedCallback が先に走る。
   const cfg = window.MMJ_CONFIG ?? {};
   const map = document.getElementById('map');
 
