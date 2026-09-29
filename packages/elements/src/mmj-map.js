@@ -38,7 +38,13 @@ import {
 } from "./attrs.js";
 import { ensureControlContrast } from "./controls-dom.js";
 import { popupColorsFrom } from "./popup-dom.js";
-import { addExtrusion } from "./extrude.js";
+import {
+  EXTRUSION_ID,
+  addExtrusion,
+  buildExtrusionLayer,
+  extrusionBeforeId,
+  extrusionCamera,
+} from "./extrude.js";
 import { accentPalette, applyPalette, readDeclaredAccent, readTheme } from "./palette.js";
 import { applyLanguage, readLanguage } from "./lang.js";
 import {
@@ -110,6 +116,68 @@ export class MmjMap extends HTMLElement {
   disconnectedCallback() {
     this.map?.remove();
     this.map = null;
+  }
+
+  /**
+   * **`3d` は、走っている地図でも切り替えられる。**
+   *
+   * 以前は地図を作るときに 1 回読むだけで、**歩きながら立てたり寝かせたりが
+   * できなかった**。知らない街では「その角のビルの形」が効くが、
+   * **ずっと立っていると、上から道をたどるのが読みにくい**
+   * （2026-09-29・人からの言葉「知らない都会を歩くときはこっちのほうが
+   * いい人もいるかも」）。
+   */
+  static observedAttributes = ["3d"];
+
+  /**
+   * @param {string} name
+   * @param {string | null} before
+   * @param {string | null} after
+   */
+  attributeChangedCallback(name, before, after) {
+    if (name !== "3d" || before === after) return;
+    // 地図を作る前の指定は `#render` が拾う。**ここで二重に足さない**
+    if (this.map === null) return;
+    this.#sync3d();
+  }
+
+  /**
+   * いまの `3d` に合わせて、押し出しレイヤを足す／外す。
+   *
+   * **同じものを二度足さない**（MapLibre は同じ id で投げる）。
+   * スタイルがまだ読み終わっていなければ、読み終わってからやり直す。
+   */
+  #sync3d() {
+    const map = this.map;
+    if (map === null) return;
+    if (!map.isStyleLoaded()) return void map.once("idle", () => this.#sync3d());
+
+    const wants = this.hasAttribute("3d");
+    if (wants === Boolean(map.getLayer(EXTRUSION_ID))) return;
+
+    if (!wants) {
+      map.removeLayer(EXTRUSION_ID);
+      // **傾きは戻さない。**利用者が自分で決めた角度を奪わない
+      return;
+    }
+
+    try {
+      const layers = map.getStyle().layers;
+      const buildings = layers.find((/** @type {any} */ layer) => layer?.id === "buildings");
+      map.addLayer(
+        buildExtrusionLayer(buildings),
+        extrusionBeforeId(layers.map((/** @type {any} */ layer) => layer?.id)),
+      );
+    } catch (error) {
+      // 握り潰さない（§8）。**ここで失敗しても地図は生きている**
+      return void console.error("[mmj-map] 建物を立てられませんでした", error);
+    }
+
+    // **押し出しは、寄って・傾けて初めて見える。**足りないまま入れると、
+    // 押しても画面が変わらず、壊れているように見える（理由は `extrusionCamera`）。
+    // **下げない**——すでに寄っている／傾けている人からは、その値を奪わない
+    const camera = extrusionCamera({ zoom: map.getZoom(), pitch: map.getPitch() });
+    if (camera !== null) map.easeTo({ ...camera, duration: 400 });
   }
 
   async #render() {

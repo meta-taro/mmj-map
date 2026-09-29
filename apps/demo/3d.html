@@ -59,6 +59,10 @@
 <main id="main" class="map-area">
   <mmj-map id="map" center="135.4959,34.7024" zoom="16" pitch="60" hash 3d fullscreen></mmj-map>
 
+  <!-- **2D と見くらべられるようにする。**`3d` は走っている地図でも付け外しできる属性で、
+       平らな建物のレイヤは 3D のときも消えていない（高さを持たない建物が残るため）。 -->
+  <button id="tilt" class="map-btn" type="button" aria-pressed="true">建物を寝かせる</button>
+
   <div id="notice" class="notice" hidden>
     <div class="box">
       <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
@@ -80,6 +84,18 @@
   } else {
     map.setAttribute('tiles', cfg.tilesUrl);
     map.setAttribute('style-url', cfg.styleUrl);
+
+    // **押して 2D と見くらべる。**部品側が寄りと傾きを面倒みるので、
+    // ここは属性を付け外しして文言を合わせるだけ。
+    const tilt = document.getElementById('tilt');
+    tilt.addEventListener('click', () => {
+      const on = map.toggleAttribute('3d');
+      tilt.setAttribute('aria-pressed', String(on));
+      tilt.textContent = on ? '建物を寝かせる' : '建物を立てる';
+      // 寝かせたら真上へ戻す。**平らな地図を傾けたまま見せても、道をたどりにくいだけ**
+      if (!on) map.map?.easeTo({ pitch: 0, duration: 400 });
+    });
+
     await import('./elements/index.js');
   }
 </script>

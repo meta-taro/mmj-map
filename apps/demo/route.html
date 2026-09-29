@@ -64,6 +64,10 @@
     <mmj-route id="route" src="./data/sample-route.geojson" fit></mmj-route>
   </mmj-map>
 
+  <!-- **知らない街を歩くときは、建物の形のほうが速い。**
+       ただしずっと立っていると、上から道をたどるのが読みにくいので、切り替えにする。 -->
+  <button id="tilt" class="map-btn" type="button" aria-pressed="false">建物を立てる</button>
+
   <div id="picked" class="picked" hidden></div>
 
   <div id="notice" class="notice" hidden>
@@ -93,6 +97,18 @@
       const box = document.getElementById('picked');
       box.textContent = `案内 ${event.detail.steps} 件。押すと開きます`;
       box.hidden = false;
+    });
+
+    // **建物は走っている地図でも立てられる**（`3d` は動く属性）。
+    // 経路の層はあとから足されているので、**立てても案内の線は建物に隠れません**。
+    const tilt = document.getElementById('tilt');
+    tilt.addEventListener('click', () => {
+      const on = map.toggleAttribute('3d');
+      tilt.setAttribute('aria-pressed', String(on));
+      tilt.textContent = on ? '建物を寝かせる' : '建物を立てる';
+      // 立てるときの傾きは部品が付ける。**寝かせたら真上へ戻す**——
+      // 平らな地図を傾けたまま見せても、道をたどりにくいだけ
+      if (!on) map.map?.easeTo({ pitch: 0, duration: 400 });
     });
 
     await import('./elements/index.js');
