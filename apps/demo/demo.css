@@ -590,3 +590,108 @@ mmj-map,
   min-height: 0;
   height: 100%;
 }
+
+/* --- 地図と並ぶ一覧（shops.html） ---------------------------------------- */
+
+/* **カードは送りボタンで 1 件ずつしか回れない。**3 件なら足りるが、
+   20 件を「探す」ことはできない。一覧はそこを埋める。
+
+   **HTML に書いてあることが肝心。**検索に出て、JS を切っても読めて、
+   Tab で届くのは、**最初から HTML にある文字だけ**。 */
+.shop-list-area {
+  min-width: 0;
+  padding: 0.75rem 1rem 1.25rem;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.shop-list-area h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.shop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.shop-list a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  /* 指の的は 36px を割らない */
+  min-height: 36px;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.shop-list a:hover {
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+
+.shop-list a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* **いまどれを見ているかを、塗りで示す。**
+   地図と一覧で「いまどれか」が食い違うと、どちらも信用されない。
+   印は部品が `aria-current` で付ける（**見た目はこちらが決める**）。 */
+.shop-list a[aria-current="true"] {
+  border-color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 18%, transparent);
+  font-weight: 600;
+}
+
+.shop-list-meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.shop-list-note {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* **広い画面では地図の右に置く。**左はカードが使う（横から出る面）ので、
+   同じ側に並べると取り合いになる。携帯では地図の下（読み物として続く）。 */
+@media (min-width: 56.25rem) {
+  body.has-list {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+  }
+
+  body.has-list .site-header {
+    grid-column: 1 / -1;
+  }
+
+  body.has-list .map-area {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  body.has-list .shop-list-area {
+    grid-column: 2;
+    grid-row: 2;
+    /* **一覧の中だけ送る。**頁ごと送ると地図が画面から出ていく */
+    min-height: 0;
+    overflow-y: auto;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+}
+
+/* **狭い画面では、地図の大きさを先に確保する。**
+   一覧を足しただけで地図が 694px → 378px に縮んだ（実測・2026-09-30、390x844）。
+   一覧は**折り目の下**へ送り、読みたい人が下ろす形にする。
+   （広い画面では横に並ぶので、この指定は要らない） */
+@media (max-width: 56.24rem) {
+  body.has-list .map-area {
+    min-height: 70dvh;
+  }
+}

@@ -22,7 +22,7 @@
 <link rel="stylesheet" href="./vendor/maplibre-gl/maplibre-gl.css">
 <link rel="stylesheet" href="./demo.css">
 </head>
-<body>
+<body class="has-list">
 
 <a class="skip-link" href="#main">地図へ飛ぶ</a>
 
@@ -75,6 +75,7 @@
              card-links="写真:sns_url,公式:site_url,電話:tel"
              card-hours="open_hours" card-reviews="review_items"
              card-live="いま:./data/live/{id}.json"
+             list="#shop-list"
              attribution="見本（架空の店舗です）"></mmj-poi>
   </mmj-map>
 
@@ -84,6 +85,47 @@
     </div>
   </div>
 </main>
+
+<!--
+  **一覧は HTML に書きます。**部品が作るのではありません。
+
+  ここに文字があるから、**検索に出て、JS を切っても読めて、Tab で届きます**。
+  部品が JS で作った一覧は、探すのとキーボードには効きますが、
+  **検索には効きません**（読み込んだ後に生えるため）。
+
+  店のデータは `data/shops.geojson` と同じものを書き写しています。
+  実際のサイトでは、**CMS や静的サイト生成が両方を同じ元から出します**
+  （MMJ はデータを持ちません・D-001）。
+
+  `data-shop` が地図の点と一覧を結びます。`href` は本物のリンクで、
+  **JS が動いていれば頁を読み込み直さずにカードが開きます**。
+-->
+<aside class="shop-list-area" aria-labelledby="shop-list-title">
+  <h2 id="shop-list-title">この地図にある店（3 件）</h2>
+  <ul id="shop-list" class="shop-list">
+    <li>
+      <a href="?shop=akari" data-shop="akari">
+        <span class="shop-list-name">町家カフェ 灯</span>
+        <span class="shop-list-meta">4.3 / 5（128 件）・喫茶</span>
+      </a>
+    </li>
+    <li>
+      <a href="?shop=migiwa" data-shop="migiwa">
+        <span class="shop-list-name">らーめん 汀</span>
+        <span class="shop-list-meta">4.1 / 5（342 件）・ラーメン</span>
+      </a>
+    </li>
+    <li>
+      <a href="?shop=misaki" data-shop="misaki">
+        <span class="shop-list-name">古本 みさき</span>
+        <span class="shop-list-meta">4.6 / 5（57 件）・古書</span>
+      </a>
+    </li>
+  </ul>
+  <p class="shop-list-note">
+    <strong>この 3 店は架空です。</strong>写真も生成した見本で、実在の店舗ではありません。
+  </p>
+</aside>
 
 <script src="./vendor/maplibre-gl/maplibre-gl.js"></script>
 <script src="./vendor/pmtiles/pmtiles.js"></script>

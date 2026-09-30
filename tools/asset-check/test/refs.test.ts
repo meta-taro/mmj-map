@@ -146,3 +146,30 @@ describe("findBasePathHazards", () => {
     expect(findBasePathHazards([{ raw: "/a.js", line: 42 }])[0]?.line).toBe(42);
   });
 });
+
+/**
+ * **クエリだけのリンクは、ファイルを指していない。**
+ *
+ * 一覧の各項目は `<a href="?shop=akari">` と書く。JS を切っても
+ * その店の頁になる本物のリンクだが、**指しているのは同じ頁**であって
+ * `apps/demo/?shop=akari` というファイルではない。
+ *
+ * 拾ってしまうと、**実在しないファイルとして CI が止まる**
+ * （実測・2026-09-30。一覧を足した `shops.html` で 3 件止まった）。
+ * `#` 始まり（同じ頁の中の行き先）を外しているのと同じ理由。
+ */
+describe("extractReferences（同じ頁を指すリンク）", () => {
+  it("**`?` 始まりは拾わない**（同じ頁のクエリ違い）", () => {
+    const html = '<a href="?shop=akari">町家カフェ 灯</a>';
+    expect(extractReferences(html)).toEqual([]);
+  });
+
+  it("`#` 始まりも拾わない（これまでどおり）", () => {
+    expect(extractReferences('<a href="#main">地図へ飛ぶ</a>')).toEqual([]);
+  });
+
+  it("**ファイル名の付いたものは、クエリがあっても拾う**", () => {
+    const html = '<a href="./shops.html?shop=akari">お店</a>';
+    expect(extractReferences(html).map((r) => r.raw)).toEqual(["./shops.html?shop=akari"]);
+  });
+});

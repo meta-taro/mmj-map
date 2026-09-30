@@ -31,6 +31,9 @@ function isExternal(value: string): boolean {
   return (
     value === "" ||
     value.startsWith("#") ||
+    // **クエリだけのリンクは同じ頁を指す。**一覧の `<a href="?shop=akari">` は
+    // ファイルではない（実測・2026-09-30。3 件を実在しないファイルとして止めた）
+    value.startsWith("?") ||
     value.startsWith("data:") ||
     value.startsWith("mailto:") ||
     value.startsWith("//") ||

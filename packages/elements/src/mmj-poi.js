@@ -36,6 +36,8 @@ import {
   writeShopParam,
 } from "./card.js";
 import { mountCard } from "./card-dom.js";
+import { listEntries } from "./list.js";
+import { ensureListContrast, mountList } from "./list-dom.js";
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
 import { buildCardContent, isSafeLink } from "./popup.js";
 import {
@@ -104,6 +106,9 @@ export class MmjPoi extends HTMLElement {
   /** いま「ここ」の印が立っている点の id。**降ろすのに要る** @type {string | null} */
   picked = null;
 
+  /** 繋いだ一覧。`list` 属性が無ければ null @type {any} */
+  list = null;
+
   /**
    * 開いた回数。**取りに行った結果が遅れて返ったとき、古いものを捨てるため。**
    * 送って回っている間に前の応答が返ると、**別の店の情報が今の店の顔で出る**。
@@ -129,6 +134,8 @@ export class MmjPoi extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.list?.destroy();
+    this.list = null;
     if (this.map && this.spec) {
       for (const layer of this.spec.layers) if (this.map.getLayer(layer.id)) this.map.removeLayer(layer.id);
       if (this.map.getSource(this.spec.sourceId)) this.map.removeSource(this.spec.sourceId);
@@ -206,7 +213,50 @@ export class MmjPoi extends HTMLElement {
       console.error("[mmj-poi] 一覧を読めませんでした。次/前と URL の復元は出ません", error);
       return;
     }
+    this.#mountList();
     this.#restore();
+  }
+
+  /**
+   * 一覧を地図へ繋ぐ。**`list` に入れ物のセレクタが指定されたときだけ。**
+   *
+   * カードは送りボタンで 1 件ずつしか回れない。3 件なら足りるが、
+   * **20 件を「探す」ことはできない**。
+   *
+   * **HTML に一覧があれば、それを繋ぐだけ**（中身には触らない）。
+   * 置く側が書いたものは検索にも JS 無しにも効くので、作り直すと
+   * **検索に出ていた文字を JS で消す**ことになる。
+   * 空の入れ物なら点の一覧から作る（**そちらは検索に効かない**）。
+   */
+  #mountList() {
+    const selector = this.getAttribute("list");
+    if (selector === null || selector === "") return;
+
+    const container = document.querySelector(selector);
+    if (!(container instanceof HTMLElement)) {
+      // 握り潰さない（§8）。**一覧だけが黙って出ないのが一番気づきにくい**
+      return void console.error(`[mmj-poi] list の指す入れ物がありません: ${selector}`);
+    }
+
+    const entries = listEntries(
+      this.features,
+      {
+        idKey: this.getAttribute("card-id"),
+        titleKey: this.getAttribute("card-title"),
+        search: location.search,
+      },
+      writeShopParam,
+    );
+
+    const className = ensureListContrast(popupColorsFrom(this.owner));
+
+    this.list = mountList({
+      container,
+      entries,
+      className,
+      // **地図を寄せる。**一覧から選んだのに画面の外で開いても、何も見えない
+      onPick: (id) => this.#openAt(indexOfShop(this.features, this.getAttribute("card-id"), id), true),
+    });
   }
 
   /**
@@ -317,6 +367,8 @@ export class MmjPoi extends HTMLElement {
     if (this.picked !== null) map.setFeatureState({ source, id: this.picked }, { picked: false });
     if (next !== null) map.setFeatureState({ source, id: next }, { picked: true });
     this.picked = next;
+    // **一覧にも同じ印を。**地図と一覧で「いまどれか」が食い違うと、どちらも信用されない
+    this.list?.mark(next);
   }
 
   /**
