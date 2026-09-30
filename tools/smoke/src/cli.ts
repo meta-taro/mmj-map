@@ -97,11 +97,38 @@ const chrome = spawn(
     `--user-data-dir=${profile}`,
     "about:blank",
   ],
-  { stdio: "ignore" },
+  // **ブラウザの言い分を捨てない。**`ignore` にしていたせいで、
+  // CI で起動しなかったときに**理由がどこにも残らなかった**（2026-09-30）。
+  { stdio: ["ignore", "pipe", "pipe"] },
 );
 
+/** ブラウザが自分で言ったこと。**起動に失敗したとき、これだけが手がかりになる** */
+let said = "";
+for (const stream of [chrome.stdout, chrome.stderr]) {
+  stream?.on("data", (chunk: Buffer) => {
+    said += String(chunk);
+  });
+}
+
+let exited: string | null = null;
+chrome.on("exit", (code, signal) => {
+  exited = `終了コード ${code ?? "なし"}${signal === null ? "" : ` / シグナル ${signal}`}`;
+});
+
+/**
+ * ブラウザが CDP を開くまで待つ。
+ *
+ * **待ち時間は長めに取る。**12 秒で諦めていたが、混んだ CI の機械では
+ * Chrome の初回起動がそれを超えることがある（2026-09-30 に 1 回落ちた）。
+ * **遅いだけのものを不具合として報告しない。**
+ */
 async function cdpEndpoint(): Promise<string> {
-  for (let i = 0; i < 60; i++) {
+  const limit = 150; // 200ms × 150 = 30 秒
+  for (let i = 0; i < limit; i++) {
+    // 先に落ちていたら待つ意味がない。**理由ごと出す**
+    if (exited !== null) {
+      throw new Error(`ブラウザが起動しませんでした（${exited}）\n${said.trim() || "（出力なし）"}`);
+    }
     try {
       const res = await fetch(`http://127.0.0.1:${port}/json/version`);
       return ((await res.json()) as { webSocketDebuggerUrl: string }).webSocketDebuggerUrl;
@@ -109,7 +136,10 @@ async function cdpEndpoint(): Promise<string> {
       await sleep(200);
     }
   }
-  throw new Error(`ブラウザの CDP に繋がりません（port ${port}）`);
+  throw new Error(
+    `ブラウザの CDP に ${(limit * 200) / 1000} 秒つないでも応答がありません（port ${port}）\n` +
+      `使ったブラウザ: ${browser}\n${said.trim() || "（出力なし）"}`,
+  );
 }
 
 const ws = new WebSocket(await cdpEndpoint());
