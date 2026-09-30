@@ -25,6 +25,7 @@ import { chooseBuild, outputNameFor, rememberBuild, type KnownBuild } from "./ro
 
 /** 戻り先として覚えておく本数。際限なく増やさない（D-014） */
 const KNOWN_GOOD_LIMIT = 3;
+import { asOfTime, isStale } from "@mmj-map/elements/provenance";
 import { interpretRangeResponse, PROBE_RANGE_HEADER } from "./range.js";
 import { adhocRegion, refuseOutsideRepo, resolveOutDir, shouldResolveLatest, sizeVerdict } from "./install.js";
 
@@ -311,6 +312,54 @@ async function commandCheckRange(argv: readonly string[]): Promise<number> {
   return verdict.ok ? 0 : 1;
 }
 
+
+/**
+ * 配っているタイルが古びていないかを見る。
+ *
+ * **凍った成果物は、置き換えるまで古びていく。**画面には
+ * 「地図データ: 2026-09 時点」と出るようにしたが、**出しただけでは誰も見ない**。
+ * 機械が数えて、越えたら知らせる（ECC の「人が気をつける方式は必ず漏れる」）。
+ *
+ * **落とさない。**古いこと自体は不具合ではなく、切り直す判断は人のもの。
+ * 出すのは事実（何日前か）だけで、終了コードは 0 のまま。
+ */
+async function commandCheckAge(argv: readonly string[]): Promise<number> {
+  const url = argv.find((arg) => !arg.startsWith("--"));
+  if (url === undefined) {
+    console.error("使い方: check-age <配信中の PMTiles の URL> [--days=90]");
+    return 2;
+  }
+  const days = Number(argv.find((a) => a.startsWith("--days="))?.slice("--days=".length) ?? 90);
+
+  // pmtiles のメタデータは JSON で、ヘッダの後ろに置かれている。
+  // **go-pmtiles に読ませる**（自前で解くと、仕様が変わったとき黙って外れる）
+  const { execFileSync } = await import("node:child_process");
+  let metadata: Record<string, unknown>;
+  try {
+    metadata = JSON.parse(String(execFileSync("pmtiles", ["show", "--metadata", url], { maxBuffer: 64 * 1024 * 1024 })));
+  } catch (error) {
+    console.error(`メタデータを読めませんでした: ${url}`);
+    console.error(String(error));
+    return 2;
+  }
+
+  const time = asOfTime(metadata);
+  if (time === null) {
+    console.log("時点が入っていません（planetiler で作られていないタイル）。判断しません");
+    return 0;
+  }
+
+  const age = Math.floor((Date.now() - Date.parse(time)) / 86_400_000);
+  const stale = isStale(metadata, new Date(), days);
+  console.log(`地図データの時点: ${time}（${age} 日前）`);
+  console.log(
+    stale
+      ? `しきい値 ${days} 日を越えています。切り直しは人の判断です（pnpm tiles:extract）`
+      : `しきい値 ${days} 日以内です`,
+  );
+  return 0;
+}
+
 async function main(): Promise<number> {
   const [command, ...argv] = process.argv.slice(2);
 
@@ -321,8 +370,10 @@ async function main(): Promise<number> {
       return commandExtract(argv);
     case "check-range":
       return commandCheckRange(argv);
+    case "check-age":
+      return commandCheckAge(argv);
     default:
-      console.error("使い方: cli.ts <resolve | extract | check-range> [...]");
+      console.error("使い方: cli.ts <resolve | extract | check-range | check-age> [...]");
       return 2;
   }
 }

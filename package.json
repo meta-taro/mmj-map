@@ -27,7 +27,8 @@
     "palette": "pnpm --filter @mmj-map/palette run make",
     "palette:mcp": "pnpm --filter @mmj-map/palette run mcp",
     "coverage": "vitest run --coverage",
-    "smoke": "pnpm --filter @mmj-map/smoke run smoke"
+    "smoke": "pnpm --filter @mmj-map/smoke run smoke",
+    "tiles:check-age": "pnpm --filter @mmj-map/tiles run check-age"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "5.0.0",

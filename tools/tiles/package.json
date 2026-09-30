@@ -4,7 +4,13 @@
   "type": "module",
   "license": "MIT",
   "description": "公開データ（Protomaps 日次ビルド）と公開ツール（go-pmtiles）だけで、地球上の好きな範囲の PMTiles を切り出す",
-  "keywords": ["pmtiles", "openstreetmap", "protomaps", "maplibre", "vector-tiles"],
+  "keywords": [
+    "pmtiles",
+    "openstreetmap",
+    "protomaps",
+    "maplibre",
+    "vector-tiles"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/meta-taro/mmj-map.git",
@@ -17,7 +23,13 @@
   "bin": {
     "mmj-tiles": "dist/cli.js"
   },
-  "files": ["dist", "manifest.json", "regions", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "manifest.json",
+    "regions",
+    "README.md",
+    "LICENSE"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -28,12 +40,16 @@
     "check-range": "tsx src/cli.ts check-range",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "prepublishOnly": "pnpm build"
+    "prepublishOnly": "pnpm build",
+    "check-age": "tsx src/cli.ts check-age"
   },
   "devDependencies": {
     "@types/node": "^26.5.1",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0"
+  },
+  "dependencies": {
+    "@mmj-map/elements": "workspace:*"
   }
 }

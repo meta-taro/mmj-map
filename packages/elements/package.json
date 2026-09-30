@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.js",
     "./attrs": "./src/attrs.js",
-    "./palette": "./src/palette.js"
+    "./palette": "./src/palette.js",
+    "./provenance": "./src/provenance.js"
   },
   "files": [
     "src/",

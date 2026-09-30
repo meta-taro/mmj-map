@@ -47,6 +47,7 @@ import {
 } from "./extrude.js";
 import { accentPalette, applyPalette, readDeclaredAccent, readTheme } from "./palette.js";
 import { applyLanguage, readLanguage } from "./lang.js";
+import { asOfLabel, withAsOf } from "./provenance.js";
 import {
   MISSING_COLORS,
   buildMissingLayers,
@@ -57,6 +58,13 @@ import {
   readTileKey,
   shouldNotice,
 } from "./coverage.js";
+
+/**
+ * 「いつの地図か」を読むのを諦めるまで（ミリ秒）。
+ *
+ * **地図より先に諦める。**時点の一行のために地図が出ないのは本末転倒。
+ */
+const ASOF_TIMEOUT_MS = 3000;
 
 /** pmtiles プロトコルは 1 回だけ登録する（2 度目は MapLibre が投げる） */
 let protocolRegistered = false;
@@ -180,6 +188,31 @@ export class MmjMap extends HTMLElement {
     if (camera !== null) map.easeTo({ ...camera, duration: 400 });
   }
 
+  /**
+   * タイルから「いつの地図か」を読む。**読めなくても地図は出す。**
+   *
+   * **待たされ続けない。**メタデータは小さな Range 1 回だが、
+   * 配信が遅いときに地図そのものが出ないほうが困るので、打ち切る。
+   *
+   * @param {any} pmtiles 読み込み側が入れた pmtiles
+   * @param {string} tilesUrl
+   * @returns {Promise<string | null>}
+   */
+  async #readAsOf(pmtiles, tilesUrl) {
+    try {
+      const archive = new pmtiles.PMTiles(tilesUrl);
+      const metadata = await Promise.race([
+        archive.getMetadata(),
+        new Promise((resolve) => setTimeout(() => resolve(null), ASOF_TIMEOUT_MS)),
+      ]);
+      return asOfLabel(/** @type {any} */ (metadata));
+    } catch (error) {
+      // 握り潰さない（§8）。**消えるのは時点の一行だけ**で、地図は出る
+      console.error("[mmj-map] 地図の時点を読めませんでした（帰属表示に出ません）", error);
+      return null;
+    }
+  }
+
   async #render() {
     const maplibregl = /** @type {any} */ (window).maplibregl;
     const pmtiles = /** @type {any} */ (window).pmtiles;
@@ -233,7 +266,11 @@ export class MmjMap extends HTMLElement {
     // `/mmj-map/styles/x.json` の `../glyphs/` が `/glyphs/` になって 404 だった
     // （2026-09-27・本番でだけ壊れた。手元は開発サーバーが root にも配っていて通った）。
     const resolved = resolveStyleUrls(JSON.parse(applied.text), new URL(styleUrl, location.href).href);
-    const style = this.#relabel(await this.#recolor(resolved));
+    // **この地図がいつのものかを、地図の中に出す。**
+    // 配った `.pmtiles` は凍った成果物で、置き換えるまで古びていく。
+    // **画面に何も出ないと、8 か月前の地図を配り続けても誰も気づけない。**
+    // 上流（planetiler）が入れた時刻がタイルの中にあるので、それを読む。
+    const style = withAsOf(this.#relabel(await this.#recolor(resolved)), await this.#readAsOf(pmtiles, tilesUrl));
 
     // 子要素（目印・まとまり・自前 POI・ポップアップ）が借りる色。
     // **部品が色を持たないようにするため**、読み込んだスタイルから読む。
