@@ -49,7 +49,7 @@ export function renderPopup(parts) {
         strip.addEventListener(type, (event) => event.stopPropagation(), { passive: true });
       }
       // **PC では指で払えない。**横スクロールは手間なので、送りボタンを重ねる
-      // （2026-09-29・人からの指摘「このスライドがスマホだといいけど PC だと UX 悪い」）。
+      // （2026-09-29・横スライダーは携帯では良いが PC では使いにくい、という指摘）。
       // **触る画面では出さない**（指で払えるほうが速く、ボタンは写真を隠す）
       const wrap = document.createElement("div");
       wrap.className = "mmj-popup-gallery-wrap";
@@ -357,7 +357,7 @@ export function popupColorsFrom(parent) {
   return {
     // **面は地図より暗くしない**（`surfaceFor` に理由と実測）。
     // 地色をそのまま使うと明るい土台で箱が溶け、縁取り色をそのまま使うと
-    // **暗い土台で真っ黒の穴になる**（対比 1.12・人からの指摘 2026-09-30）
+    // **暗い土台で真っ黒の穴になる**（対比 1.12・2026-09-30 の指摘）
     background:
       surfaceFor(theme?.background, theme?.text, theme?.surface) ??
       theme?.surface ??

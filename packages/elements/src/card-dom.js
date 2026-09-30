@@ -35,7 +35,7 @@ const SIDE_CLASS = "mmj-card-sheet-side";
  *
  * **広い画面では「全面」にしない。**1440px の幅いっぱいに文字を敷くと
  * 1 行が長すぎて読めず、地図も消える
- * （2026-09-29・人からの指摘「文字が上に幅を利かせて、体験お邪魔」）。
+ * （2026-09-29・頁の上の文字が地図を押しのけている、という指摘）。
  * 広げても**地図は必ず横に残す**。
  */
 const WIDE_CLASS = "mmj-card-sheet-wide";
@@ -98,7 +98,7 @@ export function buildCardStyle(colors, className) {
     `.${className} .mmj-card-btn:focus-visible{outline:2px solid ${colors.text};outline-offset:1px;}` +
     // 下から出る面。**地図は上に残す。**
     // 全面にすると、**「押した点」と「出てきた面」のつながりが切れる**
-    // （2026-09-29・人からの指摘「なんおこっちゃとなりました」）。
+    // （2026-09-29・何が起きたのか分からなかった、という指摘）。
     // Google マップも Apple マップも、スマホではこの形で地図を残している。
     `.${SHEET_CLASS}.${PART_CLASS}{top:auto;height:58%;` +
     `border-top:1px solid ${colors.border};border-radius:12px 12px 0 0;` +
@@ -147,7 +147,7 @@ export function buildCardStyle(colors, className) {
     `.${SHEET_CLASS}:not(.${PART_CLASS}) .mmj-popup-gallery img{` +
     "flex:0 0 auto;width:auto;min-width:0;max-width:none;height:min(38vh,320px);}" +
     // **長い行は読めない。**広げたときに 1 行が 1400px になると目が戻れない
-    // （2026-09-29・人からの指摘「文字が上に幅を利かせて、体験お邪魔」）
+    // （2026-09-29・頁の上の文字が地図を押しのけている、という指摘）
     `.${SHEET_CLASS} .mmj-popup-text,.${SHEET_CLASS} .mmj-popup-review{max-width:42rem;}` +
     // 横から出る面。**地図を消さない。**押した点は右に見えたまま残る
     `.${SHEET_CLASS}.${SIDE_CLASS}{` +
@@ -157,7 +157,7 @@ export function buildCardStyle(colors, className) {
     // 広げても**横いっぱいにしない**。地図が 38% 残る
     `.${SHEET_CLASS}.${SIDE_CLASS}.${WIDE_CLASS}{width:min(46rem,62%);}` +
     // **横から出る面に横スライダーは要らない。**縦に長いので、写真は敷き詰められる
-    // （2026-09-29・人からの指摘「このスライドが PC だと UX 悪いです」）。
+    // （2026-09-29・横スライダーは PC では使いにくい、という指摘）。
     // 1 枚目を大きく、残りを並べる——Google マップの店舗欄と同じ形
     `.${SHEET_CLASS}.${SIDE_CLASS} .mmj-popup-slide{display:none;}` +
     `.${SHEET_CLASS}.${SIDE_CLASS} .mmj-popup-gallery{` +
@@ -284,7 +284,7 @@ export function mountCard(input) {
 
     // **面が出ていても、点の上には名前を残す。**
     // 面だけが差し替わると、**矢印で送ったときにどの点の話か分からない**
-    // （2026-09-29・人からの言葉「その時ここ！って分かる UX、吹き出しはあっていいはず」）。
+    // （2026-09-29・送ったときにどれが「いま」か分かること・吹き出しは残してよい、という指摘）。
     // 吹き出しは DOM なので、**密集していても必ず前面に出る**。
     const mini = input.mini?.() ?? null;
     balloon.style.display = mini === null ? "none" : "";
@@ -394,8 +394,8 @@ export function mountCard(input) {
   /**
    * 見出しバーをつまんで、面の高さを変える。
    *
-   * **横棒を出しておきながら動かなかった**（人からの指摘・2026-09-29
-   * 「お店下から出る風で、実際動かないんで窓サイズ変えられない」）。
+   * **横棒を出しておきながら動かなかった**（2026-09-29・下から出る面に見えるのに、
+   * つまんでも動かない、という指摘）。
    * **触れそうに見えるのに触れないのは、横棒が無いより悪い。**
    *
    * **指に追いてから決める。**しきい値だけで切り替えると、
