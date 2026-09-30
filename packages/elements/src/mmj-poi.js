@@ -590,6 +590,13 @@ export class MmjPoi extends HTMLElement {
       this.card = null;
       this.popup = null;
       this.index = -1;
+      // **印も降ろす。**MapLibre が自分で閉じたときは、こちらの「閉じる」処理が
+      // 走らないので、**印が立ったまま・名前が隠れたまま**になっていた
+      // （人からの指摘 2026-09-30「もう一度押すと全部消えて、ただの青い丸になる。
+      // 店名が復活しない」。選ばれた点の名前は地図から消しているので、
+      // 印だけ残ると**名前の無い大きな丸**になる）。
+      this.#mark(null);
+      this.openTitle = "";
       this.#writeUrl(null);
     });
 
