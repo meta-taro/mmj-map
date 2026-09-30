@@ -50,6 +50,7 @@
     "vitest": "^5.0.0"
   },
   "dependencies": {
-    "@mmj-map/elements": "workspace:*"
+    "@mmj-map/elements": "workspace:*",
+    "pmtiles": "4.4.0"
   }
 }

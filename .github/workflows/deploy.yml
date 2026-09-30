@@ -265,18 +265,34 @@ jobs:
       # 画面には「地図データ: 2026-09 時点」と出るようにしたが（`provenance.js`）、
       # **出しただけでは誰も見ない**。機械が数えて、越えたら知らせる。
       #
-      # **落とさない。**古いこと自体は不具合ではなく、切り直すかどうかは人の判断
+      # **古いこと自体では落とさない。**切り直すかどうかは人の判断
       # （100 GB を落として切り直す工程なので、CI が勝手に走らせるものではない）。
       # ここが出すのは事実だけ——何日前か、しきい値を越えたか。
+      #
+      # **ただし、読めなかったら落とす。**初版（2026-09-30）は
+      #
+      #     pnpm tiles:check-age -- "$url" | tee /tmp/age.txt
+      #
+      # と書いていた。runner に go-pmtiles が無くて中は `ENOENT` で死んでいたのに、
+      # **パイプの終了コードは `tee` のもの（0）**なので、
+      # ステップは緑のまま何も検査していなかった。**落ちない検査は検査ではない。**
+      # いまは `pmtiles`（npm）で読むので入れるものは要らず、パイプも外した。
       - name: Report how old the published tiles are
         run: |
-          pnpm tiles:check-age -- "${{ steps.deployment.outputs.page_url }}tiles/demo.pmtiles" | tee /tmp/age.txt
-          # 越えていたら、実行結果の要約に出す（ログの奥に埋めない）
-          if grep -q "越えています" /tmp/age.txt; then
+          if ! pnpm tiles:check-age -- "${{ steps.deployment.outputs.page_url }}tiles/demo.pmtiles" > age.txt 2>&1; then
+            cat age.txt
+            echo "::error::タイルの時点を読めなかった（この検査そのものが壊れています）"
+            exit 1
+          fi
+          cat age.txt
+          # 越えていたら、実行結果の要約に出す（ログの奥に埋めない）。
+          # **grep するのは機械が読む印**（`age.ts` の STALE_FLAG、テストで固定）。
+          # 日本語の文面を grep させると、言い回しを直した日に黙って出なくなる。
+          if grep -q "^mmj:stale=true$" age.txt; then
             {
               echo "### タイルが古びています"
               echo ""
-              cat /tmp/age.txt
+              grep -v "^mmj:stale=" age.txt
               echo ""
               echo "切り直しは \`pnpm tiles:extract -- demo\`。**人の判断です。**"
             } >> "$GITHUB_STEP_SUMMARY"

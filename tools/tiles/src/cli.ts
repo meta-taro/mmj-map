@@ -25,7 +25,7 @@ import { chooseBuild, outputNameFor, rememberBuild, type KnownBuild } from "./ro
 
 /** 戻り先として覚えておく本数。際限なく増やさない（D-014） */
 const KNOWN_GOOD_LIMIT = 3;
-import { asOfTime, isStale } from "@mmj-map/elements/provenance";
+import { ageReport } from "./age.js";
 import { interpretRangeResponse, PROBE_RANGE_HEADER } from "./range.js";
 import { adhocRegion, refuseOutsideRepo, resolveOutDir, shouldResolveLatest, sizeVerdict } from "./install.js";
 
@@ -320,8 +320,19 @@ async function commandCheckRange(argv: readonly string[]): Promise<number> {
  * 「地図データ: 2026-09 時点」と出るようにしたが、**出しただけでは誰も見ない**。
  * 機械が数えて、越えたら知らせる（ECC の「人が気をつける方式は必ず漏れる」）。
  *
- * **落とさない。**古いこと自体は不具合ではなく、切り直す判断は人のもの。
- * 出すのは事実（何日前か）だけで、終了コードは 0 のまま。
+ * **古いこと自体は不具合ではない**（切り直す判断は人のもの）ので、
+ * 古びていても 0 で返す。**読めなかったときだけ落とす**——
+ * 検査が動いていないことは、検査の不具合だから。
+ *
+ * ## メタデータの読み方（go-pmtiles に頼らない）
+ *
+ * 最初は `pmtiles show --metadata` を子プロセスで叩いていた。
+ * **GitHub の runner に go-pmtiles は入っていない**ので `ENOENT` で落ち、
+ * しかも deploy 側の `| tee` がパイプの終了コードを飲んでいて、
+ * **ステップは緑のまま何もしていなかった**（2026-09-30 実測）。
+ *
+ * いまは `pmtiles`（npm）で HTTP Range 越しに読む。**入れるものが増えない**うえ、
+ * 配信先で Range が効いていること自体も一緒に確かめられる（D-003）。
  */
 async function commandCheckAge(argv: readonly string[]): Promise<number> {
   const url = argv.find((arg) => !arg.startsWith("--"));
@@ -331,32 +342,18 @@ async function commandCheckAge(argv: readonly string[]): Promise<number> {
   }
   const days = Number(argv.find((a) => a.startsWith("--days="))?.slice("--days=".length) ?? 90);
 
-  // pmtiles のメタデータは JSON で、ヘッダの後ろに置かれている。
-  // **go-pmtiles に読ませる**（自前で解くと、仕様が変わったとき黙って外れる）
-  const { execFileSync } = await import("node:child_process");
   let metadata: Record<string, unknown>;
   try {
-    metadata = JSON.parse(String(execFileSync("pmtiles", ["show", "--metadata", url], { maxBuffer: 64 * 1024 * 1024 })));
+    const { PMTiles } = await import("pmtiles");
+    metadata = (await new PMTiles(url).getMetadata()) as Record<string, unknown>;
   } catch (error) {
+    // **黙って 0 で返さない。**読めていない検査は、通った検査と区別がつかない
     console.error(`メタデータを読めませんでした: ${url}`);
-    console.error(String(error));
-    return 2;
+    console.error(error instanceof Error ? error.message : String(error));
+    return 1;
   }
 
-  const time = asOfTime(metadata);
-  if (time === null) {
-    console.log("時点が入っていません（planetiler で作られていないタイル）。判断しません");
-    return 0;
-  }
-
-  const age = Math.floor((Date.now() - Date.parse(time)) / 86_400_000);
-  const stale = isStale(metadata, new Date(), days);
-  console.log(`地図データの時点: ${time}（${age} 日前）`);
-  console.log(
-    stale
-      ? `しきい値 ${days} 日を越えています。切り直しは人の判断です（pnpm tiles:extract）`
-      : `しきい値 ${days} 日以内です`,
-  );
+  for (const line of ageReport({ metadata, now: new Date(), days }).lines) console.log(line);
   return 0;
 }
 

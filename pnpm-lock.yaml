@@ -398,6 +398,9 @@ importers:
       '@mmj-map/elements':
         specifier: workspace:*
         version: link:../../packages/elements
+      pmtiles:
+        specifier: 4.4.0
+        version: 4.4.0
     devDependencies:
       '@types/node':
         specifier: ^26.5.1
