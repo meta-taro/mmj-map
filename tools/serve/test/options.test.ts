@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { readBase, readPort } from "../src/options.js";
+import { readBase, readNoTiles, readPort } from "../src/options.js";
 
 describe("readPort", () => {
   it("指定が無ければ 8787", () => {
@@ -46,5 +46,37 @@ describe("readBase", () => {
   it("空白や `..` を含むものは弾く", () => {
     expect(() => readBase(["--base=/a b"])).toThrow();
     expect(() => readBase(["--base=/../etc"])).toThrow();
+  });
+});
+
+/**
+ * **タイルを持たずに配る。**
+ *
+ * この配信は既定で「タイルはここ」という設定を差し込むので、
+ * **タイルが無い機械では地図が 404 を出し続ける**（CI で実際にそうなった・2026-09-30）。
+ *
+ * 画面の骨格だけを見たいとき（`pnpm smoke`）に要るのは、
+ * **配信元が無いときの姿**——デモが地図の代わりに案内を出す形。
+ * `apps/demo/config.js` が commit されている姿そのものなので、
+ * **差し込みを止めれば再現できる**。
+ */
+describe("readNoTiles", () => {
+  it("既定は false（手元では地図を出したい）", () => {
+    expect(readNoTiles([])).toBe(false);
+    expect(readNoTiles(["--port=9000"])).toBe(false);
+  });
+
+  it("--no-tiles を付けると true", () => {
+    expect(readNoTiles(["--no-tiles"])).toBe(true);
+  });
+
+  it("他の指定と混ざっても読む", () => {
+    expect(readNoTiles(["--base=/mmj-map", "--no-tiles", "kansai"])).toBe(true);
+  });
+
+  /** **似た綴りを黙って通さない。**通すと「付けたのに効かない」が起きる */
+  it("似ているだけの指定は false", () => {
+    expect(readNoTiles(["--no-tile"])).toBe(false);
+    expect(readNoTiles(["--tiles"])).toBe(false);
   });
 });

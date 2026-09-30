@@ -92,11 +92,12 @@ jobs:
           MMJ_BROWSER=$(command -v google-chrome || command -v chromium-browser || command -v chromium)
           test -n "$MMJ_BROWSER"
           export MMJ_BROWSER
-          # `pnpm serve` は dist/tiles が無いと**わざと起動しません**（空の配信を
-          # 黙って立てると、地図が白いのか配信が空なのか分からなくなるため）。
-          # ここが見るのは頁の骨格で**タイルは要らない**ので、空の置き場だけ作ります。
-          mkdir -p dist/tiles
-          pnpm serve > /tmp/serve.log 2>&1 &
+          # **`--no-tiles` で配ります。**この配信は既定で「タイルはここ」という設定を
+          # 差し込むので、タイルが無い CI では**地図が 404 を出し続けます**
+          # （実測・2026-09-30。その 404 を console の指摘として 30 件出しました）。
+          # ここが見るのは頁の骨格なので、**配信元が無いときの姿**——
+          # デモが地図の代わりに案内を出す形——で配れば十分です。
+          pnpm serve -- --no-tiles > /tmp/serve.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:8787/index.html > /dev/null && break; sleep 1; done
           # **立っていないまま先へ進まない。**ブラウザのエラー画面を測ると、
           # 「的が小さい」という嘘の指摘が 30 件出て、本当の原因が埋もれます

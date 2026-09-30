@@ -15,7 +15,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createStaticServer, type Mount } from "./server.js";
-import { readBase, readPort, withBasePath } from "./options.js";
+import { readBase, readNoTiles, readPort, withBasePath } from "./options.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -46,8 +46,11 @@ const mounts: Mount[] = withBasePath(
   base,
 );
 
+// **タイルを持たずに配る**（`pnpm smoke` 用）。配信元が無いときの姿をそのまま出す
+const noTiles = readNoTiles(argv);
+
 const tilesDir = resolve(repoRoot, "dist/tiles");
-if (!existsSync(tilesDir)) {
+if (!noTiles && !existsSync(tilesDir)) {
   // 黙って空の配信を立てない。地図が白いのか配信が空なのか分からなくなる
   console.error(`タイルがありません: ${tilesDir}`);
   console.error("先に `pnpm tiles:extract -- kansai` を実行してください。");
@@ -72,12 +75,17 @@ window.MMJ_CONFIG = {
 
 const root = `http://localhost:${port}${base}/`;
 
-createStaticServer(mounts, {
-  [`${base}/config.js`]: { type: "text/javascript; charset=utf-8", body: devConfig },
-}).listen(port, () => {
+// **`--no-tiles` では差し込まない。**リポジトリの config.js（配信元 null）が
+// そのまま配られ、デモは地図の代わりに案内を出す＝公開前と同じ姿になる
+const injected = noTiles
+  ? {}
+  : { [`${base}/config.js`]: { type: "text/javascript; charset=utf-8", body: devConfig } };
+
+createStaticServer(mounts, injected).listen(port, () => {
   if (base !== "") console.log(`base path: ${base}  （この外は 404。公開先と同じ形です）`);
   console.log(`デモ:       ${root}`);
-  console.log(`タイル:     ${root}tiles/${region}.pmtiles`);
+  if (noTiles) console.log("タイル:     配りません（--no-tiles）。地図の代わりに案内が出ます");
+  else console.log(`タイル:     ${root}tiles/${region}.pmtiles`);
   console.log(`スタイル:   ${root}styles/modern-dark.json`);
   console.log(`部品の例:   ${root}elements.html`);
   console.log(`建物を立てる: ${root}3d.html`);

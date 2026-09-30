@@ -40,6 +40,22 @@ export function readBase(argv: readonly string[]): string {
 }
 
 /**
+ * `--no-tiles` を読む。**タイルを持たずに配るか。**
+ *
+ * この配信は既定で「タイルはここ」という設定を差し込むので、
+ * **タイルが無い機械では地図が 404 を出し続ける**（CI で実際にそうなった・2026-09-30）。
+ *
+ * 画面の骨格だけを見たいとき（`pnpm smoke`）に要るのは**配信元が無いときの姿**——
+ * デモが地図の代わりに案内を出す形で、`apps/demo/config.js` が commit されている
+ * 姿そのもの。差し込みを止めれば再現できる。
+ *
+ * **既定は false。**手元では地図を出したい。
+ */
+export function readNoTiles(argv: readonly string[]): boolean {
+  return argv.includes("--no-tiles");
+}
+
+/**
  * すべての mount を base path の下へ移す。**base の外は解けなくなる**
  * （＝公開先と同じ 404 になる）。base が空なら何もしない。
  */
