@@ -7,6 +7,7 @@ import {
   applyPalette,
   readDeclaredAccent,
   readTheme,
+  surfaceFor,
   isDarkColor,
   themeClassName,
 } from "../src/palette.js";
@@ -227,5 +228,71 @@ describe("readDeclaredAccent", () => {
   it("色でない値は読まない", () => {
     expect(readDeclaredAccent({ metadata: { "mmj:anchors": { accent: 12 } } })).toBeNull();
     expect(readDeclaredAccent({ metadata: { "mmj:anchors": "青" } })).toBeNull();
+  });
+});
+
+/**
+ * **面は地図より暗くしない。**
+ *
+ * 面の地色はスタイルのラベルの縁取り色を借りていたが、
+ * **暗いスタイルではそれが地図より暗い**。対比 1.1 は枠の形が見えず、
+ * 人からは「ふきだしがまっくろはわかりづらいな」と言われた（2026-09-30）。
+ *
+ * 数字はすべて配っている 6 枚からの実測。
+ */
+/** 相対輝度。**対比を数字で確かめるため**（面が地図と見分けられるか） */
+const lum = (/** @type {string} */ hex) => {
+  const n = Number.parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * (c[0] ?? 0) + 0.7152 * (c[1] ?? 0) + 0.0722 * (c[2] ?? 0);
+};
+
+describe("surfaceFor", () => {
+  /** modern-light / candy / sand は白い縁取りを持つ。**これまでどおり** */
+  it("縁取りが地図より明るければ、そのまま使う", () => {
+    expect(surfaceFor("#EDF0F3", "#10172A", "#FFFFFF")).toBe("#FFFFFF");
+  });
+
+  /** modern-dark: 地図 #1B1F24 に対し縁取りは #111418（対比 1.12） */
+  it("縁取りが地図より暗ければ、地図の地色を文字の側へ寄せる", () => {
+    expect(surfaceFor("#1B1F24", "#D8DCE1", "#111418")).toBe("#3d4146");
+  });
+
+  /** modern-neon: 地図 #0E1020 に対し縁取りは #0B0D18（対比 1.03） */
+  it("暗いスタイルはどれも持ち上げる", () => {
+    expect(surfaceFor("#0E1020", "#FFFFFF", "#0B0D18")).toBe("#393b48");
+  });
+
+  /** modern-ink: 地図も縁取りも #FFFFFF（対比 **1.00**）。**同じ色は明るいと読まない** */
+  it("地図と同じ色なら持ち上げる", () => {
+    expect(surfaceFor("#FFFFFF", "#000000", "#FFFFFF")).toBe("#d1d1d1");
+  });
+
+  it("持ち上げた面は、地図と見分けが付く（対比 1.5 以上）", () => {
+    const lifted = surfaceFor("#1B1F24", "#D8DCE1", "#111418") ?? "";
+    // 相対輝度で 1.5 倍以上離れていること（数字は上の表と揃える）
+    const ratio = (lum(lifted) + 0.05) / (lum("#1B1F24") + 0.05);
+    expect(ratio).toBeGreaterThan(1.5);
+  });
+
+  /** **決めつけない。**読めない値で勝手に色を作ると、地図と無関係の面が出る */
+  it("地図の地色が読めなければ、候補をそのまま返す", () => {
+    expect(surfaceFor(null, "#D8DCE1", "#111418")).toBe("#111418");
+    expect(surfaceFor("rgb(1,2,3)", "#D8DCE1", "#111418")).toBe("#111418");
+  });
+
+  it("文字色が読めなければ、候補をそのまま返す", () => {
+    expect(surfaceFor("#1B1F24", null, "#111418")).toBe("#111418");
+  });
+
+  it("どちらも無ければ null（**呼ぶ側の既定に任せる**）", () => {
+    expect(surfaceFor(null, null, null)).toBeNull();
+  });
+
+  it("3 桁の指定も読む", () => {
+    expect(surfaceFor("#000", "#fff", "#000")).toBe("#2e2e2e");
   });
 });

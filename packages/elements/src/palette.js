@@ -161,6 +161,95 @@ export function isDarkColor(color) {
 }
 
 /**
+ * 面（吹き出し・カード・一覧）の地色を決める。
+ *
+ * ## 何が起きていたか
+ *
+ * 面の地色は**スタイルのラベルの縁取り色**を借りていた。明るいスタイルでは
+ * 白なので地図から浮くが、**暗いスタイルでは地図より暗い**。
+ *
+ * | スタイル | 地図の地色 | 縁取り（＝面の地色） | 対比 |
+ * |---|---|---|---|
+ * | modern-dark | `#1B1F24` | `#111418` | **1.12** |
+ * | modern-neon | `#0E1020` | `#0B0D18` | **1.03** |
+ * | modern-ink | `#FFFFFF` | `#FFFFFF` | **1.00** |
+ *
+ * 対比 1.1 は**枠としての形が見えない**。人からの言葉は
+ * 「ふきだしがまっくろはわかりづらいな」（2026-09-30）。
+ *
+ * ## 決めた規則
+ *
+ * **面は地図より暗くしない。**暗いと地図に沈むうえ、**影は暗い地の上では効かない**
+ * （明るい地図で白い面＋影が読めるのは、影が見えるから）。
+ *
+ * 縁取り色が地図より明るければ、そのまま使う（明るいスタイルはこれまでどおり）。
+ * 明るくなければ、**地図の地色を文字の側へ一定量だけ寄せる**。
+ * **新しい指し値を作っていない**——スタイルが持つ 2 色の間を取るだけ（baseline §11）。
+ *
+ * @param {string | null | undefined} background 地図の地色
+ * @param {string | null | undefined} text 文字色
+ * @param {string | null | undefined} surface スタイルが持つ面の候補（ラベルの縁取り）
+ * @returns {string | null} 使う地色。決められなければ null（呼ぶ側の既定に任せる）
+ */
+export function surfaceFor(background, text, surface) {
+  const map = luminanceOf(background);
+  // 地図の地色が読めないなら判断できない。**候補をそのまま返す**（今までどおり）
+  if (map === null) return surface ?? null;
+
+  const candidate = luminanceOf(surface);
+  // **明るい側なら採用。**0.01 は同じ色を「明るい」と読まないための幅
+  if (candidate !== null && candidate > map + 0.01) return surface ?? null;
+
+  return mixColor(background, text, SURFACE_LIFT) ?? surface ?? null;
+}
+
+/**
+ * 面を持ち上げる量。**6 枚すべてで対比 1.5 以上**になる値（実測・2026-09-30）。
+ * dark 1.61 / neon 1.70 / ink 1.53。これ以上上げると、面が地図より目立ちすぎる。
+ */
+const SURFACE_LIFT = 0.18;
+
+/**
+ * 色の相対輝度。読めない値は `null`（**決めつけない**）。
+ * @param {string | null | undefined} color
+ * @returns {number | null}
+ */
+function luminanceOf(color) {
+  const rgb = readRgb(color);
+  if (rgb === null) return null;
+  const [r, g, b] = rgb.map((v) => v / 255);
+  // ITU-R BT.709。緑を重く、青を軽く見積もる（`isDarkColor` と同じ尺度）
+  return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+}
+
+/**
+ * 2 色の間を取る。**どちらかが読めなければ `null`。**
+ * @param {string | null | undefined} from
+ * @param {string | null | undefined} to
+ * @param {number} amount 0 で `from`、1 で `to`
+ * @returns {string | null}
+ */
+function mixColor(from, to, amount) {
+  const a = readRgb(from);
+  const b = readRgb(to);
+  if (a === null || b === null) return null;
+  const mixed = a.map((value, i) => Math.round(value + ((b[i] ?? value) - value) * amount));
+  return `#${mixed.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/**
+ * `#rgb` / `#rrggbb` を 0〜255 の 3 つ組へ。読めなければ `null`。
+ * @param {string | null | undefined} color
+ * @returns {number[] | null}
+ */
+function readRgb(color) {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color ?? "")?.[1];
+  if (hex === undefined) return null;
+  const full = hex.length === 3 ? [...hex].map((c) => c + c) : [hex.slice(0, 2), hex.slice(2, 4), hex.slice(4, 6)];
+  return full.map((pair) => Number.parseInt(pair, 16));
+}
+
+/**
  * `accent` の 1 色を、役割ごとの色へ広げる。
  * @param {string} color
  * @returns {Record<string, string>}

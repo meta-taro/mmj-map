@@ -11,7 +11,7 @@ import { buildPopupStyle, POPUP_COLORS } from "./attrs.js";
 import { buildCardStyle } from "./card-dom.js";
 import { splitForTabs, stepIndex } from "./card.js";
 import { formatRating } from "./popup.js";
-import { themeClassName } from "./palette.js";
+import { surfaceFor, themeClassName } from "./palette.js";
 import { groupParts } from "./popup.js";
 
 /**
@@ -355,8 +355,14 @@ export function ensureCardContrast(colors, className) {
 export function popupColorsFrom(parent) {
   const theme = /** @type {any} */ (parent)?.theme;
   return {
-    // **地色ではなく surface。**地色を使うと明るい土台で箱が地図に溶ける
-    background: theme?.surface ?? theme?.background ?? POPUP_COLORS.background,
+    // **面は地図より暗くしない**（`surfaceFor` に理由と実測）。
+    // 地色をそのまま使うと明るい土台で箱が溶け、縁取り色をそのまま使うと
+    // **暗い土台で真っ黒の穴になる**（対比 1.12・人からの指摘 2026-09-30）
+    background:
+      surfaceFor(theme?.background, theme?.text, theme?.surface) ??
+      theme?.surface ??
+      theme?.background ??
+      POPUP_COLORS.background,
     text: theme?.text ?? POPUP_COLORS.text,
     border: theme?.border ?? POPUP_COLORS.border,
   };
