@@ -178,7 +178,20 @@ for (const size of widths) {
 
   for (const name of targets) {
     errors = [];
-    await send("Page.navigate", { url: `${base}${name}` }, session);
+    const went = (await send("Page.navigate", { url: `${base}${name}` }, session)).result as {
+      errorText?: string;
+    };
+    seen += 1;
+
+    // **開けなかったことを、中身の指摘として出さない。**
+    // ブラウザのエラー画面にも「Reload」「Details」というボタンがあるので、
+    // そのまま測ると**「的が小さい」という嘘の指摘が 30 件**出る
+    // （実測・2026-09-30。CI で配信が立っておらず、本当の原因に気づくのが遅れた）。
+    if (went?.errorText !== undefined && went.errorText !== "") {
+      found.push({ rule: "open", detail: `${name} @${size.width}: 開けません（${went.errorText}）` });
+      continue;
+    }
+
     // **地図は待たない。**配信元が無い手元では地図が出ないのが正しい姿で、
     // ここが見るのは頁の骨格（`checks.ts`）。待つのは描画が落ち着くまで
     await sleep(1500);
@@ -187,7 +200,6 @@ for (const size of widths) {
       result?: { value?: unknown };
     };
     const probe = readProbe(result?.result?.value);
-    seen += 1;
 
     if (probe === null) {
       found.push({ rule: "probe", detail: `${name} @${size.width}: 頁を測れませんでした（開けていない可能性）` });

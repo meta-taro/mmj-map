@@ -92,6 +92,14 @@ jobs:
           MMJ_BROWSER=$(command -v google-chrome || command -v chromium-browser || command -v chromium)
           test -n "$MMJ_BROWSER"
           export MMJ_BROWSER
-          pnpm serve &
-          for i in $(seq 1 30); do curl -sf http://localhost:8787/ > /dev/null && break; sleep 1; done
+          # `pnpm serve` は dist/tiles が無いと**わざと起動しません**（空の配信を
+          # 黙って立てると、地図が白いのか配信が空なのか分からなくなるため）。
+          # ここが見るのは頁の骨格で**タイルは要らない**ので、空の置き場だけ作ります。
+          mkdir -p dist/tiles
+          pnpm serve > /tmp/serve.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:8787/index.html > /dev/null && break; sleep 1; done
+          # **立っていないまま先へ進まない。**ブラウザのエラー画面を測ると、
+          # 「的が小さい」という嘘の指摘が 30 件出て、本当の原因が埋もれます
+          # （実測・2026-09-30。この一手を省いて、原因に気づくのが遅れました）。
+          curl -sf http://localhost:8787/index.html > /dev/null || { cat /tmp/serve.log; exit 1; }
           pnpm smoke
