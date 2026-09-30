@@ -56,7 +56,9 @@
             "name": "とみ",
             "date": "2026-07"
           }
-        ]
+        ],
+        "category": "cafe",
+        "payment": "現金 / クレジットカード / 交通系 IC\nQR 決済は PayPay のみ。**昼（11:00〜14:00）はカード不可**、現金かコード決済でお願いします。"
       },
       "geometry": {
         "type": "Point",
@@ -115,7 +117,9 @@
             "name": "くら",
             "date": "2026-09"
           }
-        ]
+        ],
+        "category": "ramen",
+        "payment": "現金のみ。**カード・電子マネーは使えません。**\n店頭の券売機は新千円札に対応しています。"
       },
       "geometry": {
         "type": "Point",
@@ -166,7 +170,9 @@
             "name": "あお",
             "date": "2026-06"
           }
-        ]
+        ],
+        "category": "books",
+        "payment": "現金 / クレジットカード（**5,000 円以上から**） / 交通系 IC\n海外発行カードは Visa・Mastercard のみ。Alipay・WeChat Pay も使えます。"
       },
       "geometry": {
         "type": "Point",

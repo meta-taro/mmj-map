@@ -4,6 +4,8 @@
  * ベース地図の `pois` とは別の層。**ベースには触らない**（D-001・データを持たない）。
  * まとめないのがこの部品の役目で、まとめたいときは `<mmj-cluster>`（D-011）。
  */
+import { hasIconFilter, iconImageExpression } from "./icons.js";
+
 
 /**
  * 既定値。**色は提案であって、承認された色ではない**（baseline §11）。
@@ -35,12 +37,15 @@ export const POI_DEFAULTS = {
  *   src: string,
  *   labelKey?: string,
  *   idKey?: string,
+ *   iconKey?: string,
+ *   icons?: readonly { name: string, url: string }[],
  *   minZoom?: number,
  *   color?: string,
  *   textColor?: string,
  *   attribution?: string,
  * }} input
- * @returns {{ sourceId: string, hitId: string, pickedId: string | null, source: any, layers: any[] }}
+ * @returns {{ sourceId: string, hitId: string, pickedId: string | null, iconId: string | null,
+ *   imageIdFor: (name: string) => string, source: any, layers: any[] }}
  */
 export function buildPoiSpec(input) {
   if (!input.id) throw new Error("id が要ります（source 名が衝突すると後勝ちで消えます）");
@@ -67,10 +72,20 @@ export function buildPoiSpec(input) {
   const idKey = typeof input.idKey === "string" && input.idKey !== "" ? input.idKey : null;
   const pickedId = idKey === null ? null : `${sourceId}-picked`;
 
+  // **絵は、名前と URL の対応を渡されたときだけ出す。**
+  // 名前は地図へ入れるときに `<layer-id>--<名前>` にする——1 枚の頁に地図が
+  // 何枚も載るので（`themes.html` は 6 枚）、**素の名前だと隣の地図と衝突する**。
+  const iconKey = typeof input.iconKey === "string" && input.iconKey !== "" ? input.iconKey : null;
+  const icons = Array.isArray(input.icons) ? input.icons : [];
+  const iconId = iconKey === null || icons.length === 0 ? null : `${sourceId}-icon`;
+  const imageIdFor = (/** @type {string} */ name) => `${sourceId}--${name}`;
+
   return {
     sourceId,
     hitId: `${sourceId}-hit`,
     pickedId,
+    iconId,
+    imageIdFor,
     source: {
       type: "geojson",
       data: input.src,
@@ -102,6 +117,9 @@ export function buildPoiSpec(input) {
         type: "circle",
         source: sourceId,
         minzoom,
+        // **絵を持つ点には丸を出さない。**重ねると絵の下から丸がはみ出して汚れる。
+        // 絵の指定が無ければ誰にも当たらない＝今までどおり全部が丸
+        ...(iconKey === null ? {} : { filter: ["!", hasIconFilter(iconKey, icons)] }),
         paint: {
           "circle-color": color,
           "circle-radius": 5,
@@ -127,11 +145,41 @@ export function buildPoiSpec(input) {
               source: sourceId,
               minzoom,
               paint: {
-                "circle-radius": ["case", ["boolean", ["feature-state", "picked"], false], 9, 0],
+                // **絵があるときは輪を大きくする。**絵（22px）より内側だと
+                // 絵に隠れて、選ばれていることが見えない（実測・2026-09-30）
+                "circle-radius": ["case", ["boolean", ["feature-state", "picked"], false], iconId === null ? 9 : 16, 0],
                 "circle-color": color,
                 // **縁は太く。**色だけで差をつけると、配色によっては見分けが付かない
                 "circle-stroke-width": ["case", ["boolean", ["feature-state", "picked"], false], 3.5, 0],
                 "circle-stroke-color": POI_DEFAULTS.haloColor,
+              },
+            },
+          ]),
+      // **一目で何屋か分かるようにする。**点が全部同じ丸だと、
+      // カードを 1 枚ずつ開くまで何の店か分からない
+      // （2026-09-30・うどん・ラーメン・ケーキ・コーヒーを絵で出したい、という依頼）。
+      //
+      // **絵は持ち込む側のもの**（D-001）。ここは置き場所と大きさだけ決める。
+      // **知らない名前は描かない**ので、分類の無い点は静かに丸のまま。
+      ...(iconId === null
+        ? []
+        : [
+            {
+              id: iconId,
+              type: "symbol",
+              source: sourceId,
+              minzoom,
+              layout: {
+                "icon-image": iconImageExpression(/** @type {string} */ (iconKey), icons, imageIdFor),
+                // **重なっても消さない。**名前は消えてよいが、
+                // **何屋かが消えると地図の意味が変わる**
+                "icon-allow-overlap": true,
+                "icon-ignore-placement": true,
+                // **`feature-state` は layout では使えない**（MapLibre が投げる。
+                // 実測・2026-09-30「"feature-state" data expressions are not
+                // supported with layout properties」）。
+                // **選ばれている点を目立たせるのは `-picked` の丸に任せる**——
+                // 絵の後ろに大きな丸が出るので、絵の大きさは変えなくてよい
               },
             },
           ]),

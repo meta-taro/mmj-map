@@ -36,6 +36,7 @@ import {
   writeShopParam,
 } from "./card.js";
 import { mountCard } from "./card-dom.js";
+import { loadIcon, parseIcons } from "./icons.js";
 import { listEntries } from "./list.js";
 import { ensureListContrast, mountList } from "./list-dom.js";
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
@@ -68,7 +69,7 @@ let serial = 0;
 export class MmjPoi extends HTMLElement {
   /** @type {any} */
   map = null;
-  /** @type {{ sourceId: string, hitId: string, pickedId: string | null, source: any, layers: any[] } | null} */
+  /** @type {ReturnType<typeof buildPoiSpec> | null} */
   spec = null;
 
   /** 開いているカード。**開き直すたびに片付ける**（重ねて開かない） */
@@ -167,6 +168,9 @@ export class MmjPoi extends HTMLElement {
         labelKey: this.getAttribute("label-key") ?? undefined,
         // **点を id で引けるようにする。**「いまここ」の印を立てるのに要る
         idKey: this.getAttribute("card-id") ?? undefined,
+        // **一目で何屋か分かるようにする。**絵は持ち込む側のもの（D-001）
+        iconKey: this.getAttribute("icon-key") ?? undefined,
+        icons: parseIcons(this.getAttribute("icons"), isSafeLink),
         minZoom: parseCount(this.getAttribute("min-zoom"), POI_DEFAULTS.minZoom),
         // 指定が無ければ、サイトのテーマカラー（`<mmj-map accent>`）を既定にする。
         // 名前は地図のラベルと同じ色を借りる。**ここで色を作らない**
@@ -182,7 +186,12 @@ export class MmjPoi extends HTMLElement {
     }
 
     map.addSource(this.spec.sourceId, this.spec.source);
-    for (const layer of this.spec.layers) map.addLayer(layer);
+    // **絵を先に入れてから層を足す。**逆にすると、MapLibre が
+    // 「そんな画像は無い」と言い続ける（層は出るが絵は出ない）
+    const spec = this.spec;
+    void this.#addIcons(map).then(() => {
+      for (const layer of spec.layers) if (!map.getLayer(layer.id)) map.addLayer(layer);
+    });
 
     // **押す対象は、見える点ではなく当たり判定の層**（直径 36px）。
     // 見える点は 13px しかなく、指で狙うには小さい
@@ -196,6 +205,40 @@ export class MmjPoi extends HTMLElement {
     // **`card-id` があるときだけ一覧を読む。**無ければ送りも復元も出ないので、
     // 取りに行く理由が無い（**使わないものを取りに行かない**）
     if (this.getAttribute("card-id")) void this.#loadList(src);
+  }
+
+  /**
+   * 絵を地図へ入れる。**1 枚読めなくても地図は出す。**
+   *
+   * 読めなかった名前は読み替えに残るが、**MapLibre は無い画像を黙って飛ばす**。
+   * その点は丸も出ない（丸は「絵を持つ名前」で切ってあるため）ので、
+   * **必ずログに名前を残す**。
+   *
+   * @param {any} map
+   */
+  async #addIcons(map) {
+    const icons = parseIcons(this.getAttribute("icons"), isSafeLink);
+    if (icons.length === 0 || this.spec === null) return;
+
+    const ratio = typeof devicePixelRatio === "number" && devicePixelRatio > 0 ? devicePixelRatio : 1;
+    /** @type {string[]} */
+    const missing = [];
+
+    await Promise.all(
+      icons.map(async (icon) => {
+        const id = this.spec?.imageIdFor(icon.name);
+        if (id === undefined || map.hasImage(id)) return;
+        const data = await loadIcon(icon.url, ratio);
+        if (data === null) return void missing.push(`${icon.name}（${icon.url}）`);
+        // **倍率を伝える。**伝えないと、高精細の画面で 2 倍の大きさで出る
+        map.addImage(id, data, { pixelRatio: ratio });
+      }),
+    );
+
+    // 握り潰さない（§8）。**絵が出ない理由が画面にもログにも残らないのが一番困る**
+    if (missing.length > 0) {
+      console.error(`[mmj-poi] 読めなかったアイコン（その点には何も出ません）: ${missing.join(", ")}`);
+    }
   }
 
   /**
