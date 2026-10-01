@@ -123,11 +123,19 @@ await send(
 const inflight = new Map<string, string>();
 const failures: string[] = [];
 const logs: string[] = [];
+/**
+ * 読み終えたか。**これを見ないと、読み込みが始まる前に撮る。**
+ * HTML を受け取ってから CSS を要求するまでの隙間で、通信は一瞬 0 件になる。
+ */
+let loaded = false;
 
 function drainEvents(): void {
   for (const event of events.splice(0)) {
     const p = (event.params ?? {}) as Record<string, any>;
     switch (event.method) {
+      case "Page.loadEventFired":
+        loaded = true;
+        break;
       case "Network.requestWillBeSent":
         {
           const url = String(p["request"]?.url ?? "?");
@@ -166,11 +174,17 @@ let state: WaitState = { quietSince: null };
 for (;;) {
   await sleep(250);
   drainEvents();
-  const next = nextWaitState(state, inflight.size, Date.now(), QUIET_MS);
+  const next = nextWaitState(state, inflight.size, Date.now(), QUIET_MS, loaded);
   state = next.state;
   if (next.done) break;
   if (Date.now() > deadline) {
-    console.warn(`${args.waitMs}ms 待っても通信が止まりませんでした。その時点で撮ります`);
+    // **読み終える前に撮るなら、そう言う。**黙って撮ると、
+    // 半分しか出ていない画面を「異常なし」として配ることになる
+    console.warn(
+      loaded
+        ? `${args.waitMs}ms 待っても通信が止まりませんでした。その時点で撮ります`
+        : `${args.waitMs}ms 待っても読み終えませんでした（load が来ていません）。**この絵は途中です**`,
+    );
     for (const url of [...inflight.values()].slice(0, 5)) console.warn(`  終わっていない通信: ${url}`);
     break;
   }
@@ -186,6 +200,9 @@ if (args.offline) {
     session,
   );
   console.log("通信を切って、読み込み直します");
+  // **読み直すので、読み終えた印も戻す。**戻さないと、前回の load で
+  // 「もう読み終えている」と誤判定して、読み込み途中を撮る
+  loaded = false;
   await send("Page.reload", {}, session);
 
   const offlineDeadline = Date.now() + args.waitMs;
@@ -193,7 +210,7 @@ if (args.offline) {
   for (;;) {
     await sleep(250);
     drainEvents();
-    const next = nextWaitState(state, inflight.size, Date.now(), QUIET_MS);
+    const next = nextWaitState(state, inflight.size, Date.now(), QUIET_MS, loaded);
     state = next.state;
     if (next.done) break;
     if (Date.now() > offlineDeadline) break;
@@ -213,7 +230,10 @@ const probe = (
         // 3 状態で返す。**無いページを「出ている」と混同しない**（isNoticeShown を見ること）
         notice: (() => { const el = document.getElementById('notice'); return el ? !el.hidden : null; })(),
         webgl2: !!document.createElement('canvas').getContext('webgl2'),
-        config: window.MMJ_CONFIG ?? null
+        config: window.MMJ_CONFIG ?? null,
+        // **撮った時点の状態。**「失敗 0 件」だけでは、読み込み途中かどうか分からない
+        ready: document.readyState,
+        sheets: document.styleSheets.length
       })`,
       returnByValue: true,
     },

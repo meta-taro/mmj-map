@@ -89,18 +89,22 @@ describe("nextWaitState", () => {
     expect(nextWaitState({ quietSince: 1000 }, 3, 5000, quietMs)).toEqual({ state: { quietSince: null }, done: false });
   });
 
+  // 以下は**静けさの数え方**を見るもの。読み終えている前提（第 5 引数 true）で試す
   it("通信が途切れた時刻を覚える", () => {
-    expect(nextWaitState({ quietSince: null }, 0, 5000, quietMs)).toEqual({ state: { quietSince: 5000 }, done: false });
+    expect(nextWaitState({ quietSince: null }, 0, 5000, quietMs, true)).toEqual({
+      state: { quietSince: 5000 },
+      done: false,
+    });
   });
 
   it("静かなまま十分たったら終わる", () => {
-    expect(nextWaitState({ quietSince: 5000 }, 0, 7501, quietMs).done).toBe(true);
+    expect(nextWaitState({ quietSince: 5000 }, 0, 7501, quietMs, true).done).toBe(true);
   });
 
   it("途中で通信が再開したら数え直す", () => {
-    const a = nextWaitState({ quietSince: 5000 }, 2, 6000, quietMs);
+    const a = nextWaitState({ quietSince: 5000 }, 2, 6000, quietMs, true);
     expect(a.state.quietSince).toBeNull();
-    expect(nextWaitState(a.state, 0, 6100, quietMs).state.quietSince).toBe(6100);
+    expect(nextWaitState(a.state, 0, 6100, quietMs, true).state.quietSince).toBe(6100);
   });
 });
 
@@ -152,5 +156,39 @@ describe("isNoticeShown", () => {
 
   it("読めない値なら、黙って通さずに落とす", () => {
     expect(() => isNoticeShown("<html>")).toThrow(/画面の状態/);
+  });
+});
+
+/**
+ * **読み込みが始まる前に「静か」と判断していた。**
+ *
+ * 2026-10-01 に実際に踏んだ: 本番の頁を撮ったら CSS の当たっていない画面が写り、
+ * **道具は「失敗した通信 0 件・console 0 件」と報告した。**
+ * 私はそれを見て「本番が壊れている」と誤って書いた（実際は正常）。
+ *
+ * HTML を受け取ってから CSS を要求するまでの隙間で、通信は一瞬 0 件になる。
+ * そこから静けさを数え始めると、**何も読み込んでいない画面で終わる。**
+ *
+ * **撮ってよいのは「読み終えて、かつ静か」になってから。**
+ */
+describe("nextWaitState（読み込みの前に撮らない）", () => {
+  const quietMs = 2500;
+
+  it("読み終えていなければ、静かでも終わらない", () => {
+    const got = nextWaitState({ quietSince: 5000 }, 0, 9000, quietMs, false);
+    expect(got.done).toBe(false);
+  });
+
+  it("読み終えていなければ、静かになった時刻を数え始めない", () => {
+    expect(nextWaitState({ quietSince: null }, 0, 5000, quietMs, false).state.quietSince).toBeNull();
+  });
+
+  it("読み終えて、静かなまま十分たったら終わる", () => {
+    expect(nextWaitState({ quietSince: 5000 }, 0, 7501, quietMs, true).done).toBe(true);
+  });
+
+  /** **既定で安全側に倒す。**渡し忘れたときに、昔の壊れた挙動へ戻らないこと */
+  it("読み込みの状態を渡さなければ、終わらない", () => {
+    expect(nextWaitState({ quietSince: 5000 }, 0, 9000, quietMs).done).toBe(false);
   });
 });

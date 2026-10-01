@@ -88,14 +88,23 @@ export interface WaitState {
  * いつ撮るかを決める。**固定時間で待たない。**
  * タイルは Range で細切れに来るため、「読み込みが止まってから一定時間」を待つ。
  * 早すぎると空の地図を撮り、それを「地図が出ない」と誤読する。
+ *
+ * **静けさだけでは足りない。**HTML を受け取ってから CSS を要求するまでの隙間で、
+ * 通信は一瞬 0 件になる。そこから数え始めると、**何も読み込んでいない画面で終わる**。
+ * 2026-10-01 に実際に踏んで、正常な本番を「壊れている」と誤って報告した。
+ * **道具は「失敗した通信 0 件」と言っていた**ので、絵を見るまで分からなかった。
+ *
+ * @param loaded 読み終えたか（`Page.loadEventFired`）。**渡さなければ終わらない**
+ *   ——渡し忘れたときに、昔の壊れた挙動へ戻らないように
  */
 export function nextWaitState(
   state: WaitState,
   inflight: number,
   now: number,
   quietMs: number,
+  loaded = false,
 ): { state: WaitState; done: boolean } {
-  if (inflight > 0) return { state: { quietSince: null }, done: false };
+  if (!loaded || inflight > 0) return { state: { quietSince: null }, done: false };
   const quietSince = state.quietSince ?? now;
   return { state: { quietSince }, done: now - quietSince > quietMs };
 }
