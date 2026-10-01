@@ -1,0 +1,18 @@
+#!/bin/sh
+# push する前の置き場所の検査。
+#
+# **pre-commit と同じものを、もう一度走らせる。**理由は 2 つ:
+#   1. `--no-verify` で commit した分が、push で初めて止まる
+#   2. 他のセッションや別の端末が作った commit を、ここで初めて見る
+#
+# 中身は .github/scripts/oss-placement-check.sh の 1 本だけ（CI と同じ）。
+# 張り付けは `pnpm install` が行う（root の `prepare` が core.hooksPath を向ける）。
+set -e
+
+if [ ! -f .github/scripts/oss-placement-check.sh ]; then
+	echo "pre-push: 置き場所の検査が見つかりません。飛ばします（CI が最終ゲート）" >&2
+	exit 0
+fi
+
+echo "pre-push: 置き場所の検査"
+sh .github/scripts/oss-placement-check.sh

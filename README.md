@@ -22,7 +22,7 @@
 > **What is not done:** there are no hosted tiles — you cut your own, which is the point;
 > there are no Japanese glyphs, so CJK labels fall back to the viewer's font and the
 > letterforms change per machine; and the six styles are **proposals**, not an approved
-> palette. See [`.claude/roadmap.md`](.claude/roadmap.md).
+> palette. See [`PRD.md`](PRD.md) for scope.
 
 ## Why
 
@@ -148,8 +148,7 @@ Read [`LICENSES.md`](LICENSES.md) before you ship. Short version: keep
 - [`PRINCIPLES.md`](PRINCIPLES.md) — what this project is for, how it chooses data, who is welcome
 - [`CREDITS.md`](CREDITS.md) — the work this map stands on
 - [`PRD.md`](PRD.md) — scope, and what we deliberately do not build
-- [`.claude/roadmap.md`](.claude/roadmap.md) — phases
-- [`.claude/decisions.md`](.claude/decisions.md) — decisions and the reasoning behind them
+- [`docs/decisions.md`](docs/decisions.md) — decisions and the reasoning behind them
 - [`docs/origin/`](docs/origin/) — the original proposal, in Japanese, unedited
 - [`docs/install/`](docs/install/) — **how to put a map on your site** (English, 日本語, 繁體中文, 简体中文, Tiếng Việt)
 - [`README.ja.md`](README.ja.md) — 日本語

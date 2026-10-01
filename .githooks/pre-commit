@@ -13,6 +13,13 @@
 # **使ったことを commit message に書くこと。** 黙って外すと、次から既定になる。
 set -e
 
+# **置き場所の検査は pnpm より先に置く。**
+# pnpm が無い環境ではゲートごと飛ぶので、後ろに置くと記録の混入が素通りする。
+if [ -f .github/scripts/oss-placement-check.sh ]; then
+	echo "pre-commit: 置き場所の検査"
+	sh .github/scripts/oss-placement-check.sh
+fi
+
 if ! command -v pnpm >/dev/null 2>&1; then
 	echo "pre-commit: pnpm がありません。ゲートを飛ばします（CI が最終ゲート）" >&2
 	exit 0

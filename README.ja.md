@@ -21,7 +21,7 @@
 > **できていないこと**: **配信されたタイルはありません**（自分で切り出します。それが狙いです）。
 > **日本語のグリフがありません**——漢字かなは閲覧側のフォントで描くので、**字形が環境ごとに変わります**。
 > スタイル 6 枚は**提案**で、承認された配色ではありません。
-> 詳細は [`.claude/roadmap.md`](.claude/roadmap.md)。
+> 詳細は [`PRD.md`](PRD.md)。
 
 ## なぜ
 
@@ -145,8 +145,7 @@ bbox か多角形を渡せば、その範囲のタイルが出ます。
 - [`PRINCIPLES.md`](PRINCIPLES.md) — このプロジェクトの指針。何を約束し、データを何で選び、誰を歓迎するか（英語）
 - [`CREDITS.ja.md`](CREDITS.ja.md) — **この地図が立っている土台**（英語版: [`CREDITS.md`](CREDITS.md)）
 - [`PRD.md`](PRD.md) — スコープと、**あえて作らないもの**
-- [`.claude/roadmap.md`](.claude/roadmap.md) — フェーズ
-- [`.claude/decisions.md`](.claude/decisions.md) — 決定と、その理由
+- [`docs/decisions.md`](docs/decisions.md) — 決定と、その理由
 - [`docs/origin/`](docs/origin/) — 原案の原文（手を入れていません）
 
 ## 参加

@@ -17,7 +17,7 @@ patch.
 
 - Read [`PRD.md`](PRD.md), in particular **§2 What we do not build**. The fastest way
   for a pull request to be declined is for it to add something that section rules out.
-- Read [`.claude/decisions.md`](.claude/decisions.md). If your change contradicts a
+- Read [`docs/decisions.md`](docs/decisions.md). If your change contradicts a
   decision there, say so and argue against the decision — do not work around it quietly.
 - **Use pnpm.** npm and yarn are not used in this repository.
 - **Run the gate.** `pnpm gate` runs lint, typecheck, tests, and the two asset/style
@@ -34,7 +34,7 @@ step quietly skipped once becomes the default next time.
 
 Linting is [oxlint](https://oxc.rs) rather than ESLint, because typescript-eslint does
 not support the TypeScript version this repository uses. See `D-015` in
-[`.claude/decisions.md`](.claude/decisions.md) for the reasoning and for the two rules
+[`docs/decisions.md`](docs/decisions.md) for the reasoning and for the two rules
 that are deliberately turned off.
 
 ## Style JSON is hand-written

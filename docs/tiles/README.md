@@ -8,7 +8,7 @@
 | [Protomaps 日次プラネットビルド](https://maps.protomaps.com/builds/) | ベースタイルの出どころ | データは ODbL（OSM 由来） |
 | [go-pmtiles](https://github.com/protomaps/go-pmtiles) | 日本ぶんの切り出し | BSD-3-Clause |
 
-タイル生成パイプラインは自作しません（`.claude/decisions.md` D-001）。
+タイル生成パイプラインは自作しません（[決定 D-001](../decisions.md)）。
 
 ---
 
