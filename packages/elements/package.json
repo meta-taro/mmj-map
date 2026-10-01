@@ -14,7 +14,8 @@
   "files": [
     "src/",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "llms.txt"
   ],
   "keywords": [
     "map",

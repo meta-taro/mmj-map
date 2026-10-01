@@ -20,6 +20,7 @@ const PACKAGES = [
   "infra/pmtiles-worker",
   "packages/elements",
   "packages/http-range",
+  "tools/agent-doc",
   "tools/asset-check",
   "tools/lint-gate",
   "tools/palette",
