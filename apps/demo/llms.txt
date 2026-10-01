@@ -35,6 +35,7 @@ MMJ は描き方だけを持つ。だから API キーも従量課金も無い�
 - [素の地図](https://meta-taro.github.io/mmj-map/plain.html): HTML だけで地図を 1 枚置く
 - [お店を見て回る](https://meta-taro.github.io/mmj-map/shops.html): 点に自前の SVG・カード・決済タブ・一覧との連動
 - [建物を立てる](https://meta-taro.github.io/mmj-map/3d.html): 3d 属性で建物を押し出す
+- [3D で道案内](https://meta-taro.github.io/mmj-map/3d-route.html): 建物を立てたまま経路と案内を描く
 - [点をまとめる](https://meta-taro.github.io/mmj-map/cluster.html): 点が多いときにまとめて見せる
 - [配色を見くらべる](https://meta-taro.github.io/mmj-map/palette.html): 6 枚のスタイルを並べる
 ## きまり

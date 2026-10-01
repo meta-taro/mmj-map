@@ -648,12 +648,43 @@
   display: grid;
   align-content: start;
   gap: 0.3rem;
-  padding: 1rem 1.1rem 1.1rem;
+  /* 絵が上端まで届くように、上の余白は持たない */
+  padding: 0 1.1rem 1.1rem;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: color-mix(in oklab, var(--panel) 88%, transparent);
   text-decoration: none;
+  overflow: hidden;
   transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+/*
+ * **実物の画面をそのまま載せる。**字だけのカードが 15 枚並んでも読まれない。
+ *
+ * 撮った絵は 960×600 で、**上から約 130px が頁の見出しとナビ**。
+ * 並べるとどれも同じ帯が乗って中身の違いが消えるので、`object-position` で
+ * 下寄せにして切り落とす。**撮る側で消す案は採らなかった**——
+ * 見出しを `display:none` にすると頁の格子が崩れ、地図が高さ 0 で初期化されて
+ * 真っ黒な絵になった（2026-10-02 実測）。
+ *
+ * `width`/`height` を HTML に書いてあるので、読み込み前から場所が取られる
+ * （後から絵が入って文字が飛び跳ねない）。
+ */
+.lp-card-shot {
+  width: calc(100% + 2.2rem);
+  /* **`height: auto` が要る。**HTML の `height="600"` は高さとして効くので、
+     幅と高さが両方決まった状態になり、`aspect-ratio` が無視される（実測で踏んだ） */
+  height: auto;
+  margin: 0 -1.1rem 0.75rem;
+  /* **21/10 は計算で出した値。**元の絵は 960×600 で、上から 130px（21.7%）が
+     頁の見出しとナビ。`cover` ＋ 下寄せで切り落とされるのは
+     「1 − 箱の比 ÷ 元の比」なので、960/470 ≒ 2.04 以上が要る。16/9 では 10% しか
+     切れず、ナビの帯が残った（実測） */
+  aspect-ratio: 21 / 10;
+  object-fit: cover;
+  object-position: 50% 100%;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
 }
 
 .lp-card:hover {

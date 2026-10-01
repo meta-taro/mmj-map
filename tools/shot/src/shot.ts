@@ -22,6 +22,15 @@ export interface ShotArgs {
    * オンラインで撮れた絵は、掴んでいるのか通信しているのかを区別しない。
    */
   readonly offline: boolean;
+  /**
+   * 出す形式。**頁に並べる絵は JPEG。**
+   *
+   * 地図は写真に近いので可逆圧縮が効かず、PNG だと 1 枚で数百 KB になる。
+   * サムネを 15 枚並べるなら、それだけで数 MB の頁になる。
+   */
+  readonly format: "png" | "jpeg";
+  /** JPEG の画質（1〜100）。`format` が png のときは使わない */
+  readonly quality: number;
 }
 
 const DEFAULTS: ShotArgs = {
@@ -31,9 +40,33 @@ const DEFAULTS: ShotArgs = {
   width: 1280,
   height: 860,
   offline: false,
+  format: "png",
+  quality: 72,
 };
 
 const SIZE_FLAG = "--size=";
+const JPEG_FLAG = "--jpeg";
+/**
+ * `--jpeg` / `--jpeg=60` を読む。
+ *
+ * **読めない値で既定に落とさない**（`--size=` と同じ理由）。
+ * 画質を指定したのに効いていないと、重い絵が黙って配られる。
+ */
+function readFormat(args: readonly string[]): { format: "png" | "jpeg"; quality: number } {
+  const flag = args.find((arg) => arg === JPEG_FLAG || arg.startsWith(`${JPEG_FLAG}=`));
+  if (flag === undefined) return { format: DEFAULTS.format, quality: DEFAULTS.quality };
+  if (flag === JPEG_FLAG) return { format: "jpeg", quality: DEFAULTS.quality };
+
+  const value = flag.slice(JPEG_FLAG.length + 1);
+  if (!/^\d+$/.test(value)) {
+    throw new Error(`画質は 1〜100 の数で指定してください（例: --jpeg=72）: ${flag}`);
+  }
+  const quality = Number(value);
+  if (quality < 1 || quality > 100) {
+    throw new Error(`画質は 1〜100 で指定してください: ${flag}`);
+  }
+  return { format: "jpeg", quality };
+}
 
 /**
  * `--size=1200x630` を読む。指定が無ければ既定。
@@ -76,6 +109,7 @@ export function parseShotArgs(argv: readonly string[]): ShotArgs {
     // **黙って切らない。**明示されたときだけ、読み終えてから通信を落とす
     offline: args.includes("--offline"),
     ...size,
+    ...readFormat(args),
   };
 }
 

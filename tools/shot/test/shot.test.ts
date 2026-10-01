@@ -11,6 +11,8 @@ describe("parseShotArgs", () => {
       width: 1280,
       height: 860,
       offline: false,
+      format: "png",
+      quality: 72,
     });
   });
 
@@ -22,6 +24,8 @@ describe("parseShotArgs", () => {
       width: 1280,
       height: 860,
       offline: false,
+      format: "png",
+      quality: 72,
     });
   });
 
@@ -46,6 +50,8 @@ describe("parseShotArgs", () => {
       width: 1200,
       height: 630,
       offline: false,
+      format: "png",
+      quality: 72,
     });
   });
 
@@ -57,6 +63,8 @@ describe("parseShotArgs", () => {
       width: 800,
       height: 600,
       offline: false,
+      format: "png",
+      quality: 72,
     });
   });
 
@@ -190,5 +198,40 @@ describe("nextWaitState（読み込みの前に撮らない）", () => {
   /** **既定で安全側に倒す。**渡し忘れたときに、昔の壊れた挙動へ戻らないこと */
   it("読み込みの状態を渡さなければ、終わらない", () => {
     expect(nextWaitState({ quietSince: 5000 }, 0, 9000, quietMs).done).toBe(false);
+  });
+});
+
+/**
+ * **サムネを 15 枚載せるなら PNG では重い。**地図は写真に近いので、
+ * 可逆圧縮は効かず 1 枚で数百 KB になる。頁に並べる絵は JPEG で出す。
+ */
+describe("parseShotArgs（JPEG で出す）", () => {
+  it("既定は PNG", () => {
+    expect(parseShotArgs([])).toMatchObject({ format: "png" });
+  });
+
+  it("--jpeg で JPEG になる", () => {
+    expect(parseShotArgs(["--jpeg"])).toMatchObject({ format: "jpeg", quality: 72 });
+  });
+
+  it("画質を指定できる", () => {
+    expect(parseShotArgs(["--jpeg=60"])).toMatchObject({ format: "jpeg", quality: 60 });
+  });
+
+  /** **黙って既定へ戻さない。**指定したのに効いていないことに気づけなくなる */
+  it("画質が数でなければ落ちる", () => {
+    expect(() => parseShotArgs(["--jpeg=high"])).toThrow();
+    expect(() => parseShotArgs(["--jpeg=0"])).toThrow();
+    expect(() => parseShotArgs(["--jpeg=101"])).toThrow();
+  });
+
+  /** 旗を位置引数と数えない（`--size=` で一度踏んだ穴） */
+  it("--jpeg を URL や待ち時間と取り違えない", () => {
+    expect(parseShotArgs(["http://x/", "a.jpg", "--jpeg=80"])).toMatchObject({
+      url: "http://x/",
+      out: "a.jpg",
+      format: "jpeg",
+      quality: 80,
+    });
   });
 });

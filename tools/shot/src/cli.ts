@@ -110,6 +110,14 @@ for (const method of ["Page.enable", "Runtime.enable", "Log.enable", "Network.en
   await send(method, {}, session);
 }
 
+// **確かめる側が古いものを掴まない。**
+// プロファイル（`.shot-profile`）は使い回すので、直した CSS や JS が当たっていない絵を
+// 撮り続けることになる。2026-10-02 に実際に踏んだ——配信は新しいのに、
+// **撮れた絵には古い CSS が当たっていて**、頁の不具合だと誤読しかけた。
+// service worker も別経路で控えを返すので、両方を切る。
+await send("Network.setCacheDisabled", { cacheDisabled: true }, session);
+await send("Network.setBypassServiceWorker", { bypass: true }, session);
+
 // **絵の大きさは窓ではなくここで決める。**`--window-size` は OS の枠のぶんだけずれるし、
 // ブラウザの外から窓を変える手も効かなかった（拡張で resize しても `innerWidth` が
 // 変わらないのを実測・2026-09-25）。SNS のカードのように寸法が決まっているものは、
@@ -217,7 +225,14 @@ if (args.offline) {
   }
 }
 
-const shot = (await send("Page.captureScreenshot", { format: "png" }, session)).result as { data: string };
+// **形式は引数で決める。**頁に並べる絵は JPEG（PNG だと地図 1 枚で数百 KB）
+const shot = (
+  await send(
+    "Page.captureScreenshot",
+    args.format === "jpeg" ? { format: "jpeg", quality: args.quality } : { format: "png" },
+    session,
+  )
+).result as { data: string };
 const outPath = resolve(invokedFrom, args.out);
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, Buffer.from(shot.data, "base64"));

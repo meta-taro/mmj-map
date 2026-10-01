@@ -44,6 +44,7 @@ const LINKS: readonly IndexLink[] = [
   { section: "見本", title: "素の地図", path: "plain.html", note: "HTML だけで地図を 1 枚置く" },
   { section: "見本", title: "お店を見て回る", path: "shops.html", note: "点に自前の SVG・カード・決済タブ・一覧との連動" },
   { section: "見本", title: "建物を立てる", path: "3d.html", note: "3d 属性で建物を押し出す" },
+  { section: "見本", title: "3D で道案内", path: "3d-route.html", note: "建物を立てたまま経路と案内を描く" },
   { section: "見本", title: "点をまとめる", path: "cluster.html", note: "点が多いときにまとめて見せる" },
   { section: "見本", title: "配色を見くらべる", path: "palette.html", note: "6 枚のスタイルを並べる" },
   { section: "きまり", title: "ライセンスと帰属表示", path: "licenses.html", note: "ODbL。帰属表示を画面から外さない" },
