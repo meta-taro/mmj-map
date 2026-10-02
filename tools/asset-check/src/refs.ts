@@ -23,6 +23,26 @@ export interface Reference {
 }
 
 /**
+ * 公開先の根。**ここを指す絶対 URL は「外部」ではない。**
+ *
+ * `og:image` は絶対 URL で書く決まり（相対では SNS が解決できない）なので、
+ * 外部 CDN と同じ扱いにすると検査をすり抜ける。
+ */
+const OWN_SITE = "https://meta-taro.github.io/mmj-map/";
+
+/**
+ * 自分のサイトを指す絶対 URL を、`apps/demo` からの相対パスへ直す。
+ *
+ * @returns 自分のサイトでなければ null。サイトの根（ファイルではない）も null
+ */
+function ownSitePath(value: string): string | null {
+  if (!value.startsWith(OWN_SITE)) return null;
+  const rest = value.slice(OWN_SITE.length).split("?")[0]?.split("#")[0] ?? "";
+  if (rest === "") return null;
+  return `./${rest}`;
+}
+
+/**
  * 外へ出て行く参照かどうか。**外部 CDN はこの検査の対象外**
  * （存在するかは向こうの都合で、こちらのリポジトリでは保証できない）。
  * @param {string} value
@@ -66,6 +86,13 @@ export function extractReferences(html: string): Reference[] {
     for (const match of line.matchAll(/\bimport\s*\(\s*["']([^"']*)["']\s*\)/g)) {
       const raw = match[1] ?? "";
       if (!isExternal(raw)) found.push({ raw, line: index + 1 });
+    }
+    // **自分のサイトを指す絶対 URL**（`og:image` / `twitter:image` / `og:url`）。
+    // これらは絶対 URL で書く決まりなので `src`/`href` には現れず、`content=` に入る。
+    // 外部 CDN と同じ扱いにすると、**絵を消しても誰も気づかない**（baseline §23）。
+    for (const match of line.matchAll(/\bcontent\s*=\s*["']([^"']*)["']/gi)) {
+      const path = ownSitePath(match[1] ?? "");
+      if (path !== null) found.push({ raw: path, line: index + 1 });
     }
   }
   return found;

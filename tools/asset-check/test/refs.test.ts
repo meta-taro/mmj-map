@@ -173,3 +173,47 @@ describe("extractReferences（同じ頁を指すリンク）", () => {
     expect(extractReferences(html).map((r) => r.raw)).toEqual(["./shops.html?shop=akari"]);
   });
 });
+
+/**
+ * **自分のサイトを指す絶対 URL は、外部ではない。**
+ *
+ * `og:image` は絶対 URL で書く決まりなので、
+ * `https://meta-taro.github.io/mmj-map/og/shops.jpg` のようになる。
+ * これを「外部 CDN」と同じ扱いにすると、**絵を消しても誰も気づかない**。
+ * しかも `content=` は走査対象ですらなかった（二重の穴・2026-10-02）。
+ */
+describe("自分のサイトを指す絶対 URL", () => {
+  it("og:image を参照として拾う", () => {
+    const html = '<meta property="og:image" content="https://meta-taro.github.io/mmj-map/og/shops.jpg">';
+    expect(extractReferences(html).map((r) => r.raw)).toEqual(["./og/shops.jpg"]);
+  });
+
+  it("twitter:image も拾う", () => {
+    const html = '<meta name="twitter:image" content="https://meta-taro.github.io/mmj-map/og.png">';
+    expect(extractReferences(html).map((r) => r.raw)).toEqual(["./og.png"]);
+  });
+
+  /** **外部 CDN は従来どおり対象外。**向こうの都合で、こちらでは保証できない */
+  it("他所の絶対 URL は拾わない", () => {
+    const html = '<meta property="og:image" content="https://example.com/a.png">';
+    expect(extractReferences(html)).toEqual([]);
+  });
+
+  /** `content=` には文章も入る。**URL でないものを拾わない** */
+  it("説明文の content は拾わない", () => {
+    const html = '<meta name="description" content="地球ぜんぶは要りません。1.9 MB です。">';
+    expect(extractReferences(html)).toEqual([]);
+  });
+
+  /** 頁そのものを指す絶対 URL（`og:url` / `canonical`）も、実在する頁として見る */
+  it("og:url も拾う", () => {
+    const html = '<meta property="og:url" content="https://meta-taro.github.io/mmj-map/shops.html">';
+    expect(extractReferences(html).map((r) => r.raw)).toEqual(["./shops.html"]);
+  });
+
+  /** サイトの根（末尾が `/`）はファイルではない */
+  it("サイトの根は拾わない", () => {
+    const html = '<meta property="og:url" content="https://meta-taro.github.io/mmj-map/">';
+    expect(extractReferences(html)).toEqual([]);
+  });
+});
