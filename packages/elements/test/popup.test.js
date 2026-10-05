@@ -171,6 +171,125 @@ describe("buildCardContent", () => {
 });
 
 /**
+ * 写真の提供元が「**写真に添えて撮影者名を出すこと**」を条件にしていることがある。
+ * これは体裁ではなく**使用条件**なので、`card-body` に混ぜる（説明文と区別が付かない）、
+ * タブに入れる（**開かないと見えない**）では満たせない。
+ *
+ * 出すのは**写真の直下に 1 行**。`© OpenStreetMap contributors` を画面から
+ * 外さないのと同じ考え方（D-007 / D-028）で、**リンクの有無で消えてはいけない**。
+ */
+describe("buildCardContent（撮影者の表記）", () => {
+  it("**写真の直下に出す**（題の後・星より前）", () => {
+    const parts = buildCardContent({
+      title: "灯",
+      images: ["./1.jpg"],
+      imageCredit: "撮影 かすみ",
+      rating: 4.3,
+    });
+    expect(parts.map((p) => p.kind)).toEqual(["text", "image", "credit", "rating"]);
+  });
+
+  /**
+   * **ここが本題。**リンクが無い写真のほうが多いことがある（空は珍しくない）。
+   * リンクが無いときに行ごと消すと、**使用条件を満たさないカードが静かに出る**。
+   */
+  it("**リンクが無ければ名前だけ出す。行は消さない**", () => {
+    for (const imageCreditHref of [undefined, null, "", "   "]) {
+      const credit = buildCardContent({
+        images: ["./1.jpg"],
+        imageCredit: "撮影 かすみ",
+        imageCreditHref,
+      }).find((p) => p.kind === "credit");
+      expect(credit?.text).toBe("撮影 かすみ");
+      expect(credit?.href).toBeUndefined();
+    }
+  });
+
+  it("**安全でないリンクは黙って落とすが、名前は残す**", () => {
+    const credit = buildCardContent({
+      images: ["./1.jpg"],
+      imageCredit: "撮影 かすみ",
+      imageCreditHref: "javascript:alert(1)",
+    }).find((p) => p.kind === "credit");
+    expect(credit?.text).toBe("撮影 かすみ");
+    expect(credit?.href).toBeUndefined();
+  });
+
+  it("通すのは `card-href` と同じ（`http` / `https` / 相対 / `mailto:` / `tel:`）", () => {
+    for (const href of ["https://example.com/u", "/u", "mailto:photo@example.com", "tel:+81-6-0000-0000"]) {
+      const credit = buildCardContent({
+        images: ["./1.jpg"],
+        imageCredit: "撮影 かすみ",
+        imageCreditHref: href,
+      }).find((p) => p.kind === "credit");
+      expect(credit?.href).toBe(href);
+    }
+  });
+
+  it("**写真が 1 枚も無ければ出さない**（添える先が無い）", () => {
+    const parts = buildCardContent({ title: "灯", imageCredit: "撮影 かすみ" });
+    expect(parts.some((p) => p.kind === "credit")).toBe(false);
+  });
+
+  /** 危ない写真を落としたあと**1 枚も残っていない**なら、添える先も無い */
+  it("**写真が全部落ちたときも出さない**", () => {
+    const parts = buildCardContent({
+      title: "灯",
+      images: ["javascript:x"],
+      imageCredit: "撮影 かすみ",
+    });
+    expect(parts.some((p) => p.kind === "image")).toBe(false);
+    expect(parts.some((p) => p.kind === "credit")).toBe(false);
+  });
+
+  /**
+   * **枚数に合わせて割り振らない。**推測で割り当てると
+   * 「別の写真に別人の名前が付く」という、いちばん避けたい壊れ方になる。
+   */
+  it("**複数枚でもギャラリー全体に 1 行**", () => {
+    const parts = buildCardContent({
+      images: ["./1.jpg", "./2.jpg", "./3.jpg"],
+      imageCredit: "撮影 かすみ",
+    });
+    expect(parts.map((p) => p.kind)).toEqual(["image", "image", "image", "credit"]);
+  });
+
+  it("名前が無ければ出さない（リンクだけでは出す中身が無い）", () => {
+    const blank = buildCardContent({ images: ["./1.jpg"], imageCredit: "   " });
+    expect(blank.some((p) => p.kind === "credit")).toBe(false);
+    const linkOnly = buildCardContent({
+      images: ["./1.jpg"],
+      imageCreditHref: "https://example.com/u",
+    });
+    expect(linkOnly.some((p) => p.kind === "credit")).toBe(false);
+  });
+
+  /**
+   * `mountCard` は容れ物を作り直さず**中身だけ差し替える**（`card-dom.js` の `setBody`）。
+   * 送った先に撮影者が無ければ、**組み立ての指示にも出てこない**こと。
+   *
+   * ここが崩れると**別の店の写真に、前の店の撮影者名が付く**。
+   * 使用条件の観点でいちばん避けたい壊れ方なので、純粋関数の側で縛っておく。
+   */
+  it("**隣の店へ送ったとき、前の店の表記が残らない**", () => {
+    const withCredit = buildCardContent({
+      title: "灯",
+      images: ["./1.jpg"],
+      imageCredit: "撮影 かすみ",
+    });
+    expect(withCredit.filter((p) => p.kind === "credit").map((p) => p.text)).toEqual(["撮影 かすみ"]);
+
+    // 次の店には撮影者が無い（**前の店のものを引き継がない**）
+    const without = buildCardContent({ title: "汀", images: ["./2.jpg"] });
+    expect(without.some((p) => p.kind === "credit")).toBe(false);
+
+    // さらに次の店は別人（**前の店の名前が残らない**）
+    const other = buildCardContent({ title: "凪", images: ["./3.jpg"], imageCredit: "撮影 みお" });
+    expect(other.filter((p) => p.kind === "credit").map((p) => p.text)).toEqual(["撮影 みお"]);
+  });
+});
+
+/**
  * **写真が縦に積まると、星も長文もリンクも画面の外へ出る。**
  * 実測（2026-09-28）: 写真 2 枚で吹き出しが 422px になり、
  * 地図からはみ出して見出しバーがヘッダの下に潜った。

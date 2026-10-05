@@ -405,6 +405,15 @@ export function buildPopupStyle(colors = POPUP_COLORS, className = DEFAULT_POPUP
     // **長文と星は折り返す。**短い名前と同じ扱いにすると、横へ伸び続ける
     `.${className} .mmj-popup-copy{white-space:normal;max-width:28em;margin-top:.35em;}` +
     `.${className} .mmj-popup-rating{white-space:nowrap;margin-top:.2em;opacity:.85;}` +
+    // 撮影者の表記。**写真の直下に小さく 1 行。**添えものなので小さくするが、
+    // **読めなくはしない**（出すこと自体が写真の使用条件なので、
+    // 小さすぎると条件を満たしているか怪しくなる——帰属表示と同じ扱い）。
+    // **色は借りたものをそのまま使う**（リンクでも色を変えない。
+    // 配色は 6 枚あるので、ここで独自の色を置くと読めない組み合わせが出る）
+    `.${className} .mmj-popup-credit{white-space:normal;margin:0 0 .4em;` +
+    "font-size:.85em;opacity:.8;}" +
+    `.${className} .mmj-popup-credit a{color:inherit;` +
+    "text-decoration:underline;text-underline-offset:2px;}" +
     // タブの帯。**選んでいるものが見て分かる形**にする
     // （下線だけだと、触る画面では押せることも、いまどれかも伝わらない——
     //   デモの頁のメニューで 2 回やり直している）

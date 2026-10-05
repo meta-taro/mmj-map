@@ -562,10 +562,20 @@ export function readLiveText(json) {
 }
 
 /**
+ * タブに入れず、**いつも上に残す**中身。
+ *
+ * 題と写真は「どの店を見ているか」なので残す。**撮影者の表記も写真から離さない**——
+ * タブの中へ入ると開かないと見えず、「写真に添えて」という使用条件を満たさなくなる。
+ */
+const ALWAYS_VISIBLE = new Set(["text", "image", "credit"]);
+
+/**
  * カードの中身を「いつも見えるぶん」と「タブの中へ入れるぶん」に分ける。
  *
  * **題と写真は、タブを切り替えても出したまま。**どの店を見ているかが消えると、
  * **切り替えた先が何の店か分からなくなる**。
+ *
+ * 残すものの一覧は `ALWAYS_VISIBLE`（撮影者の表記もここに入る）。
  *
  * **元の配列は変えない**（ECC coding-style）。
  *
@@ -574,9 +584,9 @@ export function readLiveText(json) {
  */
 export function splitForTabs(parts) {
   if (!Array.isArray(parts)) return { head: [], rest: [] };
-  // 先頭から続く「題（text）と写真（image）」までが、いつも見えるぶん
+  // 先頭から続く「いつも見えるぶん」までを数える（`ALWAYS_VISIBLE`）
   let at = 0;
-  while (at < parts.length && (parts[at]?.kind === "text" || parts[at]?.kind === "image")) at += 1;
+  while (at < parts.length && ALWAYS_VISIBLE.has(parts[at]?.kind)) at += 1;
   return { head: parts.slice(0, at), rest: parts.slice(at) };
 }
 
@@ -688,6 +698,7 @@ function readNumberField(value) {
  * ```html
  * <mmj-poi src="./shops.geojson"
  *          card-title="name" card-images="photos"
+ *          card-image-credit="photo_author" card-image-credit-href="photo_author_url"
  *          card-rating="rating" card-rating-count="reviews"
  *          card-href="url" card-body="description"></mmj-poi>
  * ```
@@ -699,6 +710,7 @@ function readNumberField(value) {
  * @param {Record<string, string | null>} keys `card-*` で指定された属性名
  * @returns {{
  *   title: unknown, images: unknown[], body: unknown,
+ *   imageCredit: unknown, imageCreditHref: unknown,
  *   rating: number | undefined, ratingCount: number | undefined,
  *   href: unknown, hrefLabel: string | undefined,
  * }} `buildCardContent` へ渡す形
@@ -719,6 +731,8 @@ export function mapCardFields(properties, keys) {
   return {
     title: read(keys.title),
     images,
+    imageCredit: read(keys.imageCredit),
+    imageCreditHref: read(keys.imageCreditHref),
     body: read(keys.body),
     rating: readNumberField(read(keys.rating)),
     ratingCount: readNumberField(read(keys.ratingCount)),
