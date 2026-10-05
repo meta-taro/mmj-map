@@ -285,7 +285,7 @@ let tabSerial = 0;
  * **タブが 1 枚のときは帯を出さない。**押し先が 1 つしかないタブは、
  * 押せると思わせるだけで何も起きない（`controlsFor` と同じ）。
  *
- * @param {{ parts: any[], tabs: { label: string, text?: string, node?: HTMLElement }[] }} input
+ * @param {{ parts: any[], tabs: { label: string, text?: string, node?: HTMLElement, rich?: boolean }[] }} input
  * @returns {HTMLElement}
  */
 export function renderTabbed(input) {
@@ -304,6 +304,13 @@ export function renderTabbed(input) {
     }
     const node = document.createElement("div");
     node.className = "mmj-popup-copy mmj-popup-panel";
+    // **タブの中身も、名指しされていれば HTML として読む**（`card-rich`）。
+    // 決済や品書きこそ強調したい場面が多い
+    if (tab.rich === true) {
+      appendRich(node, tab.text ?? "");
+      panels.push({ label: tab.label, node });
+      continue;
+    }
     // **改行を残す。**品書きもクーポンも、行で分かれているのが中身そのもの
     node.textContent = tab.text ?? "";
     panels.push({ label: tab.label, node });

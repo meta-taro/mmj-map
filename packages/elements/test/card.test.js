@@ -479,13 +479,13 @@ describe("buildTabs", () => {
 
   it("中身のあるタブだけ出す（**空のタブを押させない**）", () => {
     expect(buildTabs({ menu: "珈琲 500 円", coupon: "   " }, spec)).toEqual([
-      { label: "品書き", text: "珈琲 500 円" },
+      { label: "品書き", text: "珈琲 500 円", rich: false },
     ]);
   });
 
   it("数で入っていても出す", () => {
     expect(buildTabs({ menu: 500 }, [{ label: "品書き", key: "menu" }])).toEqual([
-      { label: "品書き", text: "500" },
+      { label: "品書き", text: "500", rich: false },
     ]);
   });
 
@@ -951,5 +951,39 @@ describe("initialCardState（広い画面）", () => {
 
   it("**短い吹き出しは今までどおり**（大阪城の 3 文字に面は要らない）", () => {
     expect(initialCardState({ width: 1280, rich: false })).toBe("popup");
+  });
+});
+
+/**
+ * **タブの中身も、名指しすれば HTML として読む。**
+ *
+ * `card-rich` を入れたとき、本文にしか効かせていなかった。
+ * ところが決済や品書きのほうが**強調したい場面が多い**（「昼はカード不可」など）。
+ * 実際、見本データに `**昼はカード不可**` と書いてあり、
+ * **アスタリスクがそのまま画面に出ていた**（2026-10-05・人の指摘で判明）。
+ */
+describe("buildTabs（rich の印）", () => {
+  const spec = [
+    { label: "決済", key: "payment" },
+    { label: "品書き", key: "menu" },
+  ];
+  const properties = { payment: "昼は<strong>カード不可</strong>", menu: "うどん 600 円" };
+
+  it("名指しされた項目にだけ印が付く", () => {
+    const tabs = buildTabs(properties, spec, new Set(["payment"]));
+    expect(tabs.map((t) => [t.label, t.rich])).toEqual([
+      ["決済", true],
+      ["品書き", false],
+    ]);
+  });
+
+  /** **既定は文字のまま。**名指しが無ければ 1 つも開かない */
+  it("名指しが無ければ、どれも印が付かない", () => {
+    expect(buildTabs(properties, spec).every((t) => t.rich === false)).toBe(true);
+    expect(buildTabs(properties, spec, new Set()).every((t) => t.rich === false)).toBe(true);
+  });
+
+  it("中身の無いタブは、これまでどおり落とす", () => {
+    expect(buildTabs({ payment: "  " }, spec, new Set(["payment"]))).toEqual([]);
   });
 });

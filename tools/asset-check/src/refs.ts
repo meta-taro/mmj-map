@@ -23,6 +23,36 @@ export interface Reference {
 }
 
 /**
+ * データに混ざった文章の記法（アスタリスク 2 つで囲む強調）。
+ *
+ * カードは渡された文字をそのまま出すので、データに書くと
+ * アスタリスクがそのまま画面に出る。実際に見本データへ漏れ、
+ * 公開デモの決済タブにアスタリスクが出ていた（2026-10-05・人の指摘で判明）。
+ *
+ * 書く側が気をつける方式では漏れる。強調したいときは HTML で書き、
+ * `card-rich` で項目を名指しすること。
+ *
+ * 1 つだけのアスタリスク（掛け算・注記）は記法ではないので拾わない。
+ */
+const MARKDOWN_EMPHASIS = /\*\*[^*\n]+\*\*/g;
+
+/**
+ * データの中の文章の記法を探す。
+ *
+ * @param text JSON や GeoJSON の中身
+ * @returns 見つかった箇所（空なら問題なし）
+ */
+export function findMarkdownInData(text: string): { sample: string; line: number }[] {
+  const found: { sample: string; line: number }[] = [];
+  text.split("\n").forEach((line, index) => {
+    for (const match of line.matchAll(MARKDOWN_EMPHASIS)) {
+      found.push({ sample: match[0], line: index + 1 });
+    }
+  });
+  return found;
+}
+
+/**
  * 公開先の根。**ここを指す絶対 URL は「外部」ではない。**
  *
  * `og:image` は絶対 URL で書く決まり（相対では SNS が解決できない）なので、

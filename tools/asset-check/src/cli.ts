@@ -14,7 +14,7 @@ import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, relative, sep } from "node:path";
 
-import { extractReferences, findBasePathHazards, resolveReference, type Mount } from "./refs.js";
+import { extractReferences, findBasePathHazards, findMarkdownInData, resolveReference, type Mount } from "./refs.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -132,7 +132,41 @@ for (const file of files) {
   }
 }
 
+// データに文章の記法が混ざっていないか。
+//
+// カードは渡された文字をそのまま出すので、データに書いた強調はアスタリスクのまま
+// 画面に出る。実際に見本データへ漏れ、公開デモの決済タブに出ていた（2026-10-05）。
+// 強調したいときは HTML で書き、card-rich で項目を名指しすること。
+const dataDir = resolve(repoRoot, "apps/demo/data");
+let marked = 0;
+if (existsSync(dataDir)) {
+  const stack = [dataDir];
+  while (stack.length > 0) {
+    const dir = stack.pop();
+    if (dir === undefined) break;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = resolve(dir, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+        continue;
+      }
+      if (!/\.(json|geojson)$/i.test(entry.name)) continue;
+      for (const hit of findMarkdownInData(readFileSync(full, "utf8"))) {
+        console.error(`NG ${full.slice(repoRoot.length + 1).replaceAll("\\", "/")}:${hit.line} ${hit.sample}`);
+        console.error("   データに文章の記法が混ざっています（画面にはアスタリスクがそのまま出ます）");
+        marked++;
+      }
+    }
+  }
+}
+
 console.log(`検査: HTML ${files.length} 件 / 参照 ${checked} 件`);
+if (marked > 0) {
+  console.error("");
+  console.error(`データに文章の記法が ${marked} 件あります。`);
+  console.error("強調したいときは HTML で書き、card-rich で項目を名指ししてください。");
+  process.exit(1);
+}
 if (failed > 0) {
   console.error("");
   console.error(`参照されているのに存在しないアセットが ${failed} 件あります（baseline §23）。`);

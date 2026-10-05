@@ -482,18 +482,21 @@ function defaultIsSafe(value) {
  *
  * @param {Record<string, unknown>} properties
  * @param {readonly { label: string, key: string }[]} spec
- * @returns {{ label: string, text?: string, node?: HTMLElement }[]}
+ * @returns {{ label: string, text?: string, node?: HTMLElement, rich?: boolean }[]}
  */
-export function buildTabs(properties, spec) {
+export function buildTabs(properties, spec, rich = new Set()) {
   if (!Array.isArray(spec)) return [];
-  /** @type {{ label: string, text: string }[]} */
+  /** @type {{ label: string, text: string, rich: boolean }[]} */
   const tabs = [];
   for (const { label, key } of spec) {
     const value = properties?.[key];
     if (value === undefined || value === null) continue;
     const text = String(value).trim();
     if (text === "") continue;
-    tabs.push({ label, text });
+    // **決済や品書きこそ強調したい場面が多い**（「昼はカード不可」など）。
+    // 本文にしか効かせていなかったため、見本データの `**…**` が
+    // **アスタリスクのまま画面に出ていた**（2026-10-05・人の指摘で判明）
+    tabs.push({ label, text, rich: rich.has(key) });
   }
   return tabs;
 }

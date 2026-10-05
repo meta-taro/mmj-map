@@ -551,7 +551,12 @@ export class MmjPoi extends HTMLElement {
    */
   #renderBody(content, feature, live = null) {
     const properties = feature.properties ?? {};
-    const tabs = buildTabs(properties, parseTabs(this.getAttribute("card-tabs")));
+    // **タブの中身も名指しできる**（決済や品書きこそ強調したい場面が多い）
+    const tabs = buildTabs(
+      properties,
+      parseTabs(this.getAttribute("card-tabs")),
+      parseRichFields(this.getAttribute("card-rich")),
+    );
 
     // 曜日ごとの営業時間。**「営業中」とは書かない**（判断しない）
     const hours = parseHours(properties[String(this.getAttribute("card-hours") ?? "")]);
