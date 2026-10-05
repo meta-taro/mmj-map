@@ -12,7 +12,71 @@ import { buildCardStyle } from "./card-dom.js";
 import { splitForTabs, stepIndex } from "./card.js";
 import { formatRating } from "./popup.js";
 import { surfaceFor, themeClassName } from "./palette.js";
-import { groupParts } from "./popup.js";
+import { groupParts, isSafeLink } from "./popup.js";
+import { DROP_CONTENT, RICH_TAGS, allowedAttributes } from "./rich.js";
+
+/**
+ * 許可表に沿って、読んだ木を**作り直しながら**写す。
+ *
+ * 落ちるもの: 許可表に無いタグ、すべてのイベント属性、`style`、安全でない `href`。
+ * **タグが落ちても中の文字は残す**（文章が消えるほうが困る）。
+ * ただし画面に出す文章を持たないタグ（`script` など）は**中身ごと捨てる**。
+ *
+ * @param {Node} source
+ * @param {Element} target
+ */
+function copyRich(source, target) {
+  for (const node of source.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      target.append(node.textContent ?? "");
+      continue;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) continue;
+    const element = /** @type {Element} */ (node);
+    const tag = element.tagName.toLowerCase();
+    // **中身ごと捨てる**（`script` の中身が文字としてカードに出た・2026-10-05 実測）
+    if (DROP_CONTENT.has(tag)) continue;
+    if (!RICH_TAGS.has(tag)) {
+      // **中の文字は残す。**知らないタグで文章ごと消さない
+      copyRich(element, target);
+      continue;
+    }
+    const made = document.createElement(tag);
+    for (const name of allowedAttributes(tag)) {
+      const value = element.getAttribute(name);
+      if (name === "href" && (value === null || !isSafeLink(value))) continue;
+      if (value !== null) made.setAttribute(name, value);
+    }
+    if (tag === "a") {
+      if (!made.hasAttribute("href")) {
+        // 飛び先が無い `a` は、ただの文字として出す（押せそうで押せないものを作らない）
+        copyRich(element, target);
+        continue;
+      }
+      // **こちらが決める。**外から `target` や `rel` を渡させない
+      made.setAttribute("target", "_blank");
+      made.setAttribute("rel", "noopener noreferrer");
+    }
+    copyRich(element, made);
+    target.append(made);
+  }
+}
+
+/**
+ * 限られたタグだけを許して、本文を組み立てる。
+ *
+ * **解析した DOM をそのまま挿さない。**`DOMParser` が作る文書は実行されない
+ * （browsing context を持たないので `onerror` も走らず、画像も取りに行かない）が、
+ * それを信用して `append` すると、**許可表を通らないものまで入る**。
+ * ここでは**読み取って、`createElement` で作り直す**。入るのは許可表にあるものだけ。
+ *
+ * @param {Element} parent
+ * @param {string} html
+ */
+function appendRich(parent, html) {
+  const parsed = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+  copyRich(parsed.body, parent);
+}
 
 /**
  * 組み立ての指示から DOM を作る。
@@ -117,7 +181,9 @@ export function renderPopup(parts) {
     // 星と長文は、短い名前とは**折り返し方が違う**（`mmj-popup-text` は折り返さない）
     line.className =
       part.kind === "rating" ? "mmj-popup-rating" : part.kind === "body" ? "mmj-popup-copy" : "mmj-popup-text";
-    line.textContent = part.text ?? "";
+    // **rich は置く側が名指しした項目だけ**（`card-rich`）。既定は文字のまま
+    if (part.rich === true) appendRich(line, part.text ?? "");
+    else line.textContent = part.text ?? "";
     box.append(line);
   }
   return box;

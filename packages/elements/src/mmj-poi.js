@@ -41,6 +41,7 @@ import { listEntries } from "./list.js";
 import { ensureListContrast, mountList } from "./list-dom.js";
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
 import { buildCardContent, isSafeLink } from "./popup.js";
+import { isRichField, parseRichFields } from "./rich.js";
 import {
   ensureCardContrast,
   ensurePopupContrast,
@@ -387,6 +388,8 @@ export class MmjPoi extends HTMLElement {
       ratingCount: this.getAttribute("card-rating-count"),
       href: this.getAttribute("card-href"),
       hrefLabel: this.getAttribute("card-href-label"),
+      // **どの項目を HTML として読むか。**既定は 1 つも開かない（`rich.js` の頭に理由）
+      rich: this.getAttribute("card-rich"),
     };
   }
 
@@ -448,6 +451,8 @@ export class MmjPoi extends HTMLElement {
       ...mapCardFields(properties, keys),
       // **URL の確かめ方を 2 か所に書かない。**popup.js のものを渡す
       links: buildLinks(properties, parseLinks(this.getAttribute("card-links")), isSafeLink),
+      // **本文を HTML として読むのは、置く側が名指ししたときだけ**（`rich.js` の頭に理由）
+      bodyRich: isRichField(keys.body, parseRichFields(keys.rich)),
     });
     if (content.length === 0) return; // **空の箱を開かない**
 
