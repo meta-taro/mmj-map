@@ -4,7 +4,10 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 `packages/elements/src/*.js` が素の ESM で、そのまま配られます。
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script type="module">
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  window.maplibregl = maplibregl;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
 <script type="module" src="/elements/index.js"></script>
 
@@ -683,7 +686,7 @@ AI に経路と案内文を作らせて、この形で渡す使い方を想定�
 
 > **`#` ではなく `?` に書きます。**`<mmj-map hash>` を付けると MapLibre が
 > `#15/34.70/135.49` を書きますが、**その実装は自分の形以外を捨てます**
-> （5.24.0 で確認）。`#shop=` に置くと、**地図を少し動かしただけで消えます**。
+> （5.24.0 と 6.12.0 で確認）。`#shop=` に置くと、**地図を少し動かしただけで消えます**。
 > 消えたことは画面に出ないので、**共有して初めて壊れているのが分かります**。
 
 **一覧はもう一度読みます。**送るにも復元するにも順番の付いた一覧が要り、

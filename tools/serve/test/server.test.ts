@@ -45,6 +45,12 @@ describe("contentTypeFor", () => {
     expect(contentTypeFor("/x/STYLE.JSON")).toBe("application/json; charset=utf-8");
   });
 
+  // MapLibre 6 は ESM だけを配っており、入口は `.mjs`。**octet-stream で返すと
+  // ブラウザが module の実行を拒み**、地図が 1 枚も出ない（2026-10-06 に実測）。
+  // 拡張子を 1 つ足し忘れただけで、頁は 200 のまま白くなる。
+  it(".mjs は JavaScript として返す（module は型が違うと実行されない）", () => {
+    expect(contentTypeFor("/vendor/maplibre-gl/maplibre-gl.mjs")).toBe("text/javascript; charset=utf-8");
+  });
   it("知らない拡張子は octet-stream（**憶測で型を付けない**）", () => {
     expect(contentTypeFor("/x/data.bin")).toBe("application/octet-stream");
     expect(contentTypeFor("/x/noext")).toBe("application/octet-stream");

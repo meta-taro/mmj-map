@@ -4,7 +4,10 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 `packages/elements/src/*.js` が素の ESM で、そのまま配られます。
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script type="module">
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  window.maplibregl = maplibregl;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
 <script type="module" src="/elements/index.js"></script>
 

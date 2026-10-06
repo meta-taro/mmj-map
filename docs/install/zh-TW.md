@@ -144,7 +144,7 @@ cp -r packages/elements/src/ your-site/elements/
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
 <style>
   mmj-map { display: block; height: 70vh; }
 </style>
@@ -159,7 +159,10 @@ cp -r packages/elements/src/ your-site/elements/
   <mmj-marker lnglat="135.4959,34.7024" popup="梅田"></mmj-marker>
 </mmj-map>
 
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script type="module">
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  window.maplibregl = maplibregl;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
 <script type="module" src="./elements/index.js"></script>
 </body>
@@ -168,6 +171,11 @@ cp -r packages/elements/src/ your-site/elements/
 
 `maplibre-gl` 和 `pmtiles` 由**你**用 `<script>` 載入。MMJ 不會把它們打包進去，
 所以**版本由你掌握**。
+
+> **MapLibre 6 只發佈 ESM。**`dist/maplibre-gl.js`（UMD 版）已不存在，只把舊的
+> `<script src="…/maplibre-gl.js">` 裡的版本號改成 6，會得到 404，地圖一片空白。
+> 請使用上面 `<script type="module">` 的寫法。預設匯入（`import maplibregl from`）會得到 `undefined`，
+> 因為 v6 沒有預設匯出——請用 `import * as` 接收。
 
 `center` 是 `經度,緯度`——和 GeoJSON 同樣的順序，和口語習慣相反。
 

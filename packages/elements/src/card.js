@@ -740,7 +740,7 @@ export function mapCardFields(properties, keys) {
  *
  * **`#` は地図が持ち主。**`<mmj-map hash>` を付けると MapLibre が
  * `#15/34.70/135.49` を書き込むが、**その実装は自分の形以外を捨てる**
- * （`getHashString()` が `#${zoom}/${lat}/${lng}` を丸ごと返す・5.24.0 で確認）。
+ * （`getHashString()` が `#${zoom}/${lat}/${lng}` を丸ごと返す・5.24.0 と 6.12.0 で確認）。
  * `#shop=` に置くと、**地図を少し動かしただけで消える**。
  * 消えたことは画面に出ないので、**共有して初めて壊れているのが分かる**。
  *

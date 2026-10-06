@@ -174,11 +174,31 @@ export function pickBrowser(candidates: readonly string[], exists: (path: string
 /**
  * 「読み込みが止まったか」を数える対象かどうか。
  *
- * MapLibre の worker は `blob:` で読み込まれ、**ページが生きているあいだずっと開いたまま**に
- * なる（実測）。これを数えると静かになる瞬間が永久に来ず、毎回待ち切ってから撮ることになる。
- * 見たいのは配信への要求（タイル・スタイル・グリフ）だけ。
+ * worker は別の target で走るので、その本体を取りに行った要求には
+ * 応答が page 側へ 1 つも返ってこない。数えると静かになる瞬間が永久に来ず、
+ * 毎回待ち切ってから撮ることになる。見たいのは配信への要求
+ * （タイル・スタイル・グリフ）だけ。
+ *
+ * 仕分けは URL ではなく `initiator` で行う。MapLibre 5 の worker は `blob:` だったので
+ * 「scheme が http(s) か」で足りていたが、6 系の worker は `./maplibre-gl-worker.mjs` という
+ * 普通の URL になり、同じ規則をすり抜けた（実測・2026-10-06）。
+ *
+ * 実測した内訳（`plain.html`）:
+ *
+ * | initiator | 中身 | 応答 |
+ * | --- | --- | --- |
+ * | `script` | タイル・スタイル・グリフ・ESM | 返る |
+ * | `parser` | 頁が自分で読む css / js / 画像 | 返る |
+ * | `other` | 頁そのもの、worker の本体 | worker だけ返らない |
+ *
+ * 頁そのものを数えなくなるが、撮り終えてよいかの判断は `Page.loadEventFired` が
+ * 別に見ている。
+ *
+ * @param url 要求先
+ * @param initiator CDP の `Network.requestWillBeSent` が返す `initiator.type`
  */
-export const isCountableRequest = (url: string): boolean => /^https?:/i.test(url);
+export const isCountableRequest = (url: string, initiator: string): boolean =>
+  /^https?:/i.test(url) && (initiator === "script" || initiator === "parser");
 
 /**
  * 案内画面（配信元が無いときの代替表示）が出たまま撮れたかどうか。

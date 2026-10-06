@@ -147,7 +147,7 @@ cp -r packages/elements/src/ your-site/elements/
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
 <style>
   mmj-map { display: block; height: 70vh; }
 </style>
@@ -162,7 +162,10 @@ cp -r packages/elements/src/ your-site/elements/
   <mmj-marker lnglat="135.4959,34.7024" popup="梅田"></mmj-marker>
 </mmj-map>
 
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script type="module">
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  window.maplibregl = maplibregl;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
 <script type="module" src="./elements/index.js"></script>
 </body>
@@ -171,6 +174,11 @@ cp -r packages/elements/src/ your-site/elements/
 
 `maplibre-gl` と `pmtiles` は**読み込む側が** `<script>` で入れます。
 MMJ は同梱しないので、**版を握るのはあなた**です。
+
+> **MapLibre 6 は ESM だけを配っています。**`dist/maplibre-gl.js`（UMD）はもう存在せず、
+> 5 系の `<script src="…/maplibre-gl.js">` の版だけを 6 に書き換えると **404 になり、地図が出ません**。
+> 上の `<script type="module">` の形で入れてください。`import maplibregl from`（既定の輸入）は
+> **6 系に既定の輸出が無い**ので `undefined` になります。`import * as` で受けます。
 
 `center` は `経度,緯度` です。**GeoJSON と同じ並び**で、口で言う順番とは逆です。
 

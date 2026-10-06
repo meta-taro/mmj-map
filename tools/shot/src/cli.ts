@@ -148,7 +148,8 @@ function drainEvents(): void {
       case "Network.requestWillBeSent":
         {
           const url = String(p["request"]?.url ?? "?");
-          if (isCountableRequest(url)) inflight.set(String(p["requestId"]), url);
+          const initiator = String(p["initiator"]?.type ?? "other");
+          if (isCountableRequest(url, initiator)) inflight.set(String(p["requestId"]), url);
         }
         break;
       case "Network.loadingFinished":

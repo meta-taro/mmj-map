@@ -146,7 +146,7 @@ point at `node_modules/@mmj-map/elements/src/index.js` or let your bundler resol
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
 <style>
   mmj-map { display: block; height: 70vh; }
 </style>
@@ -161,7 +161,10 @@ point at `node_modules/@mmj-map/elements/src/index.js` or let your bundler resol
   <mmj-marker lnglat="135.4959,34.7024" popup="Umeda"></mmj-marker>
 </mmj-map>
 
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script type="module">
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  window.maplibregl = maplibregl;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
 <script type="module" src="./elements/index.js"></script>
 </body>
@@ -170,6 +173,11 @@ point at `node_modules/@mmj-map/elements/src/index.js` or let your bundler resol
 
 `maplibre-gl` and `pmtiles` are loaded by **you**, with `<script>` tags. MMJ does not bundle them,
 so you stay in control of the versions.
+
+> **MapLibre 6 ships ESM only.** `dist/maplibre-gl.js` (the UMD build) no longer exists, so changing
+> only the version number in the old `<script src="…/maplibre-gl.js">` line gives you a 404 and a blank map.
+> Use the `<script type="module">` form above. A default import (`import maplibregl from`) yields `undefined`,
+> because v6 has no default export — take the namespace with `import * as`.
 
 `center` is `longitude,latitude` — the same order as GeoJSON, not the order you say out loud.
 

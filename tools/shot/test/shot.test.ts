@@ -134,18 +134,27 @@ describe("pickBrowser", () => {
 
 describe("isCountableRequest", () => {
   it("配信への要求は数える", () => {
-    expect(isCountableRequest("http://localhost:8787/tiles/kansai.pmtiles")).toBe(true);
-    expect(isCountableRequest("https://protomaps.github.io/basemaps-assets/fonts/A/0-255.pbf")).toBe(true);
+    expect(isCountableRequest("http://localhost:8787/tiles/kansai.pmtiles", "script")).toBe(true);
+    expect(isCountableRequest("https://protomaps.github.io/basemaps-assets/fonts/A/0-255.pbf", "script")).toBe(true);
   });
 
-  it("blob: は数えない", () => {
-    // MapLibre の worker は blob: で読み込まれ、**ページが生きている間ずっと開いたまま**。
-    // これを数えると「読み込みが止まった」が永久に来ず、毎回待ち切って撮ることになる（実測）。
-    expect(isCountableRequest("blob:http://localhost:8787/e007075b-d740-4705-93e4-0d9a977af1ae")).toBe(false);
+  it("頁が自分で読む資産（parser）も数える", () => {
+    expect(isCountableRequest("http://localhost:8787/demo.css", "parser")).toBe(true);
+  });
+
+  it("worker の本体は数えない（応答が page 側へ来ないので、永久に終わらない）", () => {
+    // 実測（2026-10-06・plain.html）: MapLibre 6 の worker 本体だけが
+    // initiator=other で、responseReceived も loadingFinished も **1 つも来ない**。
+    // worker は別の target で走るため。数えると 25 秒待ち切ってから撮ることになる。
+    expect(isCountableRequest("http://localhost:8787/vendor/maplibre-gl/maplibre-gl-worker.mjs", "other")).toBe(false);
+  });
+
+  it("5 系の worker（blob:）も数えない", () => {
+    expect(isCountableRequest("blob:http://localhost:8787/e007075b-d740-4705-93e4-0d9a977af1ae", "script")).toBe(false);
   });
 
   it("data: も数えない", () => {
-    expect(isCountableRequest("data:image/png;base64,iVBOR")).toBe(false);
+    expect(isCountableRequest("data:image/png;base64,iVBOR", "parser")).toBe(false);
   });
 });
 
