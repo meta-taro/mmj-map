@@ -125,6 +125,22 @@
       if (!res.ok) throw new Error(`スタイルを取得できません: ${cfg.styleUrl} -> HTTP ${res.status}`);
       const style = JSON.parse((await res.text()).replaceAll('__TILES_URL__', cfg.tilesUrl));
 
+      // **スタイルの中の相対 URL は、スタイルの場所から解く。**
+      // オブジェクトで渡すと MapLibre には「スタイルの場所」が無いので、
+      // 頁の場所から解く。公開先は `/mmj-map/` の下にあるため、
+      // `../glyphs/` が 1 つ上を指して 404 になり、**ラテン文字だけが
+      // 閲覧側のフォントに化ける**（地図は出るので画面では気づけない）。
+      //
+      // 5.24.0 でも 6.12.0 でも同じになることを実測した（2026-10-06）。
+      // 版の問題ではなく、オブジェクトで渡す側の仕事。
+      //
+      // `new URL()` は `{` `}` を `%7B` `%7D` にするので戻す。
+      // 戻さないと MapLibre が置換子を見つけられず、**404 を別の 404 に替えるだけ**になる。
+      if (typeof style.glyphs === 'string') {
+        style.glyphs = new URL(style.glyphs, cfg.styleUrl).href
+          .replaceAll('%7B', '{').replaceAll('%7D', '}');
+      }
+
       const map = new maplibregl.Map({
         container: 'map',
         style,
