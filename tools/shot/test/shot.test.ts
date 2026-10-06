@@ -13,6 +13,7 @@ describe("parseShotArgs", () => {
       offline: false,
       format: "png",
       quality: 72,
+      click: "",
     });
   });
 
@@ -26,6 +27,7 @@ describe("parseShotArgs", () => {
       offline: false,
       format: "png",
       quality: 72,
+      click: "",
     });
   });
 
@@ -52,6 +54,7 @@ describe("parseShotArgs", () => {
       offline: false,
       format: "png",
       quality: 72,
+      click: "",
     });
   });
 
@@ -65,6 +68,7 @@ describe("parseShotArgs", () => {
       offline: false,
       format: "png",
       quality: 72,
+      click: "",
     });
   });
 
@@ -233,5 +237,39 @@ describe("parseShotArgs（JPEG で出す）", () => {
       format: "jpeg",
       quality: 80,
     });
+  });
+});
+
+/**
+ * 撮る前に押す。
+ *
+ * タブや開閉の中身は、押さないと画面に出ない。そこを確かめられないと、
+ * 「単体テストは通ったが、画面は見ていない」で止まる。
+ * 実際に決済タブの中身を確かめられず、確認を人へ回した（2026-10-05）。
+ */
+describe("parseShotArgs（撮る前に押す）", () => {
+  it("既定は押さない", () => {
+    expect(parseShotArgs([]).click).toBe("");
+  });
+
+  it("--click= で CSS セレクタを受ける", () => {
+    expect(parseShotArgs(["--click=.mmj-card-tab"]).click).toBe(".mmj-card-tab");
+  });
+
+  it("文字で選ぶ書き方も受ける", () => {
+    expect(parseShotArgs(["--click=button:text(決済)"]).click).toBe("button:text(決済)");
+  });
+
+  it("--click= を位置引数と数えない", () => {
+    expect(parseShotArgs(["--click=.x", "http://y/", "a.png", "9000"])).toMatchObject({
+      url: "http://y/",
+      out: "a.png",
+      waitMs: 9000,
+    });
+  });
+
+  /** 空の指定は受けない（押したつもりで押していない絵が配られる） */
+  it("空のセレクタは落とす", () => {
+    expect(() => parseShotArgs(["--click="])).toThrow();
   });
 });

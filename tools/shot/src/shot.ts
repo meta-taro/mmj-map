@@ -31,6 +31,13 @@ export interface ShotArgs {
   readonly format: "png" | "jpeg";
   /** JPEG の画質（1〜100）。`format` が png のときは使わない */
   readonly quality: number;
+  /**
+   * 撮る前に押すもの（CSS セレクタ、または `button:text(決済)`）。空なら押さない。
+   *
+   * タブや開閉の中身は、押さないと画面に出ない。そこを確かめられないと
+   * 「単体テストは通ったが、画面は見ていない」で止まる。
+   */
+  readonly click: string;
 }
 
 const DEFAULTS: ShotArgs = {
@@ -42,7 +49,19 @@ const DEFAULTS: ShotArgs = {
   offline: false,
   format: "png",
   quality: 72,
+  click: "",
 };
+
+const CLICK_FLAG = "--click=";
+
+/** `--click=.mmj-card-tab` を読む。空の指定は受けない（押したつもりの絵が配られる） */
+function readClick(args: readonly string[]): string {
+  const flag = args.find((arg) => arg.startsWith(CLICK_FLAG));
+  if (flag === undefined) return DEFAULTS.click;
+  const selector = flag.slice(CLICK_FLAG.length).trim();
+  if (selector === "") throw new Error("--click= には押すものを指定してください（例: --click=button:text(決済)）");
+  return selector;
+}
 
 const SIZE_FLAG = "--size=";
 const JPEG_FLAG = "--jpeg";
@@ -110,6 +129,7 @@ export function parseShotArgs(argv: readonly string[]): ShotArgs {
     offline: args.includes("--offline"),
     ...size,
     ...readFormat(args),
+    click: readClick(args),
   };
 }
 
