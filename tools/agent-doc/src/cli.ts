@@ -20,7 +20,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { attributesInDoc, attributesInHtml, attributesInSource, undocumented, unknownInText } from "./attrs.js";
-import { SNIPPET, buildIndex, type IndexLink } from "./content.js";
+import { SNIPPET, buildIndex, buildSitemap, type IndexLink } from "./content.js";
 
 // src/cli.ts → tools/agent-doc → tools → リポジトリの根（**3 つ上**）
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -39,15 +39,15 @@ const PLAIN_HTML_ATTRS = new Set(["rel", "href", "src", "type"]);
 
 /** 索引に載せる頁。**人が書く。**何が分かる頁かは、機械には書けない。 */
 const LINKS: readonly IndexLink[] = [
-  { section: "はじめに", title: "入れ方（日本語）", path: "install/ja.html", note: "タイル・スタイル・部品の 3 つを置くまで" },
-  { section: "はじめに", title: "Install (English)", path: "install/en.html", note: "the same, in English" },
+  { section: "はじめに", title: "入れ方（日本語）", path: "https://github.com/meta-taro/mmj-map/blob/develop/docs/install/ja.md", note: "タイル・スタイル・部品の 3 つを置くまで" },
+  { section: "はじめに", title: "Install (English)", path: "https://github.com/meta-taro/mmj-map/blob/develop/docs/install/en.md", note: "the same, in English" },
   { section: "見本", title: "素の地図", path: "plain.html", note: "HTML だけで地図を 1 枚置く" },
   { section: "見本", title: "お店を見て回る", path: "shops.html", note: "点に自前の SVG・カード・決済タブ・一覧との連動" },
   { section: "見本", title: "建物を立てる", path: "3d.html", note: "3d 属性で建物を押し出す" },
   { section: "見本", title: "3D で道案内", path: "3d-route.html", note: "建物を立てたまま経路と案内を描く" },
   { section: "見本", title: "点をまとめる", path: "cluster.html", note: "点が多いときにまとめて見せる" },
-  { section: "見本", title: "配色を見くらべる", path: "palette.html", note: "6 枚のスタイルを並べる" },
-  { section: "きまり", title: "ライセンスと帰属表示", path: "licenses.html", note: "ODbL。帰属表示を画面から外さない" },
+  { section: "見本", title: "配色を見くらべる", path: "themes.html", note: "6 枚のスタイルを並べる" },
+  { section: "きまり", title: "ライセンスと帰属表示", path: "https://github.com/meta-taro/mmj-map/blob/develop/LICENSES.md", note: "ODbL。帰属表示を画面から外さない" },
 ];
 
 /** 属性の正本（`packages/elements/src/*.js`） */
@@ -61,7 +61,13 @@ function generated(): { file: string; text: string }[] {
   const attributes = sourceAttributes();
   const index = buildIndex({ site: SITE, links: LINKS, attributes });
   const full = readFileSync(reference, "utf8");
-  return [...INDEX_OUT.map((file) => ({ file, text: index })), ...FULL_OUT.map((file) => ({ file, text: full }))];
+  // **索引も生成物。**手で書くと、頁を足したときに古いまま残る
+  const pages = readdirSync(path.join(repoRoot, "apps/demo")).filter((name) => name.endsWith(".html"));
+  return [
+    ...INDEX_OUT.map((file) => ({ file, text: index })),
+    ...FULL_OUT.map((file) => ({ file, text: full })),
+    { file: "apps/demo/sitemap.xml", text: buildSitemap(SITE, pages) },
+  ];
 }
 
 function readOrNull(file: string): string | null {
@@ -95,7 +101,19 @@ function commandCheck(): number {
     problems.push(`見本（content.ts の SNIPPET）が ${name} を使っていますが、ソースにありません`);
   }
 
-  // 3. 生成物が最新か（**build を忘れて commit したら落ちる**）
+  // 3. 索引のリンクが実在するか。
+  //
+  // **エージェント向けの入口として配っているのに、10 本中 4 本が 404 だった**
+  // （2026-10-06 実測）。公開サイトに無い頁へ、サイトの根を付けて書いていた。
+  // 外（https）は相手の都合なので見ない。**こちらが出す頁だけを見る。**
+  for (const link of LINKS) {
+    if (/^https?:\/\//i.test(link.path)) continue;
+    if (readOrNull(`apps/demo/${link.path}`) === null) {
+      problems.push(`索引のリンク ${link.path} が apps/demo にありません（配ると 404 になります）`);
+    }
+  }
+
+  // 4. 生成物が最新か（**build を忘れて commit したら落ちる**）
   for (const { file, text } of generated()) {
     const current = readOrNull(file);
     if (current === null) problems.push(`${file} がありません。pnpm agent-doc:build を走らせてください`);

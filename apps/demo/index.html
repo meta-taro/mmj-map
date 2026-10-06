@@ -26,6 +26,45 @@
 <link rel="stylesheet" href="./demo.css">
 <!-- **この頁だけの装飾。**他の 8 枚は地図が主役で、これを読む必要がない -->
 <link rel="stylesheet" href="./lp.css">
+<!--
+  構造化データ。何のソフトかを、読む機械に対して明示する。
+
+  llms.txt を読む事業者はまだ公表されていない（2026-10 時点）が、
+  schema.org は検索にも AI の回答にも使われている。
+  書くのは事実だけ——名前・用途・ライセンス・動く場所。
+-->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "MMJ",
+  "alternateName": "mmj-map",
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "Map rendering library",
+  "operatingSystem": "Web browser",
+  "description": "API キーもタイルサーバーも要らない地図の部品（Web Components）。PMTiles 1 ファイルと手書きのスタイル JSON を、静的配信だけで地図にする。",
+  "url": "https://meta-taro.github.io/mmj-map/",
+  "codeRepository": "https://github.com/meta-taro/mmj-map",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" },
+  "programmingLanguage": "JavaScript",
+  "runtimePlatform": "Web browser",
+  "featureList": [
+    "HTML の属性だけで地図を置く（JavaScript を書かない）",
+    "建物の押し出し（転送量は増えない）",
+    "経路と案内の吹き出し（経路の計算はしない）",
+    "点のまとまり・自前の POI・店舗カード",
+    "6 枚の配色と、サイトのテーマカラーの適用",
+    "ラベルの言語の切り替え",
+    "つながらなくても地図が出る（HTTP Range と静的配信）"
+  ],
+  "isBasedOn": [
+    { "@type": "SoftwareApplication", "name": "MapLibre GL JS", "url": "https://maplibre.org/" },
+    { "@type": "Dataset", "name": "OpenStreetMap", "url": "https://www.openstreetmap.org/", "license": "https://opendatacommons.org/licenses/odbl/" }
+  ]
+}
+</script>
 </head>
 <body class="lp">
 

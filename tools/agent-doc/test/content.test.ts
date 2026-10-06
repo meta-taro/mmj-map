@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { SNIPPET, buildIndex, type IndexInput } from "../src/content.js";
+import { SNIPPET, buildIndex, buildSitemap, type IndexInput } from "../src/content.js";
 
 const input: IndexInput = {
   site: "https://example.github.io/mmj-map/",
@@ -57,5 +57,65 @@ describe("buildIndex", () => {
   /** 同じ入力なら同じ出力（生成物を commit して差分を見るため） */
   it("同じ入力から同じ結果を作る", () => {
     expect(buildIndex(input)).toBe(buildIndex(input));
+  });
+});
+
+/**
+ * 外のリンクも置ける。
+ *
+ * 導入手順とライセンスは公開サイトではなく GitHub にある。
+ * サイトの根を頭に付けると 404 になり、実際に 10 本中 4 本が切れていた
+ * （2026-10-06 実測。エージェント向けの入口として配っていたのに）。
+ */
+describe("buildIndex（外のリンク）", () => {
+  const base: IndexInput = { site: "https://example.github.io/mmj-map/", links: [], attributes: ["zoom"] };
+
+  it("https で始まる行き先は、そのまま出す", () => {
+    const got = buildIndex({
+      ...base,
+      links: [{ section: "はじめに", title: "入れ方", path: "https://github.com/x/y/blob/develop/docs/ja.md", note: "手順" }],
+    });
+    expect(got).toContain("- [入れ方](https://github.com/x/y/blob/develop/docs/ja.md): 手順");
+  });
+
+  it("サイトの中の行き先は、これまでどおり根を付ける", () => {
+    const got = buildIndex({ ...base, links: [{ section: "見本", title: "素の地図", path: "plain.html", note: "1 枚" }] });
+    expect(got).toContain("- [素の地図](https://example.github.io/mmj-map/plain.html): 1 枚");
+  });
+});
+
+/**
+ * 索引（sitemap.xml）。
+ *
+ * 手で書くと、頁を足したときに腐る。実際に 3d-route.html を足したとき、
+ * 索引も SNS カードも手で足して回った。生成物にして、検査で古びを止める。
+ */
+describe("buildSitemap", () => {
+  const site = "https://example.github.io/mmj-map/";
+
+  it("XML の形で出す", () => {
+    const got = buildSitemap(site, ["index.html", "plain.html"]);
+    expect(got.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);
+    expect(got).toContain("<urlset");
+    expect(got).toContain("<loc>https://example.github.io/mmj-map/plain.html</loc>");
+  });
+
+  /** トップは拡張子を付けない（同じ頁が 2 つの URL で出ると、評価が割れる） */
+  it("トップはサイトの根として出す", () => {
+    expect(buildSitemap(site, ["index.html"])).toContain("<loc>https://example.github.io/mmj-map/</loc>");
+    expect(buildSitemap(site, ["index.html"])).not.toContain("index.html");
+  });
+
+  it("並びは一定（差分が出ないように）", () => {
+    expect(buildSitemap(site, ["b.html", "a.html"])).toBe(buildSitemap(site, ["a.html", "b.html"]));
+  });
+
+  it("改行で終わる", () => {
+    expect(buildSitemap(site, ["index.html"]).endsWith("\n")).toBe(true);
+  });
+
+  /** 見本を作るための頁は索引に入れない（SNS カードの版下） */
+  it("og.html は入れない", () => {
+    expect(buildSitemap(site, ["index.html", "og.html"])).not.toContain("og.html");
   });
 });
