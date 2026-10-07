@@ -2,26 +2,106 @@
 
 **自分の地図を持つ**ための道具。**API キーなし・従量課金なし・地図サーバーなし。**
 
-> **2026-09-24 に `mmj-map` へ改名しました**（D-025）。npm の scope `@mmj-map` と揃えるためです。
-> `github.com/meta-taro/modern-map-japan` は 301 でリダイレクトされますが、
-> **GitHub Pages はリダイレクトしません**。旧デモ URL は 404 です（2026-09-24 実測）。
-> デモは <https://meta-taro.github.io/mmj-map/> です。**渡したリンクがあれば貼り替えてください。**
+[![台風が近づく雨雲レーダーの画面][shot-rain]][demo-rain]
 
-> **状態: 使えます。ただし初期です。** npm にあるのは 2 つで、
-> 部品が [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements)、
-> 切り出しが [`@mmj-map/tiles`](https://www.npmjs.com/package/@mmj-map/tiles)
-> （`npx @mmj-map/tiles extract <名前> --bbox=...` で、**clone せずに自分の街を切り出せます**）。
-> デモは <https://meta-taro.github.io/mmj-map/> で動いています（13 枚すべて）。
-> **8 地域を切り替えられます**（大阪・ハノイ・ホーチミン・ニューヨーク・シンガポール・上海・台北・ソウル）。
-> 導入手順は 5 言語。
->
-> **会場の頁は、通信を切っても地図が出ます**（舞浜 1.9 MB ＋ 字 562 KB ＋ 道具 1.15 MB）。
-> **会場ほどの範囲だからできること**で、日本全土では同じことはできません。
->
-> **できていないこと**: **配信されたタイルはありません**（自分で切り出します。それが狙いです）。
+<p align="center">
+  <b><a href="https://meta-taro.github.io/mmj-map/">デモを開く</a></b> ·
+  <a href="https://meta-taro.github.io/mmj-map/rain.html">上の絵を動かす</a> ·
+  <a href="docs/install/ja.md">導入手順</a> ·
+  <a href="README.md">English</a>
+</p>
+
+> この頁に出ているものは**全部、GitHub Pages に置いた静的ファイル**です。
+> 上の動く絵も含めて、裏側に何もありません。
+
+## 動いているところ
+
+| | |
+|---|---|
+| [![写真つきのカードが開いた店舗の地図][shot-shops]][demo-shops]<br>**自分の店舗を、中身のあるカードで**——写真・星・曜日ごとの営業時間・タブ。開いている店は `?shop=` に残るので、**その 1 軒を開いた状態で共有**できます。 | [![建物が立った大阪の道案内][shot-3d-route]][demo-3d-route]<br>**建物を立てたまま道案内**——曲がる角に写真を出せます。建物は走っている地図のまま立てたり寝かせたりできます。 |
+| [![6 枚のスタイルを並べた画面][shot-themes]][demo-themes]<br>**手書きのスタイル 6 枚**。サイトのテーマカラー 1 色を渡すこともできます。当たるのは高速道路と駅の丸だけで、**地図全体は塗りません**（塗ると地図として読めなくなります）。 | [![点がまとまって表示されている地図][shot-cluster]][demo-cluster]<br>**点が多くても潰れない**——引くとまとまり、寄るとばらけます。読むのは**あなたが置いた GeoJSON** です。 |
+
+8 地域を切り替えられます（大阪・ハノイ・ホーチミン・ニューヨーク・シンガポール・上海・台北・ソウル）。
+デモは全 17 頁。
+
+## こういうときに使えます
+
+### 「地図の請求が、こちらで止められない量に比例して増える」
+
+表示ごとの課金です。サイトが伸びるほどグラフが悪くなり、**その数字はこちらで上限を決められません**。
+MMJ に**メーターはありません**。必要な範囲を 1 度だけ切り出し（街ひとつで 10〜60 MB・1 分かかりません）、
+ファイルとして置くだけです。**通信費は「静的ファイルの配信料」で、多くのサイトでは 0 円です。**
+
+### 「会場に電波が無い」
+
+ホール・地下・催事場・防災訓練。**GPS は通信が無くても動きます**——測位は衛星からで、回線ではありません。
+欠けていた唯一のピースは、**地図のほうがネット越しだった**ことだけでした。
+
+デモの 1 頁は、通信を切っても地図が出ます（タイル 1.9 MB ＋ 字 562 KB ＋ 道具 1.15 MB）。
+**会場ほどの範囲だからできること**で、日本全土では同じことはできません。
+
+### 「他人の地図ではなく、自分の点を出したい」
+
+自社の店舗・施設・点検箇所。サイトの配色で、利用者の言語で、写真つきで出したい。
+そして**その一覧を、どこかへ渡したくない**。
+
+**データは配信元から出ません**。部品が読むのは**あなたが置いた GeoJSON** で、
+MMJ には送り先になる配信元がそもそもありません。
+
+## 試す
+
+**1 コマンドと、写すだけ**。自分の街を切り出して、頁に置きます。
+
+```bash
+npx @mmj-map/tiles extract osaka --bbox=135.4,34.6,135.6,34.8
+```
+
+```
+上流の最新 20260924.pmtiles（basemap 4.15.2）で切り出します。
+できました: ./tiles/osaka.20260924.pmtiles
+9.8 MB — GitHub Pages に乗ります（1 ファイル 100 MB / サイト全体 1 GB）。
+```
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
+<style>mmj-map { display: block; height: 70vh; }</style>
+
+<mmj-map
+  tiles="./tiles/osaka.20260924.pmtiles"
+  style-url="./styles/modern-dark.json"
+  center="135.5023,34.6937"
+  zoom="12">
+  <mmj-marker lnglat="135.4959,34.7024" popup="梅田"></mmj-marker>
+</mmj-map>
+
+<script type="module">
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  window.maplibregl = maplibregl;
+</script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script type="module" src="./elements/index.js"></script>
+```
+
+`center` は `経度,緯度` です。**GeoJSON と同じ並び**で、口で言う順番とは逆です。
+
+部品は **8 つ**あります（`mmj-map` `mmj-marker` `mmj-poi` `mmj-cluster` `mmj-route`
+`mmj-circle` `mmj-raster` `mmj-fill`）。どれも素の ESM で、**ビルド工程はありません**。
+
+| | |
+|---|---|
+| 部品 | [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements) |
+| 切り出し | [`@mmj-map/tiles`](https://www.npmjs.com/package/@mmj-map/tiles) |
+| 導入手順 | [日本語](docs/install/ja.md) · [English](docs/install/en.md) · [繁體中文](docs/install/zh-TW.md) · [简体中文](docs/install/zh-CN.md) · [Tiếng Việt](docs/install/vi.md) |
+| 属性の全文（1 回の取得で全部） | <https://meta-taro.github.io/mmj-map/llms-full.txt> |
+
+> **状態: 使えます。ただし初期です。**
+> **配信されたタイルはありません**（自分で切り出します。それが狙いです）。
 > **日本語のグリフがありません**——漢字かなは閲覧側のフォントで描くので、**字形が環境ごとに変わります**。
-> スタイル 6 枚は**提案**で、承認された配色ではありません。
-> 詳細は [`PRD.md`](PRD.md)。
+> スタイル 6 枚は**提案**で、承認された配色ではありません。詳細は [`PRD.md`](PRD.md)。
+>
+> **2026-09-24 に `mmj-map` へ改名しました**（D-025）。
+> `github.com/meta-taro/modern-map-japan` は 301 でリダイレクトされますが、
+> **GitHub Pages はリダイレクトしません**。旧デモ URL は 404 です。
 
 ## なぜ
 
@@ -151,3 +231,29 @@ bbox か多角形を渡せば、その範囲のタイルが出ます。
 ## 参加
 
 [`CONTRIBUTING.md`](CONTRIBUTING.md) を読んでください。Issue は日本語でも英語でも構いません。
+
+<!--
+  上で使っている画像とデモのリンクは、ここ 1 か所にまとめてある。
+
+  画像を絶対 URL にしているのは意図的。この文書は npm や fork でも読まれ、
+  相対パスだと別の場所を指して画像が死ぬ。指しているのは deploy が作り直す
+  ファイルなので、差し替えは「ファイルを置き換える」で済み、この README は触らない。
+
+  スクリーンショットを足すときは、必ず目で見ること。デモのデータは架空だが、
+  それでも公開の宣伝物に出してはいけない名前が写ることがある。
+  `venue.jpg` をここで使っていないのはそのため——あの範囲は特定企業の施設名が
+  絵の主役になり、宣伝物では提携していると読まれかねない
+  （同じ判断が `apps/demo/og.html` に記録されている）。
+-->
+
+[shot-rain]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/rain.jpg
+[shot-shops]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/shops.jpg
+[shot-3d-route]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/3d-route.jpg
+[shot-themes]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/themes.jpg
+[shot-cluster]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/cluster.jpg
+
+[demo-rain]: https://meta-taro.github.io/mmj-map/rain.html
+[demo-shops]: https://meta-taro.github.io/mmj-map/shops.html
+[demo-3d-route]: https://meta-taro.github.io/mmj-map/3d-route.html
+[demo-themes]: https://meta-taro.github.io/mmj-map/themes.html
+[demo-cluster]: https://meta-taro.github.io/mmj-map/cluster.html

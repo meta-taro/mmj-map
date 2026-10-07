@@ -5,6 +5,21 @@ Web Components that put a real map on a page with plain HTML.
 
 > 日本語版は [README.ja.md](./README.ja.md) にあります（こちらが詳しい版です）。
 
+[![Shops with photo cards on a map][shot-shops]][demo-shops]
+
+<p align="center">
+  <b><a href="https://meta-taro.github.io/mmj-map/">Open the live demo</a></b> ·
+  <a href="https://meta-taro.github.io/mmj-map/shops.html">the page above</a> ·
+  <a href="https://meta-taro.github.io/mmj-map/rain.html">a typhoon you can scrub through</a>
+</p>
+
+| | |
+|---|---|
+| [![A route through 3D buildings][shot-3d-route]][demo-3d-route]<br>**Directions with the buildings up.** Turn-by-turn callouts, and a photo at the corner where you turn. | [![A rain radar animation with a typhoon track][shot-rain]][demo-rain]<br>**Time-stepped overlays.** Rain radar, storm and gale areas, a forecast cone — twelve hours from PNG files. |
+
+**Everything you see there is static files on GitHub Pages.** There is no backend behind
+any of it.
+
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
 <style>mmj-map { display: block; height: 70vh; }</style>
@@ -106,3 +121,23 @@ If you are handing this to an agent, hand it `llms-full.txt` rather than this pa
 ## License
 
 MIT for the code. Map data is OpenStreetMap, ODbL — see the attribution section above.
+
+<!--
+  Images and demo links are defined here, in one place.
+
+  Absolute URLs on purpose: npm resolves relative paths against nothing useful,
+  and a relative image dies on the package page. They point at files the deploy
+  regenerates, so swapping a screenshot replaces a file — not this README.
+
+  Look at any screenshot before adding it. `venue.jpg` is deliberately unused:
+  that area puts one company's facility names at the centre of the picture, and
+  a promotional page implies an association that does not exist.
+-->
+
+[shot-shops]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/shops.jpg
+[shot-3d-route]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/3d-route.jpg
+[shot-rain]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/rain.jpg
+
+[demo-shops]: https://meta-taro.github.io/mmj-map/shops.html
+[demo-3d-route]: https://meta-taro.github.io/mmj-map/3d-route.html
+[demo-rain]: https://meta-taro.github.io/mmj-map/rain.html

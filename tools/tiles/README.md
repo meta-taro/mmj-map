@@ -5,6 +5,15 @@ No key, no account, no tile server.
 
 > 日本語版は [README.ja.md](./README.ja.md) にあります（こちらが詳しい版です）。
 
+[![A hand-styled map of Osaka, drawn from one PMTiles archive][shot-plain]][demo-plain]
+
+<p align="center">
+  <b><a href="https://meta-taro.github.io/mmj-map/">See what the output looks like</a></b> ·
+  <a href="https://www.npmjs.com/package/@mmj-map/elements">render it with the components</a>
+</p>
+
+**That whole map is one file.** Cut it here, put it on static hosting, done.
+
 ```bash
 npx @mmj-map/tiles extract nagoya --bbox=136.85,35.13,136.95,35.20
 ```
@@ -85,3 +94,13 @@ The data is OpenStreetMap under ODbL. Whatever you render it with, keep
 ## License
 
 MIT for the code. Map data is OpenStreetMap, ODbL.
+
+<!--
+  Images and demo links are defined here, in one place. Absolute URLs on purpose:
+  npm resolves relative paths against nothing useful, and a relative image dies
+  on the package page. Look at any screenshot before adding it.
+-->
+
+[shot-plain]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/plain.jpg
+
+[demo-plain]: https://meta-taro.github.io/mmj-map/plain.html

@@ -1,27 +1,108 @@
 # MMJ
 
-**M**odern **M**ap — a map you own. No API key, no per-view billing, no tile server to run.
+**M**odern **M**ap — **put a real map on your page, and own it.**
+No API key. No per-view billing. No tile server to run.
 
-> **Renamed to `mmj-map` on 2026-09-24** (D-025), matching the npm scope `@mmj-map`.
-> `github.com/meta-taro/modern-map-japan` still redirects (301), but **GitHub Pages does
-> not**: the old demo URL is a hard 404 (measured 2026-09-24). The demo now lives at
-> <https://meta-taro.github.io/mmj-map/> — update any link you have shared.
+[![A typhoon approaching Japan, drawn over a rain-radar animation][shot-rain]][demo-rain]
 
-> **Status: usable, early.** Two packages are on npm: the components as
-> [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements) and the extractor as
-> [`@mmj-map/tiles`](https://www.npmjs.com/package/@mmj-map/tiles) — run
-> `npx @mmj-map/tiles extract <name> --bbox=...` to **cut your own town without cloning this
-> repository**. The demo is live at <https://meta-taro.github.io/mmj-map/> (thirteen pages, all
-> working) with **eight regions you can switch between** — Osaka, Hanoi, Ho Chi Minh City, New
-> York, Singapore, Shanghai, Taipei, Seoul — and the install guide exists in five languages.
->
-> **The venue page keeps working with the network switched off** (Maihama 1.9 MB + glyphs
-> 562 KB + the renderer 1.15 MB). **That works because a venue is small** — the whole of Japan
-> could not do the same.
->
-> **What is not done:** there are no hosted tiles — you cut your own, which is the point;
-> there are no Japanese glyphs, so CJK labels fall back to the viewer's font and the
-> letterforms change per machine; and the six styles are **proposals**, not an approved
+<p align="center">
+  <b><a href="https://meta-taro.github.io/mmj-map/">Open the live demo</a></b> ·
+  <a href="https://meta-taro.github.io/mmj-map/rain.html">press play on the one above</a> ·
+  <a href="docs/install/en.md">Install guide</a> ·
+  <a href="README.ja.md">日本語</a>
+</p>
+
+> Everything on this page is **static files on GitHub Pages**. There is no backend behind
+> any of it — including the animation above.
+
+## See it working
+
+| | |
+|---|---|
+| [![Shops with photo cards on a map][shot-shops]][demo-shops]<br>**Your own places, with real cards** — photos, ratings, opening hours per weekday, tabs. The open one lives in `?shop=`, so a single place is a shareable link. | [![A route through 3D buildings in Osaka][shot-3d-route]][demo-3d-route]<br>**Walking directions with the buildings up** — turn-by-turn callouts, and a photo at the corner where you turn. Buildings tilt up and lie back down on a running map. |
+| [![Six hand-written map styles side by side][shot-themes]][demo-themes]<br>**Six hand-written styles**, or hand it your brand colour and it lands on the motorways and station rings — not on the whole map, which would make it unreadable. | [![Points grouped into clusters that split apart as you zoom][shot-cluster]][demo-cluster]<br>**Thousands of points without a mess** — they group as you pull back and come apart as you move in. Your GeoJSON, read straight from your own hosting. |
+
+Eight regions you can switch between — Osaka, Hanoi, Ho Chi Minh City, New York, Singapore,
+Shanghai, Taipei, Seoul — and seventeen demo pages in all.
+
+## When this is the right tool
+
+### "Our map bill grows with traffic we do not control"
+
+You are billed per view. The better your site does, the worse the graph looks, and the
+number is not yours to cap. MMJ has **no meter** — you cut the area you care about once
+(10–60 MB for a city, under a minute) and serve it as a file. **Traffic costs what your
+static host charges for a file, which for most sites is nothing.**
+
+### "The venue has no signal"
+
+A hall, a basement, a festival site, a disaster drill. **GPS still works without a
+network** — positioning comes from satellites, not from your carrier. The only missing
+piece was that the map itself was behind a network call.
+
+One of the demo pages keeps working with the network switched off: 1.9 MB of tiles +
+562 KB of glyphs + 1.15 MB of renderer. **That works because a venue is small** — the
+whole of Japan could not do the same.
+
+### "We need our own points on a map, not someone else's"
+
+Your shops, your facilities, your inspection sites. You want them styled like your site,
+labelled in your users' language, with your photos in the popup — and you do not want to
+publish your point list to anyone to get that.
+
+**Your data never leaves your hosting.** The components read the GeoJSON you serve, and
+MMJ has no delivery origin to send it to.
+
+## Try it
+
+**One command and a copy-paste.** Cut your own town, then put it on a page.
+
+```bash
+npx @mmj-map/tiles extract osaka --bbox=135.4,34.6,135.6,34.8
+```
+
+```
+Cutting from the current upstream build 20260924.pmtiles (basemap 4.15.2).
+Done: ./tiles/osaka.20260924.pmtiles
+9.8 MB — fits on GitHub Pages (100 MB per file, 1 GB per site).
+```
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
+<style>mmj-map { display: block; height: 70vh; }</style>
+
+<mmj-map
+  tiles="./tiles/osaka.20260924.pmtiles"
+  style-url="./styles/modern-dark.json"
+  center="135.5023,34.6937"
+  zoom="12">
+  <mmj-marker lnglat="135.4959,34.7024" popup="Umeda"></mmj-marker>
+</mmj-map>
+
+<script type="module">
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  window.maplibregl = maplibregl;
+</script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script type="module" src="./elements/index.js"></script>
+```
+
+`center` is `longitude,latitude` — the same order as GeoJSON, not the order you say out loud.
+
+**Eight elements** ship in the package: `mmj-map`, `mmj-marker`, `mmj-poi`, `mmj-cluster`,
+`mmj-route`, `mmj-circle`, `mmj-raster`, `mmj-fill`. All of them are plain ESM; there is
+nothing to compile.
+
+| | |
+|---|---|
+| Components | [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements) |
+| Tile extractor | [`@mmj-map/tiles`](https://www.npmjs.com/package/@mmj-map/tiles) |
+| Full install guide | [English](docs/install/en.md) · [日本語](docs/install/ja.md) · [繁體中文](docs/install/zh-TW.md) · [简体中文](docs/install/zh-CN.md) · [Tiếng Việt](docs/install/vi.md) |
+| Every attribute, in one fetch | <https://meta-taro.github.io/mmj-map/llms-full.txt> |
+
+> **Status: usable, early.** There are **no hosted tiles — you cut your own, which is the
+> point**. There are no Japanese glyphs, so CJK labels fall back to the viewer's font and
+> the letterforms change per machine. The six styles are **proposals**, not an approved
 > palette. See [`PRD.md`](PRD.md) for scope.
 
 ## Why
@@ -84,7 +165,7 @@ Every one of those is **one site's business, and none of it is data**.
 | What you skip | What it costs you otherwise |
 |---|---|
 | **Working out the rights** | The OSM [Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/) **rules out commercial and heavy-traffic use**, and dropping the ODbL attribution from the screen is a breach |
-| **Learning how serving works** | **Some hosts answer `Range` with 200.** The map still draws, so you cannot see it — but **every tile pulls the whole archive**. MMJ ships a check for exactly this (`pnpm tiles:check-range`) |
+| **Learning how serving works** | **Some hosts answer `Range` with 200.** The map still draws, so you cannot see it — but **every tile pulls the whole archive**. MMJ ships a check for exactly this (`npx @mmj-map/tiles check-range <url>`) |
 | **Learning how upstream works** | Daily builds **disappear**. Ours **vanished nine days after we pinned it** (measured 2026-09-24). Without a pin and a fallback, one morning you simply cannot cut tiles any more |
 | **Hunting for a look** | Six hand-written styles. **That whole search is gone** |
 
@@ -109,8 +190,8 @@ There are more, and they are all the kind you find out about by stepping on them
   **per region**. The first set is written for Japanese cartography — dense place names,
   mixed scripts, rail lines that carry their operator's own colours.
   **The tools are global; the styling is local.** That distinction is the whole design.
-- **UI parts** (marker, popup, cluster, your own POIs, routes) ship as Web Components.
-  React and Vue wrappers are planned, not written.
+- **UI parts** (marker, popup, cluster, your own POIs, routes, overlays) ship as Web
+  Components. React and Vue wrappers are planned, not written.
 - **No server.** Static hosting plus HTTP Range requests is the whole deployment story.
 
 ## Where it works
@@ -144,15 +225,43 @@ Read [`LICENSES.md`](LICENSES.md) before you ship. Short version: keep
 
 ## Documentation
 
+- [`docs/install/`](docs/install/) — **how to put a map on your site** (English, 日本語, 繁體中文, 简体中文, Tiếng Việt)
 - [`docs/tiles/README.md`](docs/tiles/README.md) — **build the base tiles yourself** (public data and public tools only; written in Japanese)
+- [`docs/elements/README.md`](docs/elements/README.md) — every attribute of every component
 - [`PRINCIPLES.md`](PRINCIPLES.md) — what this project is for, how it chooses data, who is welcome
 - [`CREDITS.md`](CREDITS.md) — the work this map stands on
 - [`PRD.md`](PRD.md) — scope, and what we deliberately do not build
 - [`docs/decisions.md`](docs/decisions.md) — decisions and the reasoning behind them
 - [`docs/origin/`](docs/origin/) — the original proposal, in Japanese, unedited
-- [`docs/install/`](docs/install/) — **how to put a map on your site** (English, 日本語, 繁體中文, 简体中文, Tiếng Việt)
 - [`README.ja.md`](README.ja.md) — 日本語
 
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md). Issues in Japanese or English are both fine.
+
+<!--
+  Every image and demo link used above is defined here, in one place.
+
+  The images are absolute URLs on purpose: this file is also read on npm and in
+  forks, where a relative path resolves somewhere else and the image dies.
+  They point at files the deploy regenerates, so swapping a screenshot means
+  replacing the file — not editing this README.
+
+  Before adding a screenshot, look at it. The demo data is fictional, but a shot
+  can still carry a name that should not be in a public, promotional page.
+  `venue.jpg` is deliberately not used here: that area puts one company's
+  facility names at the centre of the picture, and a promotional page implies an
+  association that does not exist (the same reasoning is recorded in `og.html`).
+-->
+
+[shot-rain]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/rain.jpg
+[shot-shops]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/shops.jpg
+[shot-3d-route]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/3d-route.jpg
+[shot-themes]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/themes.jpg
+[shot-cluster]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/cluster.jpg
+
+[demo-rain]: https://meta-taro.github.io/mmj-map/rain.html
+[demo-shops]: https://meta-taro.github.io/mmj-map/shops.html
+[demo-3d-route]: https://meta-taro.github.io/mmj-map/3d-route.html
+[demo-themes]: https://meta-taro.github.io/mmj-map/themes.html
+[demo-cluster]: https://meta-taro.github.io/mmj-map/cluster.html
