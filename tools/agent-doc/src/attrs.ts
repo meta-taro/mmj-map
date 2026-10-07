@@ -53,11 +53,33 @@ export function attributesInDoc(markdown: string): Set<string> {
   return new Set([...markdown.matchAll(CODE_SPAN)].map((match) => match[1]!));
 }
 
+/**
+ * Markdown の中の ```html の囲みだけを取り出す。
+ *
+ * **写される場所だけを見るため。**地の文には「書いてはいけない例」が出てくる
+ * （`<img onerror=...>` は危険の説明であって、使い方の見本ではない）。
+ * 地の文まで属性として数えると、**正しい文書が落ちる**——2026-10-07 に実際に落ちた。
+ *
+ * `bash` や `json` の囲みも返さない。`--base=/mmj-map` を属性と読まないため。
+ */
+export function htmlBlocksInMarkdown(markdown: string): string[] {
+  return [...markdown.matchAll(/^```html\r?\n([\s\S]*?)^```/gm)].map((match) => match[1]!);
+}
+
+/**
+ * 引用符の中（＝値）を空にする。**名前だけを数えるため。**
+ *
+ * `label="徒歩 10 分"` から `10` を属性として拾っていた（2026-10-07 実測）。
+ * **2 語では再現しない**——前後が引用符に接していて、たまたま当たらないだけで、
+ * 3 語以上だと真ん中の語が残る（`popup="osaka umeda station"` → `umeda`）。
+ */
+const withoutValues = (attrs: string): string => attrs.replaceAll(/=\s*"[^"]*"/g, "=").replaceAll(/=\s*'[^']*'/g, "=");
+
 /** 見本の HTML が使っている属性 */
 export function attributesInHtml(html: string): string[] {
   const found: string[] = [];
   for (const tag of html.matchAll(HTML_TAG)) {
-    for (const attr of tag[1]!.matchAll(HTML_ATTR)) found.push(attr[1]!);
+    for (const attr of withoutValues(tag[1]!).matchAll(HTML_ATTR)) found.push(attr[1]!);
   }
   return sorted(found);
 }

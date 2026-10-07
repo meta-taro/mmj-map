@@ -22,6 +22,23 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 手元で動かすなら `pnpm serve` のあと <http://localhost:8787/elements.html>。
 点をまとめる例は <http://localhost:8787/cluster.html>。
 
+> **MapLibre 6 は ESM だけを配っています。**上の `<script type="module">` の形で入れてください。
+> 5 系のままでも動きます（`peerDependencies` は `>=5`）。
+> 詳しくは [CHANGELOG.md](./CHANGELOG.md) の 0.2.0 を読んでください。
+
+### どこに何があるか
+
+| 欲しいもの | 場所 |
+| --- | --- |
+| **属性の全文**（部品ごと・1 回の取得で全部） | <https://meta-taro.github.io/mmj-map/llms-full.txt> |
+| 索引と、写して動く最小の 1 枚 | <https://meta-taro.github.io/mmj-map/llms.txt> |
+| 通信が無いとき | `node_modules/@mmj-map/elements/llms.txt` |
+| 版ごとの変更 | [CHANGELOG.md](./CHANGELOG.md) |
+| 実物（全部の例） | <https://meta-taro.github.io/mmj-map/> |
+
+**この README は入口です。**属性を 1 つずつ探すなら上の全文のほうが速く、
+エージェントに渡すならそちらを渡してください。
+
 ## 属性
 
 ### `<mmj-map>`
@@ -272,6 +289,60 @@ AI に経路と案内文を作らせて、この形で渡す使い方を想定�
   **点は残るので場所は分かります**。実物（`2026-09-17-poi-z15.jpg`）でも 8 点中 1 つの名前が
   衝突で消えています。
 - `<mmj-cluster>` との使い分け: **まとめたいときはクラスタ、1 点ずつ名前を出したいときはこちら。**
+
+#### 押したときにカードを出す（`card-*`）
+
+`mmj-poi-click` を自分で受けずに、**部品にカードを出させる**こともできます。
+写真・星・タブ・曜日ごとの営業時間・ラベル付きリンクまで、GeoJSON の属性から組みます。
+
+```html
+<mmj-poi src="/data/shops.geojson"
+         card-title="shop_name" card-images="photos" card-body="description"
+         card-tabs="品書き:menu,クーポン:coupon,営業時間:hours"></mmj-poi>
+```
+
+- `card-live` — 時間で変わる中身は、**開いたときに取りに行く**
+- `card-rich` — 項目を名指ししたときだけ、本文を HTML として読む（既定は文字のまま・D-031）
+- 開いている店は `?shop=` に残るので、**その 1 軒を開いた状態で共有できます**
+
+**属性は 20 を超えるので、ここには並べません。**
+全文は <https://meta-taro.github.io/mmj-map/llms-full.txt>、実物は
+<https://meta-taro.github.io/mmj-map/shops.html>。
+
+### `<mmj-circle>` — ここから半径◯ m
+
+```html
+<mmj-circle center="139.8850,35.6305" radius="800"></mmj-circle>
+<mmj-circle center="139.8850,35.6305" radius="1600" color="#ffa03c"></mmj-circle>
+```
+
+「駅から 800 m」「この避難所の受け持ち範囲」を描きます。**円は地図の上の実寸**で、
+拡大しても縮小しても同じ距離を表します。**外部サービスもデータも要りません**（幾何だけ）。
+
+### `<mmj-raster>` — 重ねる
+
+```html
+<mmj-raster src="https://example.com/rain/{z}/{x}/{y}.png" opacity="0.6"></mmj-raster>
+```
+
+雨雲・ハザード・地盤・空中写真のように、**すでにタイルになっているもの**を上に乗せます。
+出典の表示（`attribution`）を付けられます。
+
+> **実在のタイルは同梱していません。**OSM の公式タイルは商用と大量アクセスを認めておらず、
+> 国土地理院のものは測量成果の利用にあたるかの判断が要ります（PRD §2）。
+> デモで重ねているのは自前で作った格子です。
+
+### `<mmj-fill>` — 面を値で塗り分ける
+
+```html
+<mmj-fill src="./data/flood.geojson" value-key="depth"
+          steps="0.5:#cfe8ff,1:#8ec6ff,3:#3b82f6,5:#1e3a8a"
+          legend="浸水深（m）"
+          attribution="出典：○○市 洪水浸水想定区域図（○年○月時点）"></mmj-fill>
+```
+
+浸水深・地盤・震度のように、**面と数値が対になっているもの**を段階で塗ります。
+色の段は書く側が決めます（**外界が決めている配色を、こちらで作り替えないため**）。
 
 ## この部品が引き受けていること
 

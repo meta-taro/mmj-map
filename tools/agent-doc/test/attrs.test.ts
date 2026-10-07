@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { attributesInDoc, attributesInHtml, attributesInSource, unknownInText, undocumented } from "../src/attrs.js";
+import { attributesInDoc, attributesInHtml, attributesInSource, unknownInText, undocumented, htmlBlocksInMarkdown } from "../src/attrs.js";
 
 /**
  * **エージェントが最初に読むものを、腐らせないための検査。**
@@ -99,5 +99,58 @@ describe("attributesInHtml（数字始まり・値の中身）", () => {
   it("値の中の語を属性と間違えない", () => {
     const html = '<mmj-map card-title="open now" icons="cafe:./c.svg" 3d></mmj-map>';
     expect(attributesInHtml(html)).toEqual(["3d", "card-title", "icons"]);
+  });
+});
+
+describe("htmlBlocksInMarkdown", () => {
+  // **写される場所だけを見る。**地の文には「書いてはいけない例」が出てくる。
+  // `<img onerror=...>` は危険の説明であって、使い方の見本ではない。
+  // 地の文まで数えると、**正しい文書が落ちる**（2026-10-07 に実際に落ちた）。
+  it("```html の中だけを返す", () => {
+    const md = [
+      "説明の中に `<img onerror=...>` と書くことがある。",
+      "",
+      "```html",
+      '<mmj-circle center="139.8,35.6" radius="800"></mmj-circle>',
+      "```",
+      "",
+      "続きの文。",
+    ].join("\n");
+
+    const blocks = htmlBlocksInMarkdown(md);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toContain("mmj-circle");
+    expect(blocks.join("")).not.toContain("onerror");
+  });
+
+  it("html 以外の囲みは返さない（bash の中の `--base=` を属性と読まない）", () => {
+    const md = ["```bash", "pnpm serve -- --base=/mmj-map", "```"].join("\n");
+    expect(htmlBlocksInMarkdown(md)).toEqual([]);
+  });
+
+  it("囲みが無ければ空", () => {
+    expect(htmlBlocksInMarkdown("ただの文。")).toEqual([]);
+  });
+});
+
+describe("attributesInHtml は、値の中の語を属性と読まない", () => {
+  // `label="徒歩 10 分"` から **`10`** を属性として拾っていた（2026-10-07 実測）。
+  // 引用符の中は値であって、属性名ではない。見本の多い README を見るようにしたので、
+  // ここを直さないと**正しい見本が落ちる**。
+  // 2 語では再現しない。前後が引用符に接していて、たまたま当たらないだけ。
+  // **3 語以上になると、真ん中の語が属性として残る。**
+  it("空白を含む値の中身を拾わない（真ん中の語が残っていた）", () => {
+    expect(attributesInHtml('<mmj-circle center="135.4,34.7" label="徒歩 10 分"></mmj-circle>'))
+      .toEqual(["center", "label"]);
+    expect(attributesInHtml('<mmj-map popup="osaka umeda station"></mmj-map>')).toEqual(["popup"]);
+  });
+
+  it("単引用符でも同じ", () => {
+    expect(attributesInHtml("<mmj-map style-url='/a b/c.json' zoom='12'></mmj-map>"))
+      .toEqual(["style-url", "zoom"]);
+  });
+
+  it("値の無い属性は今までどおり拾う（3d）", () => {
+    expect(attributesInHtml('<mmj-map 3d hash zoom="16"></mmj-map>')).toEqual(["3d", "hash", "zoom"]);
   });
 });

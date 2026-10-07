@@ -7,11 +7,13 @@
  *
  * **ここだけが外界（ファイル）に触る。**判断は `attrs.ts` と `content.ts`。
  *
- * ## check が見ている 3 つ
+ * ## check が見ている 4 つ
  *
  * 1. **ソースが読んでいる属性が、文書に出ているか**（足して書き忘れたら落ちる）
- * 2. **見本が、実在しない属性を使っていないか**（消したのに残っていたら落ちる）
- * 3. **生成物が最新か**（`build` を忘れて commit したら落ちる）
+ * 2. **見本が、実在しない属性を使っていないか**（消したのに残っていたら落ちる）。
+ *    `content.ts` の SNIPPET と、**npm が頁として出す README** の両方を見る
+ * 3. **索引のリンクが実在するか**（配ったら 404、を止める）
+ * 4. **生成物が最新か**（`build` を忘れて commit したら落ちる）
  *
  * **落ちない検査は検査ではない。**どれも 1 度わざと壊して、赤くなることを見ている。
  */
@@ -19,13 +21,22 @@ import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { attributesInDoc, attributesInHtml, attributesInSource, undocumented, unknownInText } from "./attrs.js";
+import {
+  attributesInDoc,
+  attributesInHtml,
+  attributesInSource,
+  htmlBlocksInMarkdown,
+  undocumented,
+  unknownInText,
+} from "./attrs.js";
 import { SNIPPET, buildIndex, buildSitemap, type IndexLink } from "./content.js";
 
 // src/cli.ts → tools/agent-doc → tools → リポジトリの根（**3 つ上**）
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const elementsDir = path.join(repoRoot, "packages/elements/src");
 const reference = path.join(repoRoot, "docs/elements/README.md");
+/** npm が頁として出す README。**導入する人が最初に読む見本がここにある** */
+const packageReadme = path.join(repoRoot, "packages/elements/README.md");
 
 /** 公開サイトの根。**ここが変わったら生成し直す**（相対リンクを出さないため） */
 const SITE = "https://meta-taro.github.io/mmj-map/";
@@ -99,6 +110,24 @@ function commandCheck(): number {
   for (const name of unknownInText([SNIPPET], attributes, attributesInHtml)) {
     if (PLAIN_HTML_ATTRS.has(name)) continue;
     problems.push(`見本（content.ts の SNIPPET）が ${name} を使っていますが、ソースにありません`);
+  }
+
+  // 2b. npm に出る README の見本が、実在しない属性を使っていないか。
+  //
+  // ここは npm の頁そのもので、導入する人が最初に読む。間違っていると、
+  // 写した HTML が黙って効かない（**知らない属性名は例外にならない**）。
+  // 2026-10-07 に実際に 3 つ間違えた——`lnglat`（正しくは `center`）・
+  // `label`（存在しない）・`card-photos`（正しくは `card-images`）。
+  // 人が気をつける方式は漏れるので、ここも機械で見る。
+  //
+  // **これで捕まるのは「どの部品にも無い名前」だけ。**上の 3 つで言えば
+  // `label` と `card-photos` は捕まるが、**`lnglat` は捕まらない**
+  // （`mmj-marker` には実在するため）。部品ごとの対応までは見ていない。
+  // 見落とす範囲を承知で置いている——**0 件は「正しい」ではない。**
+  const readmeExamples = htmlBlocksInMarkdown(readFileSync(packageReadme, "utf8"));
+  for (const name of unknownInText(readmeExamples, attributes, attributesInHtml)) {
+    if (PLAIN_HTML_ATTRS.has(name)) continue;
+    problems.push(`packages/elements/README.md が ${name} を使っていますが、ソースにありません`);
   }
 
   // 3. 索引のリンクが実在するか。
