@@ -1,9 +1,9 @@
 {
   "name": "@mmj-map/tiles",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "license": "MIT",
-  "description": "公開データ（Protomaps 日次ビルド）と公開ツール（go-pmtiles）だけで、地球上の好きな範囲の PMTiles を切り出す",
+  "description": "Cut a PMTiles archive for any bounding box on earth, from public data and public tools only. No key, no account.",
   "keywords": [
     "pmtiles",
     "openstreetmap",
@@ -28,6 +28,7 @@
     "manifest.json",
     "regions",
     "README.md",
+    "README.ja.md",
     "LICENSE"
   ],
   "publishConfig": {

@@ -7,13 +7,13 @@
 > **Machine-translated. No native speaker has reviewed this page.**
 > [`en.md`](en.md) is authoritative. Corrections welcome.
 
-> **组件已发布到 npm。**其余部分由你自行托管。
+> **组件已发布到 npm**。其余部分由你自行托管。
 >
 > ```bash
 > pnpm add @mmj-map/elements
 > ```
 >
-> **这只会给你组件，不包含其他东西。**没有托管的瓦片端点，也没有托管的样式：
+> **这只会给你组件，不包含其他东西**。没有托管的瓦片端点，也没有托管的样式：
 > `.pmtiles` 文件与样式 JSON 仍需你自己准备。**这正是本项目的用意**——
 > 不需 API 密钥、不按浏览次数计费、不必架瓦片服务器。
 
@@ -33,11 +33,11 @@ HTTP 范围请求（和视频快进所用的机制相同）**取出其中需要�
 
 | | 是什么 | 从哪里来 |
 | --- | --- | --- |
-| 1 | **瓦片** — 一个 `.pmtiles` 文件 | **只有这个要自己做。**从公开的全球构建切出，或下载示例文件 |
+| 1 | **瓦片** — 一个 `.pmtiles` 文件 | **只有这个要自己做**。从公开的全球构建切出，或下载示例文件 |
 | 2 | **样式** — 一个 `.json` 文件 | 本仓库的 `styles/`（共 6 种） |
 | 3 | **组件** — 纯 ESM，无需打包 | npm，或复制 `packages/elements/src/` |
 
-**不需要架服务器。**静态托管加上 HTTP Range 就是全部。
+**不需要架服务器**。静态托管加上 HTTP Range 就是全部。
 
 ## 1. 获取瓦片
 
@@ -49,7 +49,7 @@ gh release download demo-tiles-20260915 \
   --pattern demo.pmtiles --output tiles/demo.pmtiles
 ```
 
-**62.8 MB，仅覆盖大阪，zoom 0–15。**用来判断你喜不喜欢这张地图已经足够，
+**62.8 MB，仅覆盖大阪，zoom 0–15**。用来判断你喜不喜欢这张地图已经足够，
 **但不足以上线一个覆盖其他地区的网站。**
 
 ### B. 自己切出来
@@ -82,7 +82,7 @@ pnpm tiles:extract -- hanoi       # tools/tiles/manifest.json 里的任一区域
          center="105.8520,21.0285" zoom="13" lang="vi"></mmj-map>
 ```
 
-**不写就会用默认值，而默认优先显示日文名称。**在河内的切出文件中实测（一张 z10 瓦片）:
+**不写就会用默认值，而默认优先显示日文名称**。在河内的切出文件中实测（一张 z10 瓦片）:
 `name:en` 45、`name:ko` 29、`name:zh-Hant` 28、`name:zh-Hans` 28、**`name:vi` 27**。
 纽约则相反——地物本身就带拉丁字母的 `name`，`lang="en"` 的作用是**挡掉少数日文翻译**。
 
@@ -101,7 +101,7 @@ pnpm tiles:extract -- hanoi       # tools/tiles/manifest.json 里的任一区域
 完整步骤在 [`docs/tiles/README.md`](../tiles/README.md)（日文）。
 **只用公开数据与公开工具**，不需要账号、密钥或配额。
 
-> **文件大小很关键。**单个文件超过 100 MB 就放不进 GitHub Pages。
+> **文件大小很关键**。单个文件超过 100 MB 就放不进 GitHub Pages。
 > 在考虑付费架瓦片服务器之前，**先缩小范围或减少缩放级别**。
 
 ## 2. 选一个样式
@@ -172,7 +172,7 @@ cp -r packages/elements/src/ your-site/elements/
 `maplibre-gl` 和 `pmtiles` 由**你**用 `<script>` 加载。MMJ 不会把它们打包进去，
 所以**版本由你掌握**。
 
-> **MapLibre 6 只发布 ESM。**`dist/maplibre-gl.js`（UMD 版）已不存在，只把旧的
+> **MapLibre 6 只发布 ESM**。`dist/maplibre-gl.js`（UMD 版）已不存在，只把旧的
 > `<script src="…/maplibre-gl.js">` 里的版本号改成 6，会得到 404，地图一片空白。
 > 请使用上面 `<script type="module">` 的写法。默认导入（`import maplibregl from`）会得到 `undefined`，
 > 因为 v6 没有默认导出——请用 `import * as` 接收。
@@ -216,9 +216,9 @@ pnpm palette -- --land=#f7f9fb --water=#bfd7e8 --ink=#16202b --accent=#0a5fff --
 
 ## 还没有的东西
 
-- **托管的瓦片。**没有 MMJ 的瓦片服务端点可以指向。请自行托管你的文件
-- **路径规划。**`<mmj-route>` 只会**绘制**你提供的路线，不会计算路线
-- **中日文字形文件。**CJK 标签使用浏览端自己的字体
+- **托管的瓦片**。没有 MMJ 的瓦片服务端点可以指向。请自行托管你的文件
+- **路径规划**。`<mmj-route>` 只会**绘制**你提供的路线，不会计算路线
+- **中日文字形文件**。CJK 标签使用浏览端自己的字体
   （`localIdeographFontFamily`），因此字形会随设备而异
 
 ## 更多

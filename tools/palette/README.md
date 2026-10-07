@@ -1,6 +1,6 @@
 # @mmj-map/palette
 
-**導入者が自分の配色を完全に作るための道具。**指し値（4〜5 色）から、
+**導入者が自分の配色を完全に作るための道具**。指し値（4〜5 色）から、
 24 役割の配色、またはそのまま配れるスタイル JSON を作ります。
 
 > **ここが吐いたものを `styles/` へ置かないこと。**
@@ -90,7 +90,7 @@ Claude Code への登録（`.mcp.json` / `claude mcp add`）:
 | `mmj_derive_palette` | 指し値から 24 役割の配色を作る |
 | `mmj_build_style` | 指し値からスタイル JSON を作る |
 
-**SDK は入れていません。**MCP の stdio は JSON-RPC 2.0 を改行区切りで流すだけで、
+**SDK は入れていません**。MCP の stdio は JSON-RPC 2.0 を改行区切りで流すだけで、
 ここで要るのは `initialize` / `tools/list` / `tools/call` の 3 つです。
 公式 SDK（`@modelcontextprotocol/sdk` 1.30.0・MIT）は express / hono / cors / jose /
 express-rate-limit まで引いてきて **99 パッケージ増えます**（実測・2026-09-21）。
@@ -114,7 +114,7 @@ HTTP と SSE の輸送のためのもので、**stdio 1 本には釣り合いま
 
 ## 出したものの扱い
 
-- **あなたのものです。**手で直して構いません（そのための形にしてあります）
+- **あなたのものです**。手で直して構いません（そのための形にしてあります）
 - `__TILES_URL__` は残ります。**焼き込むと配信先を変えられなくなる**ため
 - `© OpenStreetMap contributors` の帰属表示は残ります。**消して配らないでください**（ODbL）
 - `mmj:generated: true` が入ります。**外さないでください**（手書きの作品と混ざります）

@@ -1,7 +1,7 @@
 {
   "name": "@mmj-map/elements",
-  "version": "0.2.0",
-  "description": "HTML だけで地図を置ける Web Components（ビルド不要・素の ESM）",
+  "version": "0.2.1",
+  "description": "Web Components that put a map on a page with plain HTML. No API key, no tile server, no build step.",
   "license": "MIT",
   "type": "module",
   "main": "src/index.js",
@@ -15,6 +15,7 @@
     "src/",
     "LICENSE",
     "README.md",
+    "README.ja.md",
     "CHANGELOG.md",
     "llms.txt"
   ],
