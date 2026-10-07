@@ -1,6 +1,6 @@
 {
   "name": "@mmj-map/elements",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Web Components that put a map on a page with plain HTML. No API key, no tile server, no build step.",
   "license": "MIT",
   "type": "module",

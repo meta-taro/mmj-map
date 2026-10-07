@@ -1,6 +1,6 @@
 {
   "name": "@mmj-map/tiles",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "license": "MIT",
   "description": "Cut a PMTiles archive for any bounding box on earth, from public data and public tools only. No key, no account.",
