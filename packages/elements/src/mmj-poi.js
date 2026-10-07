@@ -383,6 +383,10 @@ export class MmjPoi extends HTMLElement {
     return {
       title: this.getAttribute("card-title"),
       images: this.getAttribute("card-images"),
+      // 写真の提供元が「写真に添えて撮影者名を出すこと」を条件にしていることがある。
+      // **リンクは任意**（無ければ名前だけ出し、行は消さない）
+      imageCredit: this.getAttribute("card-image-credit"),
+      imageCreditHref: this.getAttribute("card-image-credit-href"),
       body: this.getAttribute("card-body"),
       rating: this.getAttribute("card-rating"),
       ratingCount: this.getAttribute("card-rating-count"),

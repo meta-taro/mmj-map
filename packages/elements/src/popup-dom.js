@@ -152,6 +152,28 @@ export function renderPopup(parts) {
       box.append(img);
       continue;
     }
+    if (part.kind === "credit") {
+      // **写真の直下に 1 行。**並び順は `popup.js` が決めている（ここは描くだけ）
+      const line = document.createElement("div");
+      line.className = "mmj-popup-credit";
+      const href = typeof part.href === "string" ? part.href : "";
+      if (href === "") {
+        // **リンクが無くても名前は出す。**行ごと消すと使用条件を満たさなくなる
+        line.textContent = part.text ?? "";
+      } else {
+        const link = document.createElement("a");
+        // **`href` は検証済みのものだけが来る**（`popup.js` の `isSafeLink`）
+        link.href = href;
+        link.textContent = part.text ?? "";
+        if (/^https?:/i.test(link.href)) {
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+        }
+        line.append(link);
+      }
+      box.append(line);
+      continue;
+    }
     if (part.kind === "link") {
       const link = document.createElement("a");
       // **`href` は検証済みのものだけが来る**（`popup.js` の `isSafeLink`）。

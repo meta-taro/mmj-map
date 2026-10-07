@@ -135,13 +135,24 @@ const DEFAULT_LINK_LABEL = "詳しく見る";
 /**
  * カードの中身を組む。**ここも純粋関数**で、DOM は要素側が作る。
  *
- * 並びは**見る順**——題 → 写真 → 星 → 長文 → リンク。
+ * 並びは**見る順**——題 → 写真 → 撮影者 → 星 → 長文 → リンク。
  *
  * **危ないものは落として、残りは出す。**写真 1 枚のせいでカード全部を
  * 消すと、**なぜ出ないのかが誰にも分からない**。
  *
+ * ## 撮影者の表記（`credit`）は、写真の直下から離さない
+ *
+ * 写真の提供元が「**写真に添えて撮影者名を出すこと**」を条件にしていることがある。
+ * これは体裁ではなく**使用条件**なので、長文に混ぜる（説明文と区別が付かない）、
+ * タブへ入れる（**開かないと見えない**）では満たせない。
+ *
+ * **その地物に 1 つ。**`card-images` は複数枚を受けるが、撮影者を枚数へ
+ * 推測で割り振ると、**別の写真に別人の名前が付く**という、いちばん避けたい
+ * 壊れ方になる。**写真が 1 枚も出ていなければ、この行も出さない**（添える先が無い）。
+ *
  * @param {{
  *   title?: unknown, images?: unknown, body?: unknown,
+ *   imageCredit?: unknown, imageCreditHref?: unknown,
  *   rating?: unknown, ratingCount?: unknown,
  *   href?: unknown, hrefLabel?: unknown, bodyRich?: unknown,
  *   links?: { label: string, href: string, icon: string | null }[],
@@ -156,9 +167,26 @@ export function buildCardContent(input) {
   if (title !== "") parts.push({ kind: "text", text: title });
 
   const images = Array.isArray(input.images) ? input.images : [];
+  // **出せた枚数を数える。**渡された数ではなく、落とさなかった数
+  // （危ない URL だけが来たとき、**添える先が 1 枚も残らない**）
+  let shown = 0;
   for (const src of images) {
     if (typeof src !== "string" || !isSafeImage(src)) continue;
     parts.push({ kind: "image", src: src.trim(), alt: title });
+    shown += 1;
+  }
+
+  // 撮影者の表記は**写真の直下**。星や長文より前に置く
+  const credit = typeof input.imageCredit === "string" ? input.imageCredit.trim() : "";
+  if (shown > 0 && credit !== "") {
+    const href = input.imageCreditHref;
+    // **リンクが無くても行は消さない。**中身の無いタブを落とすのとは逆で、
+    // **名前を出すこと自体が使用条件**なので、リンクの有無で消えてはいけない
+    parts.push(
+      isSafeLink(/** @type {any} */ (href))
+        ? { kind: "credit", text: credit, href: String(href).trim() }
+        : { kind: "credit", text: credit },
+    );
   }
 
   const rating = formatRating(input.rating, input.ratingCount);

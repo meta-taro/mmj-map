@@ -235,6 +235,25 @@ describe("mapCardFields", () => {
     expect(got.images).toEqual([]);
   });
 
+  /**
+   * 写真の提供元が「写真に添えて撮影者名を出すこと」を条件にしていることがある。
+   * **属性名で受ける**のは他の `card-*` と同じ（媒体ごとに名前が違う）。
+   */
+  it("**撮影者の表記も属性名で受ける**", () => {
+    const got = mapCardFields(
+      { photo_author: "撮影 かすみ", photo_author_url: "https://example.com/u" },
+      { ...keys, imageCredit: "photo_author", imageCreditHref: "photo_author_url" },
+    );
+    expect(got.imageCredit).toBe("撮影 かすみ");
+    expect(got.imageCreditHref).toBe("https://example.com/u");
+  });
+
+  it("撮影者の属性名が指定されていなければ読まない（**推測しない**）", () => {
+    const got = mapCardFields({ photo_author: "撮影 かすみ" }, keys);
+    expect(got.imageCredit).toBeUndefined();
+    expect(got.imageCreditHref).toBeUndefined();
+  });
+
   it("中身が無くても落ちない", () => {
     expect(() => mapCardFields(/** @type {any} */ (null), keys)).not.toThrow();
   });
@@ -519,6 +538,21 @@ describe("splitForTabs", () => {
     const got = splitForTabs([{ kind: "text", text: "灯" }, { kind: "body", text: "…" }]);
     expect(got.head.map((p) => p.kind)).toEqual(["text"]);
     expect(got.rest.map((p) => p.kind)).toEqual(["body"]);
+  });
+
+  /**
+   * **撮影者の表記は写真から離せない。**タブの中へ入ると開かないと見えず、
+   * 「写真に添えて」という使用条件を満たしているか怪しくなる。
+   */
+  it("**撮影者の表記は写真と一緒に上に残す**", () => {
+    const got = splitForTabs([
+      { kind: "text", text: "灯" },
+      { kind: "image", src: "./1.jpg" },
+      { kind: "credit", text: "撮影 かすみ" },
+      { kind: "rating", text: "4.3 / 5" },
+    ]);
+    expect(got.head.map((p) => p.kind)).toEqual(["text", "image", "credit"]);
+    expect(got.rest.map((p) => p.kind)).toEqual(["rating"]);
   });
 
   it("空でも落ちない", () => {
