@@ -74,6 +74,18 @@ jobs:
       - name: Style matches the pinned basemap build
         run: pnpm style:check
 
+      # 文書とソースの一致を見る（`llms.txt` は生成物で、正本はソースコード）。
+      #
+      # **2026-10-07 まで、`pnpm gate` の 6 本のうちこれだけが CI に無かった。**
+      # 手元の hook は `pnpm install` の `prepare` が張るので、**fork から来た PR
+      # には効かない**。実際に PR #2 が「属性は 58 件」のまま出てきて、
+      # **承認して CI を走らせても緑のまま通る**状態だった。
+      #
+      # 属性を足して文書を忘れても lint も test も通る。気づくのは、使った人の
+      # 地図が黙って動かなかったとき（`tools/agent-doc/src/attrs.ts` の冒頭）。
+      - name: Generated docs match the source
+        run: pnpm agent-doc:check
+
       # **画面そのものを開いて見る**（ECC `ui-flow.md` 手順 3）。
       #
       # ここまでの 6 つは 1 つもブラウザを開いていません。2026-09-29 の 1 日で、
