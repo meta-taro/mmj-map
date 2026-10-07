@@ -173,13 +173,17 @@
     const clock = document.getElementById('clock');
 
     player.hidden = false;
-    if (rain.frames.length > 0) seek.max = String(rain.frames.length - 1);
 
     // **指で出来ることが、マウスでもキーボードでも出来る**ようにする。
     // つまみは range なので、矢印キーで 1 時刻ずつ動く。
     // 台風は雨雲と同じ番号で送る。**中心と渦がずれると、見た人がどちらを信じるか迷う**
     // （見本の進路は tools/sample-raster/src/rain.ts と同じ値で作ってある）
     const typhoon = document.getElementById('typhoon');
+
+    // **用意ができた側が、できている側に合わせる。**台風は進路を取りに行くぶん
+    // 雨雲より遅れて出来上がる。追いつかせないと、雨雲だけ進んで台風が前の時刻に残る
+    // （2026-10-07 実測——`?t=11` で雨雲は 20:00、台風は 09:00 のままだった）。
+    typhoon?.addEventListener('mmj-typhoon-ready', () => typhoon.showFrame(rain.frame));
 
     rain.addEventListener('mmj-raster-frame', (event) => {
       seek.value = String(event.detail.index);
@@ -194,14 +198,22 @@
       else rain.pause();
     };
 
-    // `?t=3` で時刻を指せる。**「この時刻を見て」と渡せる形**にするため
-    // （`shops.html` の `?shop=` と同じ考え方。`#` は地図が持ち主なので使わない）。
-    // 指したときは止めて出す——動いていると、渡された人が見る前に先へ進む。
-    const asked = Number(new URLSearchParams(location.search).get('t'));
-    if (Number.isInteger(asked) && asked >= 0 && asked < rain.frames.length) {
-      setPlaying(false);
-      rain.showFrame(asked);
-    }
+    // **用意ができてから触る。**`frames` が入るのはスタイルの読み込み後なので、
+    // ここで直に読むと**まだ空**。実際に踏んだ（2026-10-07）——手元では間に合い、
+    // 本番では間に合わず、`?t=` が時々しか効かなかった。
+    rain.addEventListener('mmj-raster-ready', (event) => {
+      const count = event.detail.frames;
+      if (count > 0) seek.max = String(count - 1);
+
+      // `?t=3` で時刻を指せる。**「この時刻を見て」と渡せる形**にするため
+      // （`shops.html` の `?shop=` と同じ考え方。`#` は地図が持ち主なので使わない）。
+      // 指したときは止めて出す——動いていると、渡された人が見る前に先へ進む。
+      const asked = Number(new URLSearchParams(location.search).get('t'));
+      if (Number.isInteger(asked) && asked >= 0 && asked < count) {
+        setPlaying(false);
+        rain.showFrame(asked);
+      }
+    });
 
     toggle.addEventListener('click', () => setPlaying(rain.timer === null));
     // つまみを掴んだら止める。**動かしている最中に掴むと、指と喧嘩する**

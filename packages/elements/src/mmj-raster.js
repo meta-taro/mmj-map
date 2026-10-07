@@ -170,6 +170,15 @@ export class MmjRaster extends HTMLElement {
   /** @param {readonly string[]} frames */
   #startPlayer(frames) {
     this.frames = [...frames];
+    // **用意ができたことを言う。**ここはスタイルの読み込みを待ったあとなので、
+    // 頁側が「置いた直後」に `frames` を読むと**まだ空**になる。
+    // 実際に踏んだ（2026-10-07）——`?t=` で時刻を指しても、手元では間に合い、
+    // 本番では間に合わず、**時々しか効かない**という形で出た。
+    //
+    // **送りを始めてから言う。**先に言うと、受け取った側が `pause()` した直後に
+    // こちらが `play()` し返すことになり、止めたはずのものが動く
+    // （2026-10-07 実測——`?t=11` を渡したのに 11:00 まで進んでいた）。
     if (this.hasAttribute("autoplay")) this.play();
+    this.dispatchEvent(new CustomEvent("mmj-raster-ready", { bubbles: true, detail: { frames: this.frames.length } }));
   }
 }
