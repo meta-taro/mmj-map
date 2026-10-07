@@ -49,6 +49,12 @@ describe("buildPopupContent", () => {
     expect(buildPopupContent({ image: " JavaScript:alert(1) " })).toEqual([]);
   });
 
+  // 写真側も同じ読み方で弾く（理由は `isSafeLink` と同じ。リンクだけ直して
+  // 画像を残すと、**同じ穴が片方だけ開いたまま**になる）
+  it("**タブで分断した `javascript:` の画像も弾く**", () => {
+    expect(buildPopupContent({ image: "java\tscript:alert(1)" })).toEqual([]);
+  });
+
   it("`data:` の画像も弾く（**画像に見せかけた SVG からスクリプトが走る**）", () => {
     expect(buildPopupContent({ image: "data:image/svg+xml,<svg onload=alert(1)>" })).toEqual([]);
   });
@@ -98,6 +104,45 @@ describe("isSafeLink", () => {
 
   it("`data:` も通さない（画像と同じ理由）", () => {
     expect(isSafeLink("data:text/html,<script>alert(1)</script>")).toBe(false);
+  });
+
+  /**
+   * **ブラウザは URL の中のタブと改行を、どこにあっても取り除く**
+   * （WHATWG URL の "Remove all ASCII tab or newline from input"）。
+   * つまり `href` へ入れた瞬間に `java<TAB>script:` は `javascript:` へ戻る。
+   *
+   * **スキームを文字列の見た目で判定すると、ここで分断されて素通りする。**
+   * 2026-10-07 に実機で確認した: `a.href = "java<TAB>script:alert(1)"` のあと
+   * `a.protocol` は `javascript:` になり、しかも `/^https?:/` に一致しないので
+   * `target="_blank"` も付かない——**同じタブでそのまま走る**。
+   *
+   * 先頭の制御文字も同じ（URL の解釈前に C0 制御と空白が落ちる）。
+   */
+  it("**タブ・改行・制御文字で分断した `javascript:` も通さない**", () => {
+    expect(isSafeLink("java\tscript:alert(1)"), "タブ").toBe(false);
+    expect(isSafeLink("java\nscript:alert(1)"), "改行").toBe(false);
+    expect(isSafeLink("java\rscript:alert(1)"), "復帰").toBe(false);
+    expect(isSafeLink("\u0001javascript:alert(1)"), "先頭の制御文字").toBe(false);
+    expect(isSafeLink("data\t:text/html,<script>alert(1)</script>"), "`data:` も同じ").toBe(false);
+  });
+
+  it("分断を弾いても、普通の URL は通ったまま", () => {
+    expect(isSafeLink("https://example.com/a?b=1&c=2#d")).toBe(true);
+    expect(isSafeLink("../other/shop.html")).toBe(true);
+    expect(isSafeLink("#section")).toBe(true);
+  });
+
+  /**
+   * **ここは穴ではない。**`//other.example/x` は外部の https になるが、
+   * `https://other.example/x` と書くのと同じことで、**外部リンクはもともと通す**
+   * （店のページ・SNS を出すための口なので）。
+   *
+   * 塞ぐなら「外部 http(s) を全部やめる」という別の決定が要る。
+   * **片方だけ塞ぐと、書き方によって通ったり通らなかったりする**ので、
+   * ここで通ることを固定しておく。
+   */
+  it("プロトコル相対は通す（外部 http(s) はもともと通す決まり）", () => {
+    expect(isSafeLink("//other.example/x")).toBe(true);
   });
 
   it("空は通さない", () => {

@@ -22,11 +22,40 @@
 function isSafeImage(value) {
   const trimmed = value.trim();
   if (trimmed === "") return false;
-  // スキーム付きなら http/https だけ。無ければ相対パスなので通す
-  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(trimmed);
-  if (scheme === null) return true;
-  const name = scheme[1]?.toLowerCase();
-  return name === "http" || name === "https";
+  // 相対パスは土台から見て https になる。**通すのは http / https だけ**
+  const scheme = schemeOf(trimmed);
+  return scheme === "http" || scheme === "https";
+}
+
+/**
+ * 相対パスを読むための土台。**外へ出ない名前**を使う（`.invalid` は予約で、
+ * 誰も取れない）。ここへ通信することはなく、スキームを決めるためだけに要る。
+ */
+const RELATIVE_BASE = "https://mmj.invalid/";
+
+/**
+ * スキームを**ブラウザと同じ読み方**で取り出す。
+ *
+ * **文字列の見た目で判定してはいけない。**ブラウザは URL を読む前に、
+ * タブと改行を**どこにあっても取り除き**、先頭と末尾の C0 制御と空白も落とす
+ * （WHATWG URL の "Remove all ASCII tab or newline from input"）。
+ * つまり `java<TAB>script:alert(1)` は `href` へ入れた瞬間 `javascript:` に戻る。
+ *
+ * **2026-10-07 に実機で確認した。**正規表現でスキームを見ていたころは、
+ * これが「スキーム無し＝相対パス」と読まれて素通りし、しかも `/^https?:/` にも
+ * 一致しないので `target="_blank"` すら付かず、**同じタブでそのまま走った**。
+ * 同じ読み方をするものに判定させれば、この手の分断は最初から起きない。
+ *
+ * 読めない URL は `null`。**迷ったら通さない。**
+ * @param {string} trimmed
+ * @returns {string | null} `http` のような小文字のスキーム名
+ */
+function schemeOf(trimmed) {
+  try {
+    return new URL(trimmed, RELATIVE_BASE).protocol.slice(0, -1).toLowerCase();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -69,10 +98,10 @@ export function buildPopupContent(input) {
 export function isSafeLink(value) {
   const trimmed = typeof value === "string" ? value.trim() : "";
   if (trimmed === "") return false;
-  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(trimmed);
-  if (scheme === null) return true; // 相対パス
-  const name = scheme[1]?.toLowerCase();
-  return name === "http" || name === "https" || name === "mailto" || name === "tel";
+  // 読み方は `schemeOf` に任せる（**見た目で判定すると分断で抜けられる**）。
+  // 相対パスは土台から見て https になるので、ここでは別扱いにしなくてよい
+  const scheme = schemeOf(trimmed);
+  return scheme === "http" || scheme === "https" || scheme === "mailto" || scheme === "tel";
 }
 
 /** 星の満点。**5 段階以外を使う媒体もあるが、揃えないと読み比べられない** */
