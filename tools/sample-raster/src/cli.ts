@@ -130,10 +130,11 @@ console.log(sampleReport(tiles.length, bytes));
 //    **見せる倍率ぶんを作る。**source の最小倍率を下回ると、MapLibre は何も描かない
 //    （実測・2026-10-07: z8 だけ置いて z6.4 で開き、雨雲が 1 滴も出なかった）。
 //    台風は広い現象なので z6 から。寄ったぶんは拡大で見せる。
-const RAIN_LEVELS = [
-  { z: 6, radius: 2 },
-  { z: 7, radius: 3 },
-];
+// **段は 1 つだけ。**2 段作ると、使う段が変わるところで
+// 透かし（SAMPLE）の密度が倍になり、**四角い境目が見える**（2026-10-07 実測）。
+// 透かしはタイルの画素で描くので、段が違うと地理的な密度が変わるため。
+// 寄ったぶんは拡大で見せる。
+const RAIN_LEVELS = [{ z: 6, radius: 3 }];
 let rainBytes = 0;
 let rainCount = 0;
 for (let frame = 0; frame < FRAME_COUNT; frame += 1) {
@@ -153,7 +154,7 @@ for (let frame = 0; frame < FRAME_COUNT; frame += 1) {
 }
 
 console.log(
-  `雨雲の見本: ${FRAME_COUNT} 時刻 × ${rainCount / FRAME_COUNT} 枚（z6〜z7）= ${rainCount} 枚 / ` +
+  `雨雲の見本: ${FRAME_COUNT} 時刻 × ${rainCount / FRAME_COUNT} 枚（z6）= ${rainCount} 枚 / ` +
     `${(rainBytes / 1024 / 1024).toFixed(1)} MB — 実在の気象データではありません。` +
     "画素に SAMPLE の字を焼き込んであります。",
 );

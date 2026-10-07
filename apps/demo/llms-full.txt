@@ -1000,6 +1000,71 @@ z6/z7 への要求が **188 件 404** になりました。さらに `min-zoom` 
 **1 滴も描かれません**（タイルはあるのに真っ新に見えます）。
 
 
+## `<mmj-typhoon>` — 台風を、報道で見る形で描く
+
+```html
+<mmj-map tiles="./tiles/demo.pmtiles" style-url="./styles/modern-dark.json">
+  <mmj-typhoon src="./data/typhoon.json"></mmj-typhoon>
+</mmj-map>
+```
+
+| 属性 | 意味 |
+| --- | --- |
+| `src` | 進路のデータの URL（必須） |
+| `gale-opacity` / `storm-opacity` | 面の濃さ。既定 0.22 / 0.38 |
+| `before` | このレイヤの下へ入れる |
+| `layer-id` | source 名。1 枚に 2 つ置くときは分けます |
+
+データの形:
+
+```json
+{
+  "frames": [
+    { "label": "09:00", "center": [131.0, 30.0], "pressure": 985, "stormKm": 60, "galeKm": 220 },
+    { "label": "15:00", "center": [134.8, 33.3], "pressure": 950, "stormKm": 129, "galeKm": 379,
+      "forecast": true, "forecastKm": 68 }
+  ]
+}
+```
+
+| | |
+| --- | --- |
+| `center` | `[経度, 緯度]`（GeoJSON と同じ並び・必須） |
+| `stormKm` / `galeKm` | 暴風域・強風域の半径（km） |
+| `forecastKm` | 予報円の半径（km） |
+| `forecast` | `true` にすると、そこから先の進路線が破線になります |
+
+**中心を読めない時刻は落とします**。途中が欠けていても、残りは描けます。
+
+### 描く順と色
+
+強風域（黄）→ 暴風域（赤）→ 予報円（白の破線）→ 進路線 → 中心、の順で重ねます。
+**順番には意味があります**——強風域をあとに置くと、暴風域が隠れます。
+
+**色は作っていません**。黄と赤は外界（気象庁の配色）が決めているものを写しています。
+独自の配色にすると、赤が弱い側に見えるような誤読を生みます。
+
+### 予報円は「台風の大きさ」ではありません
+
+予報円は**中心の位置の不確かさ**で、先へ行くほど大きくなります。暴風域とは別物です。
+**塗らずに破線で描いている**のはそのためで、塗ると「この範囲が暴風」と読まれます。
+
+### 時刻を送るのは置く側
+
+```js
+const typhoon = document.querySelector('mmj-typhoon');
+typhoon.showFrame(3);                 // 3 番目へ
+typhoon.addEventListener('mmj-typhoon-frame', (e) => console.log(e.detail.label, e.detail.pressure));
+```
+
+`<mmj-raster frames=…>` と同じ再生に合わせられるように、送りは持っていません。
+実物（`rain.html`）では、雨雲の `mmj-raster-frame` を受けて同じ番号を渡しています。
+
+**MMJ は予報しません**。渡された点を描くだけで、外挿も補間もしません。
+
+実物: <https://meta-taro.github.io/mmj-map/rain.html>
+
+
 `<mmj-poi>` にも `<mmj-raster>` にも `attribution` があります。**配布元のページに
 書いても届きません**——オフラインで端末に入ったあと、そのページは付いて来ません。
 
