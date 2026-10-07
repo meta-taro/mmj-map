@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>雨雲を動かす — MMJ</title>
+<meta name="description" content="時刻ごとのタイルを並べて、雨雲レーダーのように再生します。台風が近づく 12 時間を、静的配信だけで動かしています。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="雨雲を動かす — MMJ">
+<meta property="og:description" content="時刻ごとのタイルを並べて、雨雲レーダーのように再生します。地図サーバーも配信基盤も要りません。">
+<meta property="og:site_name" content="MMJ">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:url" content="https://meta-taro.github.io/mmj-map/rain.html">
+<meta property="og:image" content="https://meta-taro.github.io/mmj-map/og/rain.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="台風の雨雲が地図の上を動いている画面">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://meta-taro.github.io/mmj-map/og/rain.jpg">
+<link rel="canonical" href="https://meta-taro.github.io/mmj-map/rain.html">
+<link rel="icon" href="./favicon.svg">
+<link rel="stylesheet" href="./vendor/maplibre-gl/maplibre-gl.css">
+<link rel="stylesheet" href="./demo.css">
+<style>
+  /* 送りの操作。**地図の上に置く**——下に置くと折り目に沈んで見つからない */
+  .player {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 5;
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; border-radius: 999px;
+    background: rgb(16 22 30 / 88%); border: 1px solid rgb(255 255 255 / 14%);
+    box-shadow: 0 6px 24px rgb(0 0 0 / 38%); backdrop-filter: blur(6px);
+    max-width: calc(100% - 32px);
+  }
+  .player button {
+    width: 40px; height: 40px; flex: 0 0 auto; border-radius: 50%;
+    border: 1px solid rgb(255 255 255 / 18%); background: rgb(255 255 255 / 10%);
+    color: #eef3f8; font-size: 15px; cursor: pointer;
+  }
+  .player button:hover { background: rgb(255 255 255 / 18%); }
+  .player input[type="range"] { width: min(42vw, 320px); accent-color: #7fb8ff; }
+  .player time { font-variant-numeric: tabular-nums; font-size: 15px; min-width: 4.4em; text-align: center; }
+  .legend-rain {
+    position: absolute; left: 12px; top: 12px; z-index: 5;
+    padding: 8px 10px; border-radius: 10px; font-size: 12px; line-height: 1.5;
+    background: rgb(16 22 30 / 86%); border: 1px solid rgb(255 255 255 / 12%);
+  }
+  .legend-rain b { display: block; font-weight: 600; margin-bottom: 4px; }
+  .legend-rain span { display: inline-block; width: 22px; height: 10px; border-radius: 2px; vertical-align: -1px; }
+  @media (max-width: 560px) {
+    /* 帰属表示が 2 行に折り返すので、その上へ逃がす（重ねない） */
+    .player { gap: 7px; padding: 7px 10px; bottom: 52px; }
+    .player input[type="range"] { width: 38vw; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
+<header class="site-header">
+  <h1>雨雲を動かす</h1>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
+    時刻ごとのタイルを並べ、<code>&lt;mmj-raster frames=…&gt;</code> で切り替えています。
+    台風が南西から近づく 12 時間ぶん。<strong>地図サーバーも配信基盤もありません</strong>——
+    置いてあるのは PNG だけです。
+    </p>
+    <p>
+    <strong>この雨雲は架空です。</strong>実在の気象データではありません。
+    タイル画像そのものに <code>SAMPLE</code> の字を焼き込んであります
+    （切り出して本物として使えないように）。
+    </p>
+    <p>
+    しくみのほうを見たいときは <a href="./raster.html">重ねる</a> へ。
+    あちらは <strong>z/x/y の画像が並んでいるだけ</strong>と分かる形にしてあります。
+    </p>
+  </details>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">はじめに</a>
+    <a href="./plain.html">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./3d.html">建物を立てる</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="./shops.html">お店を見て回る</a>
+    <a href="./route.html">経路と案内</a>
+    <a href="./3d-route.html">3D で道案内</a>
+    <a href="./themes.html">配色を見くらべる</a>
+    <a href="./brand.html">サイトの色を当てる</a>
+    <a href="./regions.html">地域を切り替える</a>
+    <a href="./venue.html">会場の地図</a>
+    <a href="./circle.html">半径で囲む</a>
+    <a href="./raster.html">重ねる</a>
+    <a href="./rain.html" aria-current="page">雨雲を動かす</a>
+    <a href="./flood.html">面で塗り分ける</a>
+    <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
+  </nav>
+</header>
+
+<main id="main" class="map-area">
+  <mmj-map id="map" center="134.8,34.2" zoom="6.4" cooperative fullscreen>
+    <mmj-raster id="rain"
+                src="./sample-raster/rain/{t}/{z}/{x}/{y}.png"
+                frames="09:00,10:00,11:00,12:00,13:00,14:00,15:00,16:00,17:00,18:00,19:00,20:00"
+                interval="650"
+                autoplay
+                min-zoom="6"
+                max-zoom="7"
+                opacity="0.78"
+                attribution="架空の見本（実在の気象データではありません）"></mmj-raster>
+  </mmj-map>
+
+  <div class="legend-rain" aria-hidden="true">
+    <b>雨の強さ（架空）</b>
+    <span style="background:#78aaff"></span> 弱い<br>
+    <span style="background:#3cc8a0"></span> やや強い<br>
+    <span style="background:#e6dc46"></span> 強い<br>
+    <span style="background:#e63c3c"></span> 非常に強い
+  </div>
+
+  <div class="player" id="player" hidden>
+    <button id="toggle" type="button" aria-label="止める">⏸</button>
+    <input id="seek" type="range" min="0" max="11" step="1" value="0" aria-label="時刻">
+    <time id="clock">09:00</time>
+  </div>
+
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="./maplibre.js"></script>
+<script src="./vendor/pmtiles/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script type="module">
+  /**
+   * **時刻ぶんのタイルを、先に全部置いてある。**
+   *
+   * 時刻を変えるたびに source を作り直すと、切り替えのたびに取りに行って白く抜ける。
+   * `<mmj-raster frames=…>` は 12 時刻ぶんの layer をまとめて置き、
+   * **見せ方（visibility）だけ**を切り替える。2 周目からは控えが効いて、紙芝居のように進む。
+   *
+   * 置いてあるのは PNG だけ。**動かしているのは閲覧側**で、配信側に仕掛けは無い。
+   */
+  const cfg = window.MMJ_CONFIG ?? {};
+  const map = document.getElementById('map');
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    map.remove();
+    document.getElementById('notice').hidden = false;
+    document.getElementById('player').remove();
+  } else {
+    map.setAttribute('tiles', cfg.tilesUrl);
+    map.setAttribute('style-url', cfg.styleUrl);
+    await import('./elements/index.js');
+
+    const rain = document.getElementById('rain');
+    const player = document.getElementById('player');
+    const toggle = document.getElementById('toggle');
+    const seek = document.getElementById('seek');
+    const clock = document.getElementById('clock');
+
+    player.hidden = false;
+    if (rain.frames.length > 0) seek.max = String(rain.frames.length - 1);
+
+    // **指で出来ることが、マウスでもキーボードでも出来る**ようにする。
+    // つまみは range なので、矢印キーで 1 時刻ずつ動く。
+    rain.addEventListener('mmj-raster-frame', (event) => {
+      seek.value = String(event.detail.index);
+      clock.textContent = event.detail.label;
+    });
+
+    const setPlaying = (playing) => {
+      toggle.textContent = playing ? '⏸' : '▶';
+      toggle.setAttribute('aria-label', playing ? '止める' : '動かす');
+      if (playing) rain.play();
+      else rain.pause();
+    };
+
+    toggle.addEventListener('click', () => setPlaying(rain.timer === null));
+    // つまみを掴んだら止める。**動かしている最中に掴むと、指と喧嘩する**
+    seek.addEventListener('input', () => {
+      setPlaying(false);
+      rain.showFrame(Number(seek.value));
+    });
+  }
+</script>
+</body>
+</html>

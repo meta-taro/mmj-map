@@ -103,6 +103,9 @@ jobs:
         run: |
           pnpm sample-raster -- --out-dir=apps/demo/sample-raster
           test -f apps/demo/sample-raster/12/3589/1626.png
+          # **雨雲の見本も要る。**無いと rain.html が空の地図になる（§23）
+          test -f apps/demo/sample-raster/rain/0/6/55/25.png
+          test -f apps/demo/sample-raster/rain/11/7/112/50.png
           du -sh apps/demo/sample-raster
 
       # 部品（Web Components）はビルドしない。素の ESM をそのまま同梱する。
