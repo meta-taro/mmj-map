@@ -87,7 +87,8 @@
     {
       "type": "Feature",
       "properties": {
-        "instruction": "大阪梅田から御堂筋を南へ。ここが出発点です"
+        "instruction": "出発点。広い通りの歩道を、街路樹に沿って南へ 400 m ほどまっすぐ進みます",
+        "image": "./data/photos/route-start.jpg"
       },
       "geometry": {
         "type": "Point",
@@ -100,8 +101,8 @@
     {
       "type": "Feature",
       "properties": {
-        "instruction": "曽根崎通を左折",
-        "image": "./data/sample-corner.svg"
+        "instruction": "横断歩道の先、角のビルの手前を左へ。歩行者用信号を渡ってすぐです",
+        "image": "./data/photos/route-corner.jpg"
       },
       "geometry": {
         "type": "Point",
@@ -114,7 +115,8 @@
     {
       "type": "Feature",
       "properties": {
-        "instruction": "東へ進んで、左手が目的地"
+        "instruction": "左手の、植え込みのあるガラス扉が目的地です",
+        "image": "./data/photos/route-goal.jpg"
       },
       "geometry": {
         "type": "Point",
