@@ -66,13 +66,18 @@ jobs:
       # MapLibre と pmtiles を同梱する。**CDN を見ている限り、通信が無いところで
       # 地図が 1 ピクセルも出ない**（§23）。閉じた網では CDN が遮断されていることもある。
       #
-      # **版は上げない。**頁が読んでいた 5.24.0 / 4.4.0 をそのまま置く。
-      # オフライン化とメジャー更新を同時にやると、**壊れたときにどちらが原因か言えない**。
+      # **MapLibre 6 は 1 本では動かない。**配っているのは ESM だけで、
+      # `maplibre-gl.js`（UMD）は存在しない。入口の `maplibre-gl.mjs` は
+      # 隣の `maplibre-gl-shared.mjs` を輸入し、worker は `import.meta.url` から
+      # `maplibre-gl-worker.mjs` を組み立てて起動する。**3 本が揃って初めて動く。**
+      # 1 本忘れると、ビルドもテストも通ったまま実行時にだけ地図が出ない（§23）。
       - name: Bundle MapLibre and pmtiles into the artifact
         run: |
           mkdir -p apps/demo/vendor/maplibre-gl apps/demo/vendor/pmtiles
-          cp node_modules/maplibre-gl/dist/maplibre-gl.js apps/demo/vendor/maplibre-gl/
-          cp node_modules/maplibre-gl/dist/maplibre-gl.css apps/demo/vendor/maplibre-gl/
+          for f in maplibre-gl.mjs maplibre-gl-shared.mjs maplibre-gl-worker.mjs maplibre-gl.css; do
+            test -f "node_modules/maplibre-gl/dist/$f" || { echo "::error::node_modules に $f がありません"; exit 1; }
+            cp "node_modules/maplibre-gl/dist/$f" apps/demo/vendor/maplibre-gl/
+          done
           cp node_modules/pmtiles/dist/pmtiles.js apps/demo/vendor/pmtiles/
           du -sh apps/demo/vendor
 
@@ -98,6 +103,9 @@ jobs:
         run: |
           pnpm sample-raster -- --out-dir=apps/demo/sample-raster
           test -f apps/demo/sample-raster/12/3589/1626.png
+          # **雨雲の見本も要る。**無いと rain.html が空の地図になる（§23）
+          test -f apps/demo/sample-raster/rain/0/6/55/25.png
+          test -f apps/demo/sample-raster/rain/11/6/57/26.png
           du -sh apps/demo/sample-raster
 
       # 部品（Web Components）はビルドしない。素の ESM をそのまま同梱する。
@@ -259,6 +267,36 @@ jobs:
           done
           echo "::error::公開ページが 200 を返さなかった（最後の応答: $code）"
           exit 1
+
+      # **module は型が違うと実行されない。**
+      #
+      # MapLibre 6 の入口は `.mjs`。配信側がこれを JavaScript 以外の型で返すと、
+      # ブラウザは取得に成功したまま実行を拒み、**地図だけが出ない**。
+      # 頁は 200、`<mmj-map>` もある、CI も緑——画面だけが白い。
+      # 手元の開発サーバーは実際にこれを踏んだ（`.mjs` を octet-stream で返していた・
+      # 2026-10-06）。GitHub Pages が同じことをしないと信じる理由が無いので、毎回測る。
+      #
+      # 3 本とも見る。worker は `import.meta.url` から組み立てられるので、
+      # **入口だけ正しくても worker が落ちれば地図は出ない。**
+      - name: Verify the vendored MapLibre is served as JavaScript
+        run: |
+          url="${{ steps.deployment.outputs.page_url }}"
+          bad=0
+          for f in maplibre-gl.mjs maplibre-gl-shared.mjs maplibre-gl-worker.mjs; do
+            target="${url%/}/vendor/maplibre-gl/$f"
+            out=$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$target")
+            code=${out%% *}
+            type=${out#* }
+            echo "$f -> $code $type"
+            if [ "$code" != "200" ]; then
+              echo "::error::$f が $code（同梱から漏れています）"
+              bad=1
+            elif ! printf '%s' "$type" | grep -qi 'javascript'; then
+              echo "::error::$f の content-type が $type（module として実行されません）"
+              bad=1
+            fi
+          done
+          exit "$bad"
 
       # **配ったタイルは凍った成果物で、置き換えるまで古びていく。**
       #

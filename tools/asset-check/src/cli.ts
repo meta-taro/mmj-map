@@ -10,11 +10,13 @@
  * 対応表は手元の配信（`tools/serve`）と本番（`.github/workflows/deploy.yml`）の
  * 両方で同じになるようにしてある。**片方だけで通る参照を作らないため。**
  */
+import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, relative, sep } from "node:path";
 
-import { extractReferences, findBasePathHazards, resolveReference, type Mount } from "./refs.js";
+import { brokenBold } from "./bold.js";
+import { extractReferences, findBasePathHazards, findMarkdownInData, resolveReference, type Mount } from "./refs.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -132,7 +134,66 @@ for (const file of files) {
   }
 }
 
+// データに文章の記法が混ざっていないか。
+//
+// カードは渡された文字をそのまま出すので、データに書いた強調はアスタリスクのまま
+// 画面に出る。実際に見本データへ漏れ、公開デモの決済タブに出ていた（2026-10-05）。
+// 強調したいときは HTML で書き、card-rich で項目を名指しすること。
+const dataDir = resolve(repoRoot, "apps/demo/data");
+let marked = 0;
+if (existsSync(dataDir)) {
+  const stack = [dataDir];
+  while (stack.length > 0) {
+    const dir = stack.pop();
+    if (dir === undefined) break;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = resolve(dir, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+        continue;
+      }
+      if (!/\.(json|geojson)$/i.test(entry.name)) continue;
+      for (const hit of findMarkdownInData(readFileSync(full, "utf8"))) {
+        console.error(`NG ${full.slice(repoRoot.length + 1).replaceAll("\\", "/")}:${hit.line} ${hit.sample}`);
+        console.error("   データに文章の記法が混ざっています（画面にはアスタリスクがそのまま出ます）");
+        marked++;
+      }
+    }
+  }
+}
+
+// 太字にならない太字。**npm と GitHub の頁に ** がそのまま出る**。
+//
+// 日本語は文末に句点を置くので `**文。**つづき` と書きがちだが、CommonMark は
+// これを閉じと見なさない。2026-10-07 に測ったら、公開中の文書 20 本に 223 箇所あった。
+// 画面を見るまで分からず、しかも見ても「そういう書き方」に見えてしまう。
+//
+// `DESIGN.md` は AI が触らない取り決めなので、見つけても人へ渡す（ここでは咎めない）。
+const NOT_OURS = new Set(["DESIGN.md"]);
+let bold = 0;
+for (const file of execFileSync("git", ["ls-files", "*.md"], { cwd: repoRoot, encoding: "utf8" })
+  .trim()
+  .split("\n")
+  .filter((name) => name !== "" && !NOT_OURS.has(name))) {
+  for (const hit of brokenBold(readFileSync(resolve(repoRoot, file), "utf8"))) {
+    console.error(`NG ${file} ${hit.text.slice(0, 60)}`);
+    bold++;
+  }
+}
+
 console.log(`検査: HTML ${files.length} 件 / 参照 ${checked} 件`);
+if (bold > 0) {
+  console.error("");
+  console.error(`太字にならない太字が ${bold} 件あります（画面に ** がそのまま出ます）。`);
+  console.error("句読点を ** の外へ出してください（**文。**つづき → **文**。つづき）。");
+  process.exit(1);
+}
+if (marked > 0) {
+  console.error("");
+  console.error(`データに文章の記法が ${marked} 件あります。`);
+  console.error("強調したいときは HTML で書き、card-rich で項目を名指ししてください。");
+  process.exit(1);
+}
 if (failed > 0) {
   console.error("");
   console.error(`参照されているのに存在しないアセットが ${failed} 件あります（baseline §23）。`);

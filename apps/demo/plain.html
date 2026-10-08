@@ -51,6 +51,7 @@
     <a href="./venue.html">会場の地図</a>
     <a href="./circle.html">半径で囲む</a>
     <a href="./raster.html">重ねる</a>
+    <a href="./rain.html">雨雲を動かす</a>
     <a href="./flood.html">面で塗り分ける</a>
     <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
   </nav>
@@ -80,26 +81,36 @@
 
 
 <!--
-  **maplibre-gl は 5 系（UMD）を使う。** 経緯（2026-09-16 の実測）:
+  **maplibre-gl は 6 系（ESM）を使う。**（2026-10-06 に上げた）
 
-  確かめたこと:
-  - 6.9.0 は **ESM のみ**で `dist/maplibre-gl.js`（UMD）を配っていない（HTTP 404）。
-    `exports` は `./dist/maplibre-gl.mjs` だけ。したがって元の `<script src=...>` は
-    必ず失敗し、コンソールに `maplibregl is not defined` が出ていた
-  - 6.9.0 の束ね版は worker を `new Worker(url, {type:"module"})` で起動する
+  2026-09-16 の時点では 5 系に留めていた。理由は「UMD が配られていて素の HTML から
+  読める」の一点で、**6 系を落とした根拠は無かった**。確かめようとした環境で
+  ブラウザのタブが不可視だったため rAF が発火せず、5 系でも 6 系でも同じ「無反応」に
+  なり、区別が付かなかった。そのとき残した条件が
+  「6 系へ上げるなら、可視な環境で描画を確認してから」。
 
-  **確かめられていないこと:** 6 系が CDN 配信で実際に動くかどうか。
-  検証しようとした環境でブラウザのタブが不可視（`visibilityState: hidden`）で、
-  requestAnimationFrame が発火せず、MapLibre は描画ループの中で style.load を出すため
-  **5 系でも 6 系でも同じ「無反応」になった**。つまり 6 系を落とした根拠は無い。
+  その条件を満たしたので上げた。確かめたこと（2026-10-06・6.12.0）:
+  - 可視な環境で描画した。タイル・ラベル・スケール・帰属が出る
+  - 配色 6 枚すべてが描ける（style-spec v25 は手書きのスタイルを拒まなかった）
+  - `hash` の書式は 5 系と同じ（`#16.23/34.699243/135.502607/0/60`）。
+    pitch を hash で渡したときの扱いも変わっていない
+  - console 0 件・失敗した通信 0 件（全 16 頁）
 
-  ここで 5 系にしているのは、**UMD が配られていて素の HTML から読める**という
-  一点だけが理由。6 系へ上げるなら、可視な環境で描画を確認してから。
+  **6 系に UMD は無い。**入口は `maplibre-gl.mjs` で、隣の `maplibre-gl-shared.mjs` を
+  輸入し、worker は `import.meta.url` から `maplibre-gl-worker.mjs` を組み立てて起動する。
+  **3 本が揃って初めて動く。**
+
+  この頁は「部品を使わない素の HTML」の見本なので、橋渡しの 1 枚（`maplibre.js`）を
+  挟まず、その場で輸入している。部品を使う 16 頁はそちらを読んでいる。
 -->
-<script src="./vendor/maplibre-gl/maplibre-gl.js"></script>
 <script src="./vendor/pmtiles/pmtiles.js"></script>
 <script src="./config.js"></script>
-<script>
+<script type="module">
+  // MapLibre 6 は ESM だけを配っている（UMD の `maplibre-gl.js` は無い）。
+  // **既定の輸出は無い**ので `import * as` で受ける。`import maplibregl from` と
+  // 書くと `undefined` が入り、読み込みは成功したまま地図だけが出ない。
+  import * as maplibregl from "./vendor/maplibre-gl/maplibre-gl.mjs";
+
   const cfg = window.MMJ_CONFIG || {};
 
   if (!cfg.tilesUrl || !cfg.styleUrl) {
@@ -114,6 +125,22 @@
       const res = await fetch(cfg.styleUrl);
       if (!res.ok) throw new Error(`スタイルを取得できません: ${cfg.styleUrl} -> HTTP ${res.status}`);
       const style = JSON.parse((await res.text()).replaceAll('__TILES_URL__', cfg.tilesUrl));
+
+      // **スタイルの中の相対 URL は、スタイルの場所から解く。**
+      // オブジェクトで渡すと MapLibre には「スタイルの場所」が無いので、
+      // 頁の場所から解く。公開先は `/mmj-map/` の下にあるため、
+      // `../glyphs/` が 1 つ上を指して 404 になり、**ラテン文字だけが
+      // 閲覧側のフォントに化ける**（地図は出るので画面では気づけない）。
+      //
+      // 5.24.0 でも 6.12.0 でも同じになることを実測した（2026-10-06）。
+      // 版の問題ではなく、オブジェクトで渡す側の仕事。
+      //
+      // `new URL()` は `{` `}` を `%7B` `%7D` にするので戻す。
+      // 戻さないと MapLibre が置換子を見つけられず、**404 を別の 404 に替えるだけ**になる。
+      if (typeof style.glyphs === 'string') {
+        style.glyphs = new URL(style.glyphs, cfg.styleUrl).href
+          .replaceAll('%7B', '{').replaceAll('%7D', '}');
+      }
 
       const map = new maplibregl.Map({
         container: 'map',

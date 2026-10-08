@@ -156,7 +156,7 @@ hãy trỏ tới `node_modules/@mmj-map/elements/src/index.js`, hoặc để bun
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
 <style>
   mmj-map { display: block; height: 70vh; }
 </style>
@@ -171,7 +171,10 @@ hãy trỏ tới `node_modules/@mmj-map/elements/src/index.js`, hoặc để bun
   <mmj-marker lnglat="135.4959,34.7024" popup="Umeda"></mmj-marker>
 </mmj-map>
 
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script type="module">
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  window.maplibregl = maplibregl;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
 <script type="module" src="./elements/index.js"></script>
 </body>
@@ -180,6 +183,11 @@ hãy trỏ tới `node_modules/@mmj-map/elements/src/index.js`, hoặc để bun
 
 `maplibre-gl` và `pmtiles` do **bạn** nạp bằng thẻ `<script>`. MMJ không đóng gói chúng,
 nên **bạn giữ quyền kiểm soát phiên bản**.
+
+> **MapLibre 6 chỉ phát hành bản ESM.** `dist/maplibre-gl.js` (bản UMD) không còn nữa, nên nếu chỉ đổi
+> số phiên bản trong dòng `<script src="…/maplibre-gl.js">` cũ thì bạn sẽ nhận 404 và bản đồ trắng.
+> Hãy dùng dạng `<script type="module">` ở trên. `import maplibregl from` (nhập mặc định) sẽ cho `undefined`
+> vì v6 không có export mặc định — hãy nhận bằng `import * as`.
 
 `center` là `kinh độ,vĩ độ` — cùng thứ tự với GeoJSON, ngược với cách nói thường ngày.
 

@@ -13,6 +13,7 @@ describe("parseShotArgs", () => {
       offline: false,
       format: "png",
       quality: 72,
+      click: "",
     });
   });
 
@@ -26,6 +27,7 @@ describe("parseShotArgs", () => {
       offline: false,
       format: "png",
       quality: 72,
+      click: "",
     });
   });
 
@@ -52,6 +54,7 @@ describe("parseShotArgs", () => {
       offline: false,
       format: "png",
       quality: 72,
+      click: "",
     });
   });
 
@@ -65,6 +68,7 @@ describe("parseShotArgs", () => {
       offline: false,
       format: "png",
       quality: 72,
+      click: "",
     });
   });
 
@@ -130,18 +134,27 @@ describe("pickBrowser", () => {
 
 describe("isCountableRequest", () => {
   it("配信への要求は数える", () => {
-    expect(isCountableRequest("http://localhost:8787/tiles/kansai.pmtiles")).toBe(true);
-    expect(isCountableRequest("https://protomaps.github.io/basemaps-assets/fonts/A/0-255.pbf")).toBe(true);
+    expect(isCountableRequest("http://localhost:8787/tiles/kansai.pmtiles", "script")).toBe(true);
+    expect(isCountableRequest("https://protomaps.github.io/basemaps-assets/fonts/A/0-255.pbf", "script")).toBe(true);
   });
 
-  it("blob: は数えない", () => {
-    // MapLibre の worker は blob: で読み込まれ、**ページが生きている間ずっと開いたまま**。
-    // これを数えると「読み込みが止まった」が永久に来ず、毎回待ち切って撮ることになる（実測）。
-    expect(isCountableRequest("blob:http://localhost:8787/e007075b-d740-4705-93e4-0d9a977af1ae")).toBe(false);
+  it("頁が自分で読む資産（parser）も数える", () => {
+    expect(isCountableRequest("http://localhost:8787/demo.css", "parser")).toBe(true);
+  });
+
+  it("worker の本体は数えない（応答が page 側へ来ないので、永久に終わらない）", () => {
+    // 実測（2026-10-06・plain.html）: MapLibre 6 の worker 本体だけが
+    // initiator=other で、responseReceived も loadingFinished も **1 つも来ない**。
+    // worker は別の target で走るため。数えると 25 秒待ち切ってから撮ることになる。
+    expect(isCountableRequest("http://localhost:8787/vendor/maplibre-gl/maplibre-gl-worker.mjs", "other")).toBe(false);
+  });
+
+  it("5 系の worker（blob:）も数えない", () => {
+    expect(isCountableRequest("blob:http://localhost:8787/e007075b-d740-4705-93e4-0d9a977af1ae", "script")).toBe(false);
   });
 
   it("data: も数えない", () => {
-    expect(isCountableRequest("data:image/png;base64,iVBOR")).toBe(false);
+    expect(isCountableRequest("data:image/png;base64,iVBOR", "parser")).toBe(false);
   });
 });
 
@@ -233,5 +246,39 @@ describe("parseShotArgs（JPEG で出す）", () => {
       format: "jpeg",
       quality: 80,
     });
+  });
+});
+
+/**
+ * 撮る前に押す。
+ *
+ * タブや開閉の中身は、押さないと画面に出ない。そこを確かめられないと、
+ * 「単体テストは通ったが、画面は見ていない」で止まる。
+ * 実際に決済タブの中身を確かめられず、確認を人へ回した（2026-10-05）。
+ */
+describe("parseShotArgs（撮る前に押す）", () => {
+  it("既定は押さない", () => {
+    expect(parseShotArgs([]).click).toBe("");
+  });
+
+  it("--click= で CSS セレクタを受ける", () => {
+    expect(parseShotArgs(["--click=.mmj-card-tab"]).click).toBe(".mmj-card-tab");
+  });
+
+  it("文字で選ぶ書き方も受ける", () => {
+    expect(parseShotArgs(["--click=button:text(決済)"]).click).toBe("button:text(決済)");
+  });
+
+  it("--click= を位置引数と数えない", () => {
+    expect(parseShotArgs(["--click=.x", "http://y/", "a.png", "9000"])).toMatchObject({
+      url: "http://y/",
+      out: "a.png",
+      waitMs: 9000,
+    });
+  });
+
+  /** 空の指定は受けない（押したつもりで押していない絵が配られる） */
+  it("空のセレクタは落とす", () => {
+    expect(() => parseShotArgs(["--click="])).toThrow();
   });
 });

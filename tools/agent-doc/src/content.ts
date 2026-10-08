@@ -41,7 +41,7 @@ export type IndexInput = {
  * ここを手で書き換えると、**文書と食い違ったまま配られる**。
  * `cli.ts` の検査が、ここで使っている属性が実在するかを見ている。
  */
-export const SNIPPET = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+export const SNIPPET = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
 <style>mmj-map { display: block; height: 70vh; }</style>
 
 <mmj-map
@@ -52,7 +52,10 @@ export const SNIPPET = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/np
   <mmj-marker lnglat="135.4959,34.7024" popup="梅田"></mmj-marker>
 </mmj-map>
 
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script type="module">
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  window.maplibregl = maplibregl;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
 <script type="module" src="./elements/index.js"></script>`;
 
@@ -60,8 +63,39 @@ const SUMMARY =
   "API キーもタイルサーバーも要らない地図の部品（Web Components）。" +
   "PMTiles 1 ファイルと手書きのスタイル JSON を、静的配信だけで地図にする。";
 
-/** `site` と `path` をつなぐ。**相対リンクを残さない**（エージェントは解けないことがある） */
-const absolute = (site: string, path: string): string => `${site.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+/**
+ * `site` と `path` をつなぐ。**相対リンクを残さない**（エージェントは解けないことがある）。
+ *
+ * `https` で始まるものは外の行き先なので、そのまま出す。
+ * 導入手順とライセンスは公開サイトではなく GitHub にあり、
+ * 根を付けると 404 になる（実際に 10 本中 4 本が切れていた・2026-10-06）。
+ */
+const absolute = (site: string, path: string): string =>
+  /^https?:\/\//i.test(path) ? path : `${site.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+
+/** 索引に入れない頁。**見本を作るための版下**（SNS カードを撮るだけの頁） */
+const NOT_INDEXED = new Set(["og.html"]);
+
+/**
+ * `sitemap.xml` を組む。
+ *
+ * **手で書くと腐る。**頁を足したときに索引だけ古いまま残り、
+ * 新しい頁が検索に出ない（しかも誰も気づかない）。生成物にして検査で縛る。
+ *
+ * @param site 公開サイトの根（末尾の `/` あり）
+ * @param pages `apps/demo` にある HTML のファイル名
+ */
+export function buildSitemap(site: string, pages: readonly string[]): string {
+  const root = site.replace(/\/+$/, "");
+  const locations = [...pages]
+    .filter((page) => !NOT_INDEXED.has(page))
+    .sort()
+    // **トップは拡張子を付けない。**同じ頁が 2 つの URL で出ると、評価が割れる
+    .map((page) => (page === "index.html" ? `${root}/` : `${root}/${page}`));
+
+  const body = locations.map((loc) => `  <url>\n    <loc>${loc}</loc>\n  </url>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+}
 
 export function buildIndex(input: IndexInput): string {
   const out: string[] = ["# MMJ (mmj-map)", "", `> ${SUMMARY}`, ""];

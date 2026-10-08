@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { extractReferences, findBasePathHazards, resolveReference, type Mount } from "../src/refs.js";
+import { extractReferences, findBasePathHazards, findMarkdownInData, resolveReference, type Mount } from "../src/refs.js";
 
 const MOUNTS: Mount[] = [
   { prefix: "/elements", dir: "packages/elements/src" },
@@ -215,5 +215,40 @@ describe("自分のサイトを指す絶対 URL", () => {
   it("サイトの根は拾わない", () => {
     const html = '<meta property="og:url" content="https://meta-taro.github.io/mmj-map/">';
     expect(extractReferences(html)).toEqual([]);
+  });
+});
+
+/**
+ * データに文章の記法が混ざっていないか。
+ *
+ * カードは渡された文字をそのまま出すので、`**強調**` と書くと
+ * アスタリスクがそのまま画面に出る。実際に見本データへ漏れ、
+ * 公開デモの決済タブにアスタリスクが出ていた（2026-10-05・人の指摘で判明）。
+ *
+ * 書く側が気をつける方式では漏れる。機械で止める。
+ */
+describe("findMarkdownInData", () => {
+  it("強調の記法を見つける", () => {
+    const json = '{"payment": "昼は**カード不可**です"}';
+    expect(findMarkdownInData(json).map((h) => h.sample)).toEqual(["**カード不可**"]);
+  });
+
+  it("行をまたいでも見つける", () => {
+    expect(findMarkdownInData('{"a": "x"}\n{"b": "**y**"}').length).toBe(1);
+  });
+
+  /** HTML で書いてあるものは、意図した強調なので通す（`card-rich` の口がある） */
+  it("HTML の強調は通す", () => {
+    expect(findMarkdownInData('{"a": "昼は<strong>カード不可</strong>"}')).toEqual([]);
+  });
+
+  /** 掛け算やアスタリスク 1 つは、記法ではない */
+  it("記法でないアスタリスクは拾わない", () => {
+    expect(findMarkdownInData('{"a": "2 * 3 = 6"}')).toEqual([]);
+    expect(findMarkdownInData('{"a": "注記 * 税込"}')).toEqual([]);
+  });
+
+  it("何も無ければ空", () => {
+    expect(findMarkdownInData('{"a": "ふつうの文章です"}')).toEqual([]);
   });
 });

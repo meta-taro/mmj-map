@@ -1,0 +1,137 @@
+{
+  "note": "架空の見本です。実在の台風ではありません。進路も半径も気圧も、この頁のために作った値です。",
+  "frames": [
+    {
+      "label": "09:00",
+      "center": [
+        131,
+        30
+      ],
+      "pressure": 985,
+      "stormKm": 60,
+      "galeKm": 220
+    },
+    {
+      "label": "10:00",
+      "center": [
+        131.636,
+        30.545
+      ],
+      "pressure": 979,
+      "stormKm": 72,
+      "galeKm": 246
+    },
+    {
+      "label": "11:00",
+      "center": [
+        132.273,
+        31.091
+      ],
+      "pressure": 973,
+      "stormKm": 83,
+      "galeKm": 273
+    },
+    {
+      "label": "12:00",
+      "center": [
+        132.909,
+        31.636
+      ],
+      "pressure": 968,
+      "stormKm": 95,
+      "galeKm": 299
+    },
+    {
+      "label": "13:00",
+      "center": [
+        133.545,
+        32.182
+      ],
+      "pressure": 962,
+      "stormKm": 106,
+      "galeKm": 326
+    },
+    {
+      "label": "14:00",
+      "center": [
+        134.182,
+        32.727
+      ],
+      "pressure": 956,
+      "stormKm": 118,
+      "galeKm": 352
+    },
+    {
+      "label": "15:00",
+      "center": [
+        134.818,
+        33.273
+      ],
+      "pressure": 950,
+      "stormKm": 129,
+      "galeKm": 379,
+      "forecast": true,
+      "forecastKm": 68
+    },
+    {
+      "label": "16:00",
+      "center": [
+        135.455,
+        33.818
+      ],
+      "pressure": 955,
+      "stormKm": 119,
+      "galeKm": 355,
+      "forecast": true,
+      "forecastKm": 96
+    },
+    {
+      "label": "17:00",
+      "center": [
+        136.091,
+        34.364
+      ],
+      "pressure": 961,
+      "stormKm": 107,
+      "galeKm": 328,
+      "forecast": true,
+      "forecastKm": 124
+    },
+    {
+      "label": "18:00",
+      "center": [
+        136.727,
+        34.909
+      ],
+      "pressure": 967,
+      "stormKm": 96,
+      "galeKm": 302,
+      "forecast": true,
+      "forecastKm": 152
+    },
+    {
+      "label": "19:00",
+      "center": [
+        137.364,
+        35.455
+      ],
+      "pressure": 973,
+      "stormKm": 84,
+      "galeKm": 276,
+      "forecast": true,
+      "forecastKm": 180
+    },
+    {
+      "label": "20:00",
+      "center": [
+        138,
+        36
+      ],
+      "pressure": 979,
+      "stormKm": 73,
+      "galeKm": 249,
+      "forecast": true,
+      "forecastKm": 208
+    }
+  ]
+}

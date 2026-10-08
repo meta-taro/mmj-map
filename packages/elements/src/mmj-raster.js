@@ -17,7 +17,7 @@
  *
  * 組み立ての判断は `raster.js` にある。ここは地図に付けるだけ。
  */
-import { buildRasterSpec, firstSymbolLayerId } from "./raster.js";
+import { buildFrameSpecs, buildRasterSpec, firstSymbolLayerId, parseFrames } from "./raster.js";
 
 let serial = 0;
 
@@ -39,6 +39,21 @@ export class MmjRaster extends HTMLElement {
   /** @type {string | null} */
   sourceId = null;
 
+  /** 時刻ごとの layer id（時刻を使わないときは 1 本） @type {string[]} */
+  layerIds = [];
+
+  /** 時刻ごとの source id @type {string[]} */
+  sourceIds = [];
+
+  /** 時刻の見出し（置く側が書いたもの） @type {string[]} */
+  frames = [];
+
+  /** いま何番目か */
+  frame = 0;
+
+  /** 送りのタイマー @type {any} */
+  timer = null;
+
   connectedCallback() {
     const parent = this.closest("mmj-map");
     if (!parent) return void console.error("[mmj-raster] <mmj-map> の中に置いてください");
@@ -51,12 +66,13 @@ export class MmjRaster extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.pause();
     const map = /** @type {any} */ (this.owner)?.map;
     if (map === undefined || map === null || this.sourceId === null) return;
     // **付けた順の逆で外す。**layer を残したまま source を消すと地図が落ちる
     try {
-      if (map.getLayer(`${this.sourceId}-raster`)) map.removeLayer(`${this.sourceId}-raster`);
-      if (map.getSource(this.sourceId)) map.removeSource(this.sourceId);
+      for (const layerId of this.layerIds) if (map.getLayer(layerId)) map.removeLayer(layerId);
+      for (const id of this.sourceIds) if (map.getSource(id)) map.removeSource(id);
     } catch (error) {
       console.error("[mmj-raster] 外せませんでした", error);
     }
@@ -77,32 +93,92 @@ export class MmjRaster extends HTMLElement {
 
   /** @param {any} map */
   #add(map) {
-    let spec;
+    const id = this.getAttribute("layer-id") || `mmj-raster-${++serial}`;
+    const common = {
+      src: this.getAttribute("src") ?? "",
+      opacity: readNumber(this.getAttribute("opacity")),
+      tileSize: readNumber(this.getAttribute("tile-size")),
+      minZoom: readNumber(this.getAttribute("min-zoom")),
+      maxZoom: readNumber(this.getAttribute("max-zoom")),
+      // **出典は地図の中に出す。**持ち出された先では配布元の頁は付いて来ない
+      attribution: this.getAttribute("attribution") ?? undefined,
+    };
+
+    const frames = parseFrames(this.getAttribute("frames"));
+    let specs;
     try {
-      spec = buildRasterSpec({
-        id: this.getAttribute("layer-id") || `mmj-raster-${++serial}`,
-        src: this.getAttribute("src") ?? "",
-        opacity: readNumber(this.getAttribute("opacity")),
-        tileSize: readNumber(this.getAttribute("tile-size")),
-        minZoom: readNumber(this.getAttribute("min-zoom")),
-        maxZoom: readNumber(this.getAttribute("max-zoom")),
-        // **出典は地図の中に出す。**持ち出された先では配布元の頁は付いて来ない
-        attribution: this.getAttribute("attribution") ?? undefined,
-      });
+      specs = frames.length > 0 ? buildFrameSpecs({ ...common, id, frames }) : [buildRasterSpec({ ...common, id })];
     } catch (error) {
       // 握り潰さない（§8）。**地図は殺さない**——重ねるものが出ないだけにする
       return void console.error("[mmj-raster]", /** @type {Error} */ (error).message);
     }
 
     try {
-      map.addSource(spec.sourceId, spec.source);
       // **ラベルの下へ入れる。**上へ置くと地名も駅名も読めなくなる。
       // `before` で明示もできる（既定より前へ出したいとき）
       const before = this.getAttribute("before") ?? firstSymbolLayerId(map.getStyle());
-      map.addLayer(spec.layer, before && map.getLayer(before) ? before : undefined);
-      this.sourceId = spec.sourceId;
+      const anchor = before && map.getLayer(before) ? before : undefined;
+      for (const spec of specs) {
+        map.addSource(spec.sourceId, spec.source);
+        map.addLayer(spec.layer, anchor);
+      }
+      this.sourceId = specs[0]?.sourceId ?? null;
+      this.layerIds = specs.map((spec) => spec.layer.id);
+      this.sourceIds = specs.map((spec) => spec.sourceId);
     } catch (error) {
-      console.error("[mmj-raster] 重ねられませんでした", error);
+      return void console.error("[mmj-raster] 重ねられませんでした", error);
     }
+
+    if (frames.length > 0) this.#startPlayer(frames);
+  }
+
+  /**
+   * 時刻を送る。**見せ方だけを切り替える**（source は置いたまま）。
+   * @param {number} index
+   */
+  showFrame(index) {
+    const map = /** @type {any} */ (this.owner)?.map;
+    if (!map || this.layerIds.length === 0) return;
+    const count = this.layerIds.length;
+    const next = ((index % count) + count) % count;
+    for (const [at, layerId] of this.layerIds.entries()) {
+      if (!map.getLayer(layerId)) continue;
+      map.setLayoutProperty(layerId, "visibility", at === next ? "visible" : "none");
+    }
+    this.frame = next;
+    this.dispatchEvent(
+      new CustomEvent("mmj-raster-frame", {
+        bubbles: true,
+        detail: { index: next, label: this.frames[next] ?? "" },
+      }),
+    );
+  }
+
+  /** 送りを止める。**見えない紙芝居を回し続けない** */
+  pause() {
+    if (this.timer !== null) clearInterval(this.timer);
+    this.timer = null;
+  }
+
+  /** 送りを始める。既定は 700ms——速すぎると読めず、遅すぎると動いて見えない */
+  play() {
+    this.pause();
+    const interval = readNumber(this.getAttribute("interval")) ?? 700;
+    this.timer = setInterval(() => this.showFrame(this.frame + 1), Math.max(120, interval));
+  }
+
+  /** @param {readonly string[]} frames */
+  #startPlayer(frames) {
+    this.frames = [...frames];
+    // **用意ができたことを言う。**ここはスタイルの読み込みを待ったあとなので、
+    // 頁側が「置いた直後」に `frames` を読むと**まだ空**になる。
+    // 実際に踏んだ（2026-10-07）——`?t=` で時刻を指しても、手元では間に合い、
+    // 本番では間に合わず、**時々しか効かない**という形で出た。
+    //
+    // **送りを始めてから言う。**先に言うと、受け取った側が `pause()` した直後に
+    // こちらが `play()` し返すことになり、止めたはずのものが動く
+    // （2026-10-07 実測——`?t=11` を渡したのに 11:00 まで進んでいた）。
+    if (this.hasAttribute("autoplay")) this.play();
+    this.dispatchEvent(new CustomEvent("mmj-raster-ready", { bubbles: true, detail: { frames: this.frames.length } }));
   }
 }

@@ -125,7 +125,7 @@ const DEFAULT_LINK_LABEL = "詳しく見る";
  *   title?: unknown, images?: unknown, body?: unknown,
  *   imageCredit?: unknown, imageCreditHref?: unknown,
  *   rating?: unknown, ratingCount?: unknown,
- *   href?: unknown, hrefLabel?: unknown,
+ *   href?: unknown, hrefLabel?: unknown, bodyRich?: unknown,
  *   links?: { label: string, href: string, icon: string | null }[],
  * }} input
  * @returns {any[]} **中身が無ければ空**（空の箱を開かないため）
@@ -164,7 +164,8 @@ export function buildCardContent(input) {
   if (rating !== null) parts.push({ kind: "rating", text: rating });
 
   const body = typeof input.body === "string" ? input.body.trim() : "";
-  if (body !== "") parts.push({ kind: "body", text: body });
+  // **rich は置く側が名指しした項目だけ。**既定は文字のまま（`rich.js` の頭に理由）
+  if (body !== "") parts.push({ kind: "body", text: body, rich: input.bodyRich === true });
 
   if (isSafeLink(/** @type {any} */ (input.href))) {
     const label = typeof input.hrefLabel === "string" && input.hrefLabel.trim() !== ""

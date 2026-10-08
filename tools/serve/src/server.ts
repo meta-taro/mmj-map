@@ -23,6 +23,8 @@ export interface Mount {
 const TYPES: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  // MapLibre 6 の入口は `.mjs`。**型が JavaScript でないと module は実行されない**
+  ".mjs": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".geojson": "application/geo+json; charset=utf-8",
   ".css": "text/css; charset=utf-8",

@@ -7,7 +7,7 @@
         "shop_id": "akari",
         "shop_name": "町家カフェ 灯",
         "rating": 4.3,
-        "description": "築 90 年の町家を改装した喫茶。日替わりの焼き菓子と、豆から挽く珈琲。二階は座敷で、窓から川と橋が見えます。※これは見本の文章です。この店は実在しません。",
+        "description": "町家を直した喫茶店。二階は<strong>予約席</strong>です。<a href=\"https://example.com/akari/reserve\">席を予約する</a>と、窓際を確保できます。<a href=\"https://example.com/akari/jobs\">スタッフ募集中</a>（週 2 日から）。※これは見本の文章です。この店は実在しません。",
         "photos": "./data/photos/akari-1.jpg,./data/photos/akari-2.jpg,./data/photos/akari-3.jpg",
         "photo_author": "撮影 かすみ（見本）",
         "photo_author_url": "https://example.com/photographers/kasumi",
@@ -60,7 +60,9 @@
           }
         ],
         "category": "cafe",
-        "payment": "現金 / クレジットカード / 交通系 IC\nQR 決済は PayPay のみ。**昼（11:00〜14:00）はカード不可**、現金かコード決済でお願いします。"
+        "payment": "現金 / クレジットカード / 交通系 IC\nQR 決済は PayPay のみ。<strong>昼（11:00〜14:00）はカード不可</strong>、現金かコード決済でお願いします。",
+        "reserve_url": "https://example.com/akari/reserve",
+        "recruit_url": "https://example.com/akari/jobs"
       },
       "geometry": {
         "type": "Point",
@@ -122,7 +124,8 @@
           }
         ],
         "category": "ramen",
-        "payment": "現金のみ。**カード・電子マネーは使えません。**\n店頭の券売機は新千円札に対応しています。"
+        "payment": "現金のみ。<strong>カード・電子マネーは使えません。</strong>\n店頭の券売機は新千円札に対応しています。",
+        "reserve_url": "https://example.com/migiwa/reserve"
       },
       "geometry": {
         "type": "Point",
@@ -175,7 +178,7 @@
           }
         ],
         "category": "books",
-        "payment": "現金 / クレジットカード（**5,000 円以上から**） / 交通系 IC\n海外発行カードは Visa・Mastercard のみ。Alipay・WeChat Pay も使えます。"
+        "payment": "現金 / クレジットカード（<strong>5,000 円以上から</strong>） / 交通系 IC\n海外発行カードは Visa・Mastercard のみ。Alipay・WeChat Pay も使えます。"
       },
       "geometry": {
         "type": "Point",

@@ -482,18 +482,21 @@ function defaultIsSafe(value) {
  *
  * @param {Record<string, unknown>} properties
  * @param {readonly { label: string, key: string }[]} spec
- * @returns {{ label: string, text?: string, node?: HTMLElement }[]}
+ * @returns {{ label: string, text?: string, node?: HTMLElement, rich?: boolean }[]}
  */
-export function buildTabs(properties, spec) {
+export function buildTabs(properties, spec, rich = new Set()) {
   if (!Array.isArray(spec)) return [];
-  /** @type {{ label: string, text: string }[]} */
+  /** @type {{ label: string, text: string, rich: boolean }[]} */
   const tabs = [];
   for (const { label, key } of spec) {
     const value = properties?.[key];
     if (value === undefined || value === null) continue;
     const text = String(value).trim();
     if (text === "") continue;
-    tabs.push({ label, text });
+    // **決済や品書きこそ強調したい場面が多い**（「昼はカード不可」など）。
+    // 本文にしか効かせていなかったため、見本データの `**…**` が
+    // **アスタリスクのまま画面に出ていた**（2026-10-05・人の指摘で判明）
+    tabs.push({ label, text, rich: rich.has(key) });
   }
   return tabs;
 }
@@ -751,7 +754,7 @@ export function mapCardFields(properties, keys) {
  *
  * **`#` は地図が持ち主。**`<mmj-map hash>` を付けると MapLibre が
  * `#15/34.70/135.49` を書き込むが、**その実装は自分の形以外を捨てる**
- * （`getHashString()` が `#${zoom}/${lat}/${lng}` を丸ごと返す・5.24.0 で確認）。
+ * （`getHashString()` が `#${zoom}/${lat}/${lng}` を丸ごと返す・5.24.0 と 6.12.0 で確認）。
  * `#shop=` に置くと、**地図を少し動かしただけで消える**。
  * 消えたことは画面に出ないので、**共有して初めて壊れているのが分かる**。
  *

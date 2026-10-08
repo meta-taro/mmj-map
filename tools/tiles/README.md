@@ -1,92 +1,106 @@
 # @mmj-map/tiles
 
-**地球上の好きな範囲の PMTiles を、公開データと公開ツールだけで切り出す道具です。**
-鍵も、アカウントも、タイルサーバーも要りません。
+**Cut a PMTiles archive for any bounding box on earth, from public data and public tools only.**
+No key, no account, no tile server.
+
+> 日本語版は [README.ja.md](./README.ja.md) にあります（こちらが詳しい版です）。
+
+[![A hand-styled map of Osaka, drawn from one PMTiles archive][shot-plain]][demo-plain]
+
+<p align="center">
+  <b><a href="https://meta-taro.github.io/mmj-map/">See what the output looks like</a></b> ·
+  <a href="https://www.npmjs.com/package/@mmj-map/elements">render it with the components</a>
+</p>
+
+**That whole map is one file.** Cut it here, put it on static hosting, done.
 
 ```bash
 npx @mmj-map/tiles extract nagoya --bbox=136.85,35.13,136.95,35.20
 ```
 
 ```
-上流の最新 20260924.pmtiles（basemap 4.15.2）で切り出します。
-出力: nagoya.20260924.pmtiles（名前に版が入ります）
+Cutting from the current upstream build 20260924.pmtiles (basemap 4.15.2).
+Output: nagoya.20260924.pmtiles (the build date is part of the name)
 ...
-できました: ./tiles/nagoya.20260924.pmtiles
-9.8 MB — GitHub Pages に乗ります（1 ファイル 100 MB / サイト全体 1 GB）。
-帰属表示（画面から外さない）: © OpenStreetMap contributors
+Done: ./tiles/nagoya.20260924.pmtiles
+9.8 MB — fits on GitHub Pages (100 MB per file, 1 GB per site).
+Attribution (keep it on screen): © OpenStreetMap contributors
 ```
 
-出来た 1 ファイルを静的配信に置けば、それがあなたの地図です。
-表示側は [MMJ](https://meta-taro.github.io/mmj-map/) の `<mmj-map>` でも、
-素の [MapLibre](https://maplibre.org/) ＋ [pmtiles](https://www.npmjs.com/package/pmtiles) でも構いません。
+Put that one file on any static host and it is your map. Render it with
+[`<mmj-map>`](https://www.npmjs.com/package/@mmj-map/elements), or with MapLibre directly —
+this tool only produces the archive.
 
-## 先に要るもの
+## Why the build date is in the filename
 
-| | |
-|---|---|
-| Node.js | 22.12 以上 |
-| `pmtiles` コマンド | [go-pmtiles のリリース](https://github.com/protomaps/go-pmtiles/releases)から OS に合うものを落として PATH に置く（BSD-3-Clause） |
+The upstream planet build is replaced daily, and a URL that is not pinned **stops working
+the week after you ship**. The output name carries the build it came from, so you can
+always say which data a given file holds.
 
-**`pmtiles` を自動で落とすことはしません。**checksum が公開されておらず、
-**確かめられないバイナリを黙って実行させたくない**ためです。
-
-## 何をしているのか
-
-[Protomaps の日次プラネットビルド](https://maps.protomaps.com/builds/)（全体 138 GB）から、
-**HTTP Range で必要な範囲だけ**を取ります。1 都市あたり数十リクエスト・数十秒です。
-
-**タイル生成パイプラインは自作していません。**データは借りて、切り出すだけです。
-
-## 使い方
-
-### 範囲を四角で渡す
+## Commands
 
 ```bash
-npx @mmj-map/tiles extract <名前> --bbox=<西>,<南>,<東>,<北> [--maxzoom=15]
+npx @mmj-map/tiles extract <name> --bbox=<west>,<south>,<east>,<north> [--maxzoom=15]
 ```
 
 | | |
-|---|---|
-| 出力先 | **叩いた場所の `./tiles/`**（`--out-dir=` で変えられます） |
-| 使う上流 | **実行時に索引から最新を解決**。`--build=<キー>` で指定もできます |
-| 最大倍率 | 既定 15。`--maxzoom=13` のように下げると軽くなります |
+| --- | --- |
+| Output | `./tiles/` where you ran it (change with `--out-dir=`) |
+| Upstream | Resolved from the index at run time; pin one with `--build=<key>` |
+| Max zoom | 15 by default. Lowering it (`--maxzoom=13`) makes a smaller file |
 
-**出力名に版が入ります**（`nagoya.20260924.pmtiles`）。上流の日次ビルドは
-**1 週間ほどで消えます**（pin してから 9 日で消えたのを実測）。
-版を名前に持たせておくと、**どの版で作ったかを後から言えます**。
+| Command | What it does |
+| --- | --- |
+| `resolve` | Report which upstream build is current |
+| `extract` | Cut a region out of an upstream build |
+| `check-range` | Check that a host serves HTTP Range correctly |
+| `check-age` | Report how old a published archive is |
 
-### 配信先が Range に応えるか確かめる
+### `check-range` is worth running before you ship
 
-```bash
-npx @mmj-map/tiles check-range https://example.com/tiles/nagoya.20260924.pmtiles
-```
+PMTiles works by asking for byte ranges. A host that answers `200` with the whole file
+instead of `206` with a slice still *looks* fine — the map draws — but **every tile pulls
+the entire archive**. You will not notice from the screen; you will notice from the bill
+or from a user on mobile data.
 
-**`200` を返す配信先は使えません。**地図は出ますが、**1 タイル見るたびに
-元ファイル全体が落ちてきます**。見ただけでは分かりません。
+Hosts that answer `206`: GitHub Pages, Cloudflare R2, Amazon S3, Netlify.
 
-`206` を返す例: GitHub Pages / Cloudflare R2 / Amazon S3 / Netlify。
+### Sizes, measured
 
-### 大きさの目安（実測）
+| Area | Size |
+| --- | --- |
+| Nagoya (city, z15) | 9.8 MB |
+| Hanoi | 10.9 MB |
+| Osaka (demo: wide z9 plus city z15) | 62.8 MB |
+| All of Japan (z15) | 2.6 GB |
 
-| 範囲 | 大きさ |
-|---|---|
-| 名古屋（市街・z15） | 9.8 MB |
-| ハノイ | 10.9 MB |
-| 大阪（デモ用・広域 z9 ＋ 市街 z15） | 62.8 MB |
-| 日本全土（z15） | 2.6 GB |
+**Most uses do not need the whole world.** Your own city is usually the whole job.
 
-**ほとんどの用途で、世界中のタイルは要りません。**自分の街のぶんを持てば足ります。
+## What this does not do
 
-## ライセンスと帰属
+- **It does not build tiles.** It cuts from [Protomaps](https://protomaps.com/)' daily
+  planet build using [go-pmtiles](https://github.com/protomaps/go-pmtiles). There is no
+  pipeline to maintain here.
+- **It does not host anything.** Where the file goes is your decision.
+- **It does not carry styles.** Those live in
+  [MMJ](https://github.com/meta-taro/mmj-map) as hand-written JSON.
 
-- このパッケージのコード: **MIT**
-- 切り出したタイルの中身: **ODbL**（OpenStreetMap 由来）
+## Attribution
 
-**`© OpenStreetMap contributors` を画面から外さないでください。**
-これは体裁ではなく、ODbL の条件です。
+The data is OpenStreetMap under ODbL. Whatever you render it with, keep
+`© OpenStreetMap contributors` visible. See
+[LICENSES.md](https://github.com/meta-taro/mmj-map/blob/develop/LICENSES.md).
 
-## もっと詳しく
+## License
 
-- 手順の全文: <https://github.com/meta-taro/mmj-map/blob/develop/docs/tiles/README.md>
-- 製品のデモ: <https://meta-taro.github.io/mmj-map/>
-- 不具合・要望: <https://github.com/meta-taro/mmj-map/issues>
+MIT for the code. Map data is OpenStreetMap, ODbL.
+
+<!--
+  Images and demo links are defined here, in one place. Absolute URLs on purpose:
+  npm resolves relative paths against nothing useful, and a relative image dies
+  on the package page. Look at any screenshot before adding it.
+-->
+
+[shot-plain]: https://raw.githubusercontent.com/meta-taro/mmj-map/develop/apps/demo/shots/plain.jpg
+
+[demo-plain]: https://meta-taro.github.io/mmj-map/plain.html

@@ -7,11 +7,13 @@
  *
  * **ここだけが外界（ファイル）に触る。**判断は `attrs.ts` と `content.ts`。
  *
- * ## check が見ている 3 つ
+ * ## check が見ている 4 つ
  *
  * 1. **ソースが読んでいる属性が、文書に出ているか**（足して書き忘れたら落ちる）
- * 2. **見本が、実在しない属性を使っていないか**（消したのに残っていたら落ちる）
- * 3. **生成物が最新か**（`build` を忘れて commit したら落ちる）
+ * 2. **見本が、実在しない属性を使っていないか**（消したのに残っていたら落ちる）。
+ *    `content.ts` の SNIPPET と、**npm が頁として出す README** の両方を見る
+ * 3. **索引のリンクが実在するか**（配ったら 404、を止める）
+ * 4. **生成物が最新か**（`build` を忘れて commit したら落ちる）
  *
  * **落ちない検査は検査ではない。**どれも 1 度わざと壊して、赤くなることを見ている。
  */
@@ -19,13 +21,22 @@ import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { attributesInDoc, attributesInHtml, attributesInSource, undocumented, unknownInText } from "./attrs.js";
-import { SNIPPET, buildIndex, type IndexLink } from "./content.js";
+import {
+  attributesInDoc,
+  attributesInHtml,
+  attributesInSource,
+  htmlBlocksInMarkdown,
+  undocumented,
+  unknownInText,
+} from "./attrs.js";
+import { SNIPPET, buildIndex, buildSitemap, type IndexLink } from "./content.js";
 
 // src/cli.ts → tools/agent-doc → tools → リポジトリの根（**3 つ上**）
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const elementsDir = path.join(repoRoot, "packages/elements/src");
 const reference = path.join(repoRoot, "docs/elements/README.md");
+/** npm が頁として出す README。**導入する人が最初に読む見本がここにある** */
+const packageReadme = path.join(repoRoot, "packages/elements/README.md");
 
 /** 公開サイトの根。**ここが変わったら生成し直す**（相対リンクを出さないため） */
 const SITE = "https://meta-taro.github.io/mmj-map/";
@@ -39,15 +50,15 @@ const PLAIN_HTML_ATTRS = new Set(["rel", "href", "src", "type"]);
 
 /** 索引に載せる頁。**人が書く。**何が分かる頁かは、機械には書けない。 */
 const LINKS: readonly IndexLink[] = [
-  { section: "はじめに", title: "入れ方（日本語）", path: "install/ja.html", note: "タイル・スタイル・部品の 3 つを置くまで" },
-  { section: "はじめに", title: "Install (English)", path: "install/en.html", note: "the same, in English" },
+  { section: "はじめに", title: "入れ方（日本語）", path: "https://github.com/meta-taro/mmj-map/blob/develop/docs/install/ja.md", note: "タイル・スタイル・部品の 3 つを置くまで" },
+  { section: "はじめに", title: "Install (English)", path: "https://github.com/meta-taro/mmj-map/blob/develop/docs/install/en.md", note: "the same, in English" },
   { section: "見本", title: "素の地図", path: "plain.html", note: "HTML だけで地図を 1 枚置く" },
   { section: "見本", title: "お店を見て回る", path: "shops.html", note: "点に自前の SVG・カード・決済タブ・一覧との連動" },
   { section: "見本", title: "建物を立てる", path: "3d.html", note: "3d 属性で建物を押し出す" },
   { section: "見本", title: "3D で道案内", path: "3d-route.html", note: "建物を立てたまま経路と案内を描く" },
   { section: "見本", title: "点をまとめる", path: "cluster.html", note: "点が多いときにまとめて見せる" },
-  { section: "見本", title: "配色を見くらべる", path: "palette.html", note: "6 枚のスタイルを並べる" },
-  { section: "きまり", title: "ライセンスと帰属表示", path: "licenses.html", note: "ODbL。帰属表示を画面から外さない" },
+  { section: "見本", title: "配色を見くらべる", path: "themes.html", note: "6 枚のスタイルを並べる" },
+  { section: "きまり", title: "ライセンスと帰属表示", path: "https://github.com/meta-taro/mmj-map/blob/develop/LICENSES.md", note: "ODbL。帰属表示を画面から外さない" },
 ];
 
 /** 属性の正本（`packages/elements/src/*.js`） */
@@ -61,7 +72,13 @@ function generated(): { file: string; text: string }[] {
   const attributes = sourceAttributes();
   const index = buildIndex({ site: SITE, links: LINKS, attributes });
   const full = readFileSync(reference, "utf8");
-  return [...INDEX_OUT.map((file) => ({ file, text: index })), ...FULL_OUT.map((file) => ({ file, text: full }))];
+  // **索引も生成物。**手で書くと、頁を足したときに古いまま残る
+  const pages = readdirSync(path.join(repoRoot, "apps/demo")).filter((name) => name.endsWith(".html"));
+  return [
+    ...INDEX_OUT.map((file) => ({ file, text: index })),
+    ...FULL_OUT.map((file) => ({ file, text: full })),
+    { file: "apps/demo/sitemap.xml", text: buildSitemap(SITE, pages) },
+  ];
 }
 
 function readOrNull(file: string): string | null {
@@ -95,7 +112,37 @@ function commandCheck(): number {
     problems.push(`見本（content.ts の SNIPPET）が ${name} を使っていますが、ソースにありません`);
   }
 
-  // 3. 生成物が最新か（**build を忘れて commit したら落ちる**）
+  // 2b. npm に出る README の見本が、実在しない属性を使っていないか。
+  //
+  // ここは npm の頁そのもので、導入する人が最初に読む。間違っていると、
+  // 写した HTML が黙って効かない（**知らない属性名は例外にならない**）。
+  // 2026-10-07 に実際に 3 つ間違えた——`lnglat`（正しくは `center`）・
+  // `label`（存在しない）・`card-photos`（正しくは `card-images`）。
+  // 人が気をつける方式は漏れるので、ここも機械で見る。
+  //
+  // **これで捕まるのは「どの部品にも無い名前」だけ。**上の 3 つで言えば
+  // `label` と `card-photos` は捕まるが、**`lnglat` は捕まらない**
+  // （`mmj-marker` には実在するため）。部品ごとの対応までは見ていない。
+  // 見落とす範囲を承知で置いている——**0 件は「正しい」ではない。**
+  const readmeExamples = htmlBlocksInMarkdown(readFileSync(packageReadme, "utf8"));
+  for (const name of unknownInText(readmeExamples, attributes, attributesInHtml)) {
+    if (PLAIN_HTML_ATTRS.has(name)) continue;
+    problems.push(`packages/elements/README.md が ${name} を使っていますが、ソースにありません`);
+  }
+
+  // 3. 索引のリンクが実在するか。
+  //
+  // **エージェント向けの入口として配っているのに、10 本中 4 本が 404 だった**
+  // （2026-10-06 実測）。公開サイトに無い頁へ、サイトの根を付けて書いていた。
+  // 外（https）は相手の都合なので見ない。**こちらが出す頁だけを見る。**
+  for (const link of LINKS) {
+    if (/^https?:\/\//i.test(link.path)) continue;
+    if (readOrNull(`apps/demo/${link.path}`) === null) {
+      problems.push(`索引のリンク ${link.path} が apps/demo にありません（配ると 404 になります）`);
+    }
+  }
+
+  // 4. 生成物が最新か（**build を忘れて commit したら落ちる**）
   for (const { file, text } of generated()) {
     const current = readOrNull(file);
     if (current === null) problems.push(`${file} がありません。pnpm agent-doc:build を走らせてください`);

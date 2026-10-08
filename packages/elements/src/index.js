@@ -16,6 +16,7 @@ import { MmjMap } from "./mmj-map.js";
 import { MmjMarker } from "./mmj-marker.js";
 import { MmjPoi } from "./mmj-poi.js";
 import { MmjRaster } from "./mmj-raster.js";
+import { MmjTyphoon } from "./mmj-typhoon.js";
 import { MmjRoute } from "./mmj-route.js";
 
 /**
@@ -27,6 +28,7 @@ function define(name, constructor) {
 }
 
 define("mmj-map", MmjMap);
+define("mmj-typhoon", MmjTyphoon);
 define("mmj-marker", MmjMarker);
 define("mmj-circle", MmjCircle);
 define("mmj-cluster", MmjCluster);

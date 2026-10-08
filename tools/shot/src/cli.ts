@@ -4,6 +4,7 @@
  *   pnpm shot                                              # 既定のトップを shot.png へ
  *   pnpm shot -- "http://localhost:8787/#15/34.70/135.49" docs/screenshots/umeda.png
  *   pnpm shot -- "http://localhost:8787/og.html" apps/demo/og.png --size=1200x630
+ *   pnpm shot -- "…/shops.html?shop=akari" pay.png --click="button:text(決済)"
  *
  * `--size=` は**出てくる絵の大きさ**。窓の大きさではない（SNS のカードのように
  * 寸法が決まっているものを撮るため）。位置引数とは数えないので、順番はどこでもよい。
@@ -147,7 +148,8 @@ function drainEvents(): void {
       case "Network.requestWillBeSent":
         {
           const url = String(p["request"]?.url ?? "?");
-          if (isCountableRequest(url)) inflight.set(String(p["requestId"]), url);
+          const initiator = String(p["initiator"]?.type ?? "other");
+          if (isCountableRequest(url, initiator)) inflight.set(String(p["requestId"]), url);
         }
         break;
       case "Network.loadingFinished":
@@ -223,6 +225,38 @@ if (args.offline) {
     if (next.done) break;
     if (Date.now() > offlineDeadline) break;
   }
+}
+
+// **撮る前に押す。**タブや開閉の中身は、押さないと画面に出ない。
+// `button:text(決済)` のように文字でも選べる（タブに id が無いため）。
+// **押せなかったら言う。**黙って撮ると、押したつもりの絵を確認に使ってしまう。
+if (args.click !== "") {
+  const clicked = (
+    await send(
+      "Runtime.evaluate",
+      {
+        expression: `(() => {
+          const want = ${JSON.stringify(args.click)};
+          const text = /^(.*):text\\((.*)\\)$/.exec(want);
+          const target = text
+            ? [...document.querySelectorAll(text[1])].find((el) => el.textContent?.trim() === text[2])
+            : document.querySelector(want);
+          if (!target) return "見つかりません";
+          target.click();
+          return "押しました";
+        })()`,
+        returnByValue: true,
+      },
+      session,
+    )
+  ).result as { result?: { value?: string } };
+  const said = clicked.result?.value ?? "？";
+  console.log(`${args.click}: ${said}`);
+  if (said !== "押しました") {
+    console.error("押すものが見つかりませんでした。**この絵は押す前の状態です**");
+    process.exitCode = 1;
+  }
+  await sleep(600); // 押したあとの描き換えを待つ
 }
 
 // **形式は引数で決める。**頁に並べる絵は JPEG（PNG だと地図 1 枚で数百 KB）

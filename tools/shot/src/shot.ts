@@ -31,6 +31,13 @@ export interface ShotArgs {
   readonly format: "png" | "jpeg";
   /** JPEG の画質（1〜100）。`format` が png のときは使わない */
   readonly quality: number;
+  /**
+   * 撮る前に押すもの（CSS セレクタ、または `button:text(決済)`）。空なら押さない。
+   *
+   * タブや開閉の中身は、押さないと画面に出ない。そこを確かめられないと
+   * 「単体テストは通ったが、画面は見ていない」で止まる。
+   */
+  readonly click: string;
 }
 
 const DEFAULTS: ShotArgs = {
@@ -42,7 +49,19 @@ const DEFAULTS: ShotArgs = {
   offline: false,
   format: "png",
   quality: 72,
+  click: "",
 };
+
+const CLICK_FLAG = "--click=";
+
+/** `--click=.mmj-card-tab` を読む。空の指定は受けない（押したつもりの絵が配られる） */
+function readClick(args: readonly string[]): string {
+  const flag = args.find((arg) => arg.startsWith(CLICK_FLAG));
+  if (flag === undefined) return DEFAULTS.click;
+  const selector = flag.slice(CLICK_FLAG.length).trim();
+  if (selector === "") throw new Error("--click= には押すものを指定してください（例: --click=button:text(決済)）");
+  return selector;
+}
 
 const SIZE_FLAG = "--size=";
 const JPEG_FLAG = "--jpeg";
@@ -110,6 +129,7 @@ export function parseShotArgs(argv: readonly string[]): ShotArgs {
     offline: args.includes("--offline"),
     ...size,
     ...readFormat(args),
+    click: readClick(args),
   };
 }
 
@@ -154,11 +174,31 @@ export function pickBrowser(candidates: readonly string[], exists: (path: string
 /**
  * 「読み込みが止まったか」を数える対象かどうか。
  *
- * MapLibre の worker は `blob:` で読み込まれ、**ページが生きているあいだずっと開いたまま**に
- * なる（実測）。これを数えると静かになる瞬間が永久に来ず、毎回待ち切ってから撮ることになる。
- * 見たいのは配信への要求（タイル・スタイル・グリフ）だけ。
+ * worker は別の target で走るので、その本体を取りに行った要求には
+ * 応答が page 側へ 1 つも返ってこない。数えると静かになる瞬間が永久に来ず、
+ * 毎回待ち切ってから撮ることになる。見たいのは配信への要求
+ * （タイル・スタイル・グリフ）だけ。
+ *
+ * 仕分けは URL ではなく `initiator` で行う。MapLibre 5 の worker は `blob:` だったので
+ * 「scheme が http(s) か」で足りていたが、6 系の worker は `./maplibre-gl-worker.mjs` という
+ * 普通の URL になり、同じ規則をすり抜けた（実測・2026-10-06）。
+ *
+ * 実測した内訳（`plain.html`）:
+ *
+ * | initiator | 中身 | 応答 |
+ * | --- | --- | --- |
+ * | `script` | タイル・スタイル・グリフ・ESM | 返る |
+ * | `parser` | 頁が自分で読む css / js / 画像 | 返る |
+ * | `other` | 頁そのもの、worker の本体 | worker だけ返らない |
+ *
+ * 頁そのものを数えなくなるが、撮り終えてよいかの判断は `Page.loadEventFired` が
+ * 別に見ている。
+ *
+ * @param url 要求先
+ * @param initiator CDP の `Network.requestWillBeSent` が返す `initiator.type`
  */
-export const isCountableRequest = (url: string): boolean => /^https?:/i.test(url);
+export const isCountableRequest = (url: string, initiator: string): boolean =>
+  /^https?:/i.test(url) && (initiator === "script" || initiator === "parser");
 
 /**
  * 案内画面（配信元が無いときの代替表示）が出たまま撮れたかどうか。

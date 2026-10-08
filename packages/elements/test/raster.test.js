@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildRasterSpec, firstSymbolLayerId, isTileTemplate, RASTER_DEFAULTS } from "../src/raster.js";
+import { buildRasterSpec, firstSymbolLayerId, isTileTemplate, RASTER_DEFAULTS, buildFrameSpecs, frameSrc, parseFrames } from "../src/raster.js";
 
 /**
  * **1 つで広く効く部品。**雨雲レーダー・ハザードマップ・地盤・震度・空中写真は、
@@ -104,10 +104,69 @@ describe("buildRasterSpec", () => {
     expect(buildRasterSpec({ ...base, attribution: "  " }).source).not.toHaveProperty("attribution");
   });
 
-  it("出す倍率を絞れる（**渡されなければ絞らない**）", () => {
+  // **持っている段は source に書く。**layer に書くと、無い段のタイルを取りに行き続ける。
+  // 実測（2026-10-07）: z8 だけ置いて layer に付けた頁で、z6/z7 への要求が 188 件 404 になった。
+  // source に書けば、持っている段を拡大・縮小して見せてくれる。
+  it("持っている倍率を source に書く（**渡されなければ書かない**）", () => {
     const spec = buildRasterSpec({ ...base, minZoom: 8, maxZoom: 14 });
-    expect(spec.layer.minzoom).toBe(8);
-    expect(spec.layer.maxzoom).toBe(14);
-    expect(buildRasterSpec(base).layer).not.toHaveProperty("minzoom");
+    expect(spec.source.minzoom).toBe(8);
+    expect(spec.source.maxzoom).toBe(14);
+    expect(spec.layer).not.toHaveProperty("minzoom");
+    expect(buildRasterSpec(base).source).not.toHaveProperty("minzoom");
+  });
+});
+
+describe("時刻つきのラスタ（雨雲レーダー）", () => {
+  describe("parseFrames", () => {
+    it("読点区切りの見出しを並べて返す", () => {
+      expect(parseFrames("09:00,10:00,11:00")).toEqual(["09:00", "10:00", "11:00"]);
+    });
+
+    it("前後の空白を落とし、空の項目は捨てる", () => {
+      expect(parseFrames(" 09:00 , ,10:00 ")).toEqual(["09:00", "10:00"]);
+    });
+
+    it("無いときは空（時刻無しのふつうのラスタになる）", () => {
+      expect(parseFrames(null)).toEqual([]);
+      expect(parseFrames("")).toEqual([]);
+    });
+  });
+
+  describe("frameSrc", () => {
+    it("{t} を番号で差し替える", () => {
+      expect(frameSrc("./rain/{t}/{z}/{x}/{y}.png", 3)).toBe("./rain/3/{z}/{x}/{y}.png");
+    });
+
+    it("{t} が無ければそのまま（時刻で変わらないものを、変わるふりにしない）", () => {
+      expect(frameSrc("./rain/{z}/{x}/{y}.png", 3)).toBe("./rain/{z}/{x}/{y}.png");
+    });
+  });
+
+  describe("buildFrameSpecs", () => {
+    const input = { id: "rain", src: "./rain/{t}/{z}/{x}/{y}.png", frames: ["09:00", "10:00", "11:00"] };
+
+    it("時刻の数だけ source と layer を作る", () => {
+      const specs = buildFrameSpecs(input);
+      expect(specs).toHaveLength(3);
+      expect(specs[0]?.sourceId).toBe("rain-0");
+      expect(specs[2]?.source.tiles).toEqual(["./rain/2/{z}/{x}/{y}.png"]);
+    });
+
+    // **全部先に置いて、見せ方だけ切り替える。**毎回 source を作り直すと、
+    // 切り替えのたびに取りに行って白く抜ける
+    it("最初の 1 枚だけが見えていて、残りは隠れている", () => {
+      const specs = buildFrameSpecs(input);
+      expect(specs[0]?.layer.layout.visibility).toBe("visible");
+      expect(specs[1]?.layer.layout.visibility).toBe("none");
+      expect(specs[2]?.layer.layout.visibility).toBe("none");
+    });
+
+    it("{t} を含まない src は断る（同じ絵を時刻ぶん並べることになる）", () => {
+      expect(() => buildFrameSpecs({ ...input, src: "./rain/{z}/{x}/{y}.png" })).toThrow(/\{t\}/);
+    });
+
+    it("時刻が 1 つも無ければ断る", () => {
+      expect(() => buildFrameSpecs({ ...input, frames: [] })).toThrow();
+    });
   });
 });

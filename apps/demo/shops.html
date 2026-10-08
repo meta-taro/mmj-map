@@ -56,6 +56,7 @@
     <a href="./venue.html">会場の地図</a>
     <a href="./circle.html">半径で囲む</a>
     <a href="./raster.html">重ねる</a>
+    <a href="./rain.html">雨雲を動かす</a>
     <a href="./flood.html">面で塗り分ける</a>
     <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
   </nav>
@@ -74,7 +75,8 @@
              card-rating="rating" card-rating-count="review_count"
              card-href="url" card-href-label="お店のページ（見本）"
              card-tabs="品書き:menu,クーポン:coupon,決済:payment"
-             card-links="写真:sns_url,公式:site_url,電話:tel"
+             card-links="予約:reserve_url,求人:recruit_url,写真:sns_url,公式:site_url,電話:tel"
+             card-rich="description,payment"
              card-hours="open_hours" card-reviews="review_items"
              card-live="いま:./data/live/{id}.json"
              list="#shop-list"
@@ -143,7 +145,7 @@
   </p>
 </aside>
 
-<script src="./vendor/maplibre-gl/maplibre-gl.js"></script>
+<script type="module" src="./maplibre.js"></script>
 <script src="./vendor/pmtiles/pmtiles.js"></script>
 <script src="./config.js"></script>
 <script type="module">

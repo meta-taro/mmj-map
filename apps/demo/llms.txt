@@ -8,7 +8,7 @@ MMJ は描き方だけを持つ。だから API キーも従量課金も無い�
 ## 写して動く最小の 1 枚
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
 <style>mmj-map { display: block; height: 70vh; }</style>
 
 <mmj-map
@@ -19,7 +19,10 @@ MMJ は描き方だけを持つ。だから API キーも従量課金も無い�
   <mmj-marker lnglat="135.4959,34.7024" popup="梅田"></mmj-marker>
 </mmj-map>
 
-<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script type="module">
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  window.maplibregl = maplibregl;
+</script>
 <script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
 <script type="module" src="./elements/index.js"></script>
 ```
@@ -28,8 +31,8 @@ MMJ は描き方だけを持つ。だから API キーも従量課金も無い�
 
 ## はじめに
 
-- [入れ方（日本語）](https://meta-taro.github.io/mmj-map/install/ja.html): タイル・スタイル・部品の 3 つを置くまで
-- [Install (English)](https://meta-taro.github.io/mmj-map/install/en.html): the same, in English
+- [入れ方（日本語）](https://github.com/meta-taro/mmj-map/blob/develop/docs/install/ja.md): タイル・スタイル・部品の 3 つを置くまで
+- [Install (English)](https://github.com/meta-taro/mmj-map/blob/develop/docs/install/en.md): the same, in English
 ## 見本
 
 - [素の地図](https://meta-taro.github.io/mmj-map/plain.html): HTML だけで地図を 1 枚置く
@@ -37,14 +40,14 @@ MMJ は描き方だけを持つ。だから API キーも従量課金も無い�
 - [建物を立てる](https://meta-taro.github.io/mmj-map/3d.html): 3d 属性で建物を押し出す
 - [3D で道案内](https://meta-taro.github.io/mmj-map/3d-route.html): 建物を立てたまま経路と案内を描く
 - [点をまとめる](https://meta-taro.github.io/mmj-map/cluster.html): 点が多いときにまとめて見せる
-- [配色を見くらべる](https://meta-taro.github.io/mmj-map/palette.html): 6 枚のスタイルを並べる
+- [配色を見くらべる](https://meta-taro.github.io/mmj-map/themes.html): 6 枚のスタイルを並べる
 ## きまり
 
-- [ライセンスと帰属表示](https://meta-taro.github.io/mmj-map/licenses.html): ODbL。帰属表示を画面から外さない
+- [ライセンスと帰属表示](https://github.com/meta-taro/mmj-map/blob/develop/LICENSES.md): ODbL。帰属表示を画面から外さない
 
 ## 属性
 
-部品が読む属性は **60 件**。**全文はこの 1 ファイルに入っている**（頁を渡り歩かなくてよい）:
+部品が読む属性は **67 件**。**全文はこの 1 ファイルに入っている**（頁を渡り歩かなくてよい）:
 
 - [llms-full.txt](https://meta-taro.github.io/mmj-map/llms-full.txt): 部品ごとの属性と、使いどころ
 
