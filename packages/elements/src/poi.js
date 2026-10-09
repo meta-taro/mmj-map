@@ -89,20 +89,27 @@ export function buildPoiSpec(input) {
   // （`styleimagemissing`）。1,027 件あっても、作るのは画面に出ている数十枚だけ。
   const pinKey = typeof input.pinImage === "string" && input.pinImage !== "" ? input.pinImage : null;
   const pinId = pinKey === null ? null : `${sourceId}-pin`;
-  // **ピンは座標の上に立つ。**当たり判定は座標を中心にした丸のままなので、
-  // **写真のところを押しても反応しない**（触れそうに見えて触れないのは、無いより悪い）。
-  // 写真の中心ぶんだけ持ち上げた当たり判定を、もう 1 枚足す。
-  const pinHitId = pinKey === null ? null : `${sourceId}-hit-pin`;
 
-  // **同じ点に丸と絵とピンを重ねない。**重なると下からはみ出して汚れる。
-  // ピンを出す点は丸も分類の絵も出さない（ピンが全部を兼ねる）
+  // **ピンになる点**（写真を持つ点と、分類の絵を持つ点）。
+  // **絵もピンの形に入れる**ので、同じ扱いになる（2026-10-09）——
+  // 片方だけ平らな丸だと、同じ地図に 2 種類の目印が並んで読み分けられない。
   const covered = [
     ...(iconKey === null ? [] : [hasIconFilter(iconKey, icons)]),
     ...(pinKey === null ? [] : [["has", pinKey]]),
   ];
-  const plainOnly = covered.length === 0
-    ? {}
-    : { filter: ["!", covered.length === 1 ? covered[0] : ["any", ...covered]] };
+  const coveredFilter = covered.length === 0
+    ? null
+    : covered.length === 1
+      ? covered[0]
+      : ["any", ...covered];
+
+  // **ピンは座標の上に立つ。**当たり判定は座標を中心にした丸のままなので、
+  // **絵や写真のところを押しても反応しない**（触れそうに見えて触れないのは、無いより悪い）。
+  // 中心ぶんだけ持ち上げた当たり判定を、もう 1 枚足す。
+  const pinHitId = coveredFilter === null ? null : `${sourceId}-hit-pin`;
+
+  // **同じ点に丸とピンを重ねない。**重なると下からはみ出して汚れる
+  const plainOnly = coveredFilter === null ? {} : { filter: ["!", coveredFilter] };
 
   return {
     sourceId,
@@ -148,7 +155,7 @@ export function buildPoiSpec(input) {
               type: "circle",
               source: sourceId,
               minzoom,
-              filter: ["has", pinKey],
+              filter: coveredFilter,
               paint: {
                 "circle-radius": HIT_RADIUS,
                 "circle-color": color,
@@ -185,7 +192,7 @@ export function buildPoiSpec(input) {
       // **ピンを出す点の「いまここ」。**ピンは座標の上に立つので、
       // 印を座標へ置くと**ピンの下に青い丸が離れて出る**（実測で見た）。
       // 当たり判定と同じだけ持ち上げて、写真を囲む輪にする。
-      ...(pickedId === null || pinKey === null
+      ...(pickedId === null || coveredFilter === null
         ? []
         : [
             {
@@ -193,7 +200,7 @@ export function buildPoiSpec(input) {
               type: "circle",
               source: sourceId,
               minzoom,
-              filter: ["has", pinKey],
+              filter: coveredFilter,
               paint: {
                 // ピンの本体（半径 14.5）より外。**内側だと写真に隠れる**
                 "circle-radius": ["case", ["boolean", ["feature-state", "picked"], false], 19, 0],
@@ -212,12 +219,13 @@ export function buildPoiSpec(input) {
               type: "circle",
               source: sourceId,
               minzoom,
-              // **ピンを出す点は、上の層が受け持つ**（二重に出さない）
-              ...(pinKey === null ? {} : { filter: ["!", ["has", pinKey]] }),
+              // **ピンになる点は、上の層が受け持つ**（二重に出さない）
+              ...(coveredFilter === null ? {} : { filter: ["!", coveredFilter] }),
               paint: {
                 // **絵があるときは輪を大きくする。**絵（22px）より内側だと
                 // 絵に隠れて、選ばれていることが見えない（実測・2026-09-30）
-                "circle-radius": ["case", ["boolean", ["feature-state", "picked"], false], iconId === null ? 9 : 16, 0],
+                // ここは丸のままの点だけ（絵も写真もピンの層が受け持つ）
+                "circle-radius": ["case", ["boolean", ["feature-state", "picked"], false], 9, 0],
                 "circle-color": color,
                 // **縁は太く。**色だけで差をつけると、配色によっては見分けが付かない
                 "circle-stroke-width": ["case", ["boolean", ["feature-state", "picked"], false], 3.5, 0],
@@ -243,6 +251,8 @@ export function buildPoiSpec(input) {
               ...(pinKey === null ? {} : { filter: ["!", ["has", pinKey]] }),
               layout: {
                 "icon-image": iconImageExpression(/** @type {string} */ (iconKey), icons, imageIdFor),
+                // **先がその地点。**ピンの形なので、中心合わせだと指す場所がずれる
+                "icon-anchor": "bottom",
                 // **重なっても消さない。**名前は消えてよいが、
                 // **何屋かが消えると地図の意味が変わる**
                 "icon-allow-overlap": true,

@@ -86,55 +86,6 @@ export function iconImageExpression(key, icons, imageId) {
 }
 
 /**
- * 地図へ入れる絵の大きさ（CSS ピクセル）。
- *
- * **SVG には寸法が無いことがある。**そのままでは描けないので、こちらで決める。
- * 点の丸（直径 13px）より大きく、1440px の画面でも形が読める大きさ。
- * **数字は実測で決め直すこと。**
- */
-export const ICON_SIZE = 26;
-
-/**
- * SVG を読んで、地図へ入れられる形にする。
- *
- * **`<img>` で読む。**`<img>` に入れた SVG の中では**スクリプトが動かない**
- * ので、持ち込まれた絵から script が走る経路が無い（baseline §21）。
- *
- * **1 枚の失敗で地図を落とさない。**読めなければ `null` を返し、
- * その点は丸のまま残る。
- *
- * @param {string} url
- * @param {number} ratio 画面の倍率（`devicePixelRatio`）
- * @returns {Promise<ImageData | null>}
- */
-export async function loadIcon(url, ratio) {
-  const scale = Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
-  const side = Math.round(ICON_SIZE * scale);
-
-  try {
-    const image = await new Promise((resolve, reject) => {
-      const element = new Image();
-      element.addEventListener("load", () => resolve(element), { once: true });
-      element.addEventListener("error", () => reject(new Error(`読めません: ${url}`)), { once: true });
-      // **寸法を指定してから読む。**SVG に width/height が無いと 0x0 で描かれる
-      element.width = side;
-      element.height = side;
-      element.src = url;
-    });
-
-    const canvas = document.createElement("canvas");
-    canvas.width = side;
-    canvas.height = side;
-    const context = canvas.getContext("2d");
-    if (context === null) return null;
-    context.drawImage(/** @type {HTMLImageElement} */ (image), 0, 0, side, side);
-    return context.getImageData(0, 0, side, side);
-  } catch {
-    return null;
-  }
-}
-
-/**
  * その点が絵を持つか。**丸を出すかどうかの裏返し。**
  *
  * 絵と丸を重ねると、**絵の下から丸がはみ出して汚れる**。

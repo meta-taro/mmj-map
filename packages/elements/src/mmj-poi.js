@@ -36,7 +36,7 @@ import {
   writeShopParam,
 } from "./card.js";
 import { mountCard } from "./card-dom.js";
-import { loadIcon, parseIcons } from "./icons.js";
+import { parseIcons } from "./icons.js";
 import { listEntries } from "./list.js";
 import { ensureListContrast, mountList } from "./list-dom.js";
 import { PIN_PHOTO, firstImageUrl, pinImageUrl, pinPath } from "./pin.js";
@@ -271,7 +271,14 @@ export class MmjPoi extends HTMLElement {
       icons.map(async (icon) => {
         const id = this.spec?.imageIdFor(icon.name);
         if (id === undefined || map.hasImage(id)) return;
-        const data = await loadIcon(icon.url, ratio);
+        // **写真と同じピンの形に入れる。**片方だけ平らな丸だと、
+        // 同じ地図に 2 種類の目印が並んで、どちらが何なのか分からない
+        // （2026-10-09・「SVG アイコンも同様にかわいいピンに合わせたい」）。
+        // **絵はもともと丸い台**（`<circle r="11">` ＋ 白縁）なので、切らずに収める
+        const data = await loadPinImage(icon.url, ratio, {
+          color: this.getAttribute("color") ?? this.owner?.accent ?? POI_DEFAULTS.color,
+          casing: POI_DEFAULTS.haloColor,
+        }, false);
         if (data === null) return void missing.push(`${icon.name}（${icon.url}）`);
         // **倍率を伝える。**伝えないと、高精細の画面で 2 倍の大きさで出る
         map.addImage(id, data, { pixelRatio: ratio });
@@ -319,7 +326,7 @@ export class MmjPoi extends HTMLElement {
     };
 
     const task = (async () => {
-      const data = await loadPinPhoto(url, ratio, colors);
+      const data = await loadPinImage(url, ratio, colors);
       if (data === null) return false;
       if (map.hasImage(id)) return true;
       // **倍率を伝える。**伝えないと、高精細の画面で 2 倍の大きさで出る
@@ -830,9 +837,10 @@ const PIN_CAP = 96;
  * @param {string} url
  * @param {number} ratio 画面の倍率
  * @param {{ color: string, casing: string }} colors
+ * @param {boolean} [crop] 写真は中央を正方形に切る。**絵はそのまま丸へ収める**
  * @returns {Promise<ImageData | null>}
  */
-async function loadPinPhoto(url, ratio, colors) {
+async function loadPinImage(url, ratio, colors, crop = true) {
   const scale = Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
   const { width, height, radius } = PIN_PHOTO;
   const pixelWidth = Math.round(width * scale);
@@ -866,19 +874,22 @@ async function loadPinPhoto(url, ratio, colors) {
     context.strokeStyle = colors.casing;
     context.stroke(shape);
 
-    // **中央を正方形に切ってから入れる。**縦長でも横長でも丸が欠けない
+    // **写真は中央を正方形に切ってから入れる。**縦長でも横長でも丸が欠けない。
+    // **絵は切らない**——もともと丸い台（`<circle r="11">`）で描かれているので、
+    // 切ると縁が欠ける。丸いっぱいにそのまま収める
     const source = /** @type {HTMLImageElement} */ (image);
-    const side = Math.min(source.naturalWidth, source.naturalHeight);
-    if (side > 0) {
-      const center = width / 2;
-      context.save();
-      context.beginPath();
-      context.arc(center, center, radius, 0, Math.PI * 2);
-      context.clip();
+    const natural = { w: source.naturalWidth || radius * 2, h: source.naturalHeight || radius * 2 };
+    const side = crop ? Math.min(natural.w, natural.h) : 0;
+    const center = width / 2;
+    context.save();
+    context.beginPath();
+    context.arc(center, center, radius, 0, Math.PI * 2);
+    context.clip();
+    if (crop && side > 0) {
       context.drawImage(
         source,
-        (source.naturalWidth - side) / 2,
-        (source.naturalHeight - side) / 2,
+        (natural.w - side) / 2,
+        (natural.h - side) / 2,
         side,
         side,
         center - radius,
@@ -886,8 +897,10 @@ async function loadPinPhoto(url, ratio, colors) {
         radius * 2,
         radius * 2,
       );
-      context.restore();
+    } else {
+      context.drawImage(source, center - radius, center - radius, radius * 2, radius * 2);
     }
+    context.restore();
 
     return context.getImageData(0, 0, pixelWidth, pixelHeight);
   } catch {
