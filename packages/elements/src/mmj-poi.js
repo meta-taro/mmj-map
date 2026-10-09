@@ -39,7 +39,7 @@ import { mountCard } from "./card-dom.js";
 import { parseIcons } from "./icons.js";
 import { listEntries } from "./list.js";
 import { ensureListContrast, mountList } from "./list-dom.js";
-import { PIN_PHOTO, firstImageUrl, pinImageUrl, pinPath } from "./pin.js";
+import { PIN_PHOTO, firstImageUrl, parsePinColors, pinImageParts, pinPath } from "./pin.js";
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
 import { buildCardContent, isSafeLink } from "./popup.js";
 import { isRichField, parseRichFields } from "./rich.js";
@@ -77,6 +77,9 @@ export class MmjPoi extends HTMLElement {
   /** ピンの写真を作る受け口を外す手。**外れるときに外す**（地図は生き続ける） */
   /** @type {(() => void) | null} */
   pinCleanup = null;
+
+  /** 分類の絵の URL。**絵は切らない**ので、写真と見分けるために持つ @type {Set<string>} */
+  iconUrls = new Set();
 
   /** 地図へ入れたピンの画像 id。**古い順**に捨てる（上限 `PIN_CAP`） */
   /** @type {string[]} */
@@ -188,6 +191,8 @@ export class MmjPoi extends HTMLElement {
 
     const theme = this.owner?.theme;
     const accent = this.owner?.accent;
+    const icons = parseIcons(this.getAttribute("icons"), isSafeLink);
+    this.iconUrls = new Set(icons.map((i) => i.url));
 
     try {
       this.spec = buildPoiSpec({
@@ -198,9 +203,12 @@ export class MmjPoi extends HTMLElement {
         idKey: this.getAttribute("card-id") ?? undefined,
         // **一目で何屋か分かるようにする。**絵は持ち込む側のもの（D-001）
         iconKey: this.getAttribute("icon-key") ?? undefined,
-        icons: parseIcons(this.getAttribute("icons"), isSafeLink),
+        icons: icons,
         // **写真を持つ点は、ピンの中に写真を出す。**押す前に分かるように
         pinImage: this.getAttribute("pin-image") ?? undefined,
+        // **色は導入側が指定する**（§11）。値 → 色の対応を受け取るだけ
+        pinColorKey: this.getAttribute("pin-color-key") ?? undefined,
+        pinColors: parsePinColors(this.getAttribute("pin-colors")),
         minZoom: parseCount(this.getAttribute("min-zoom"), POI_DEFAULTS.minZoom),
         // 指定が無ければ、サイトのテーマカラー（`<mmj-map accent>`）を既定にする。
         // 名前は地図のラベルと同じ色を借りる。**ここで色を作らない**
@@ -225,12 +233,9 @@ export class MmjPoi extends HTMLElement {
       this.pinCleanup = addPinResolver(map, (/** @type {unknown} */ id) => this.#addPinImage(map, id));
     }
 
-    // **絵を先に入れてから層を足す。**逆にすると、MapLibre が
-    // 「そんな画像は無い」と言い続ける（層は出るが絵は出ない）
-    const spec = this.spec;
-    void this.#addIcons(map).then(() => {
-      for (const layer of spec.layers) if (!map.getLayer(layer.id)) map.addLayer(layer);
-    });
+    // **絵も写真も、描こうとしたぶんだけ作る**（上の受け口）。
+    // 先に登録する必要が無いので、層はそのまま足せる
+    for (const layer of this.spec.layers) if (!map.getLayer(layer.id)) map.addLayer(layer);
 
     // **押す対象は、見える点ではなく当たり判定の層**（直径 36px）。
     // 見える点は 13px しかなく、指で狙うには小さい
@@ -248,47 +253,6 @@ export class MmjPoi extends HTMLElement {
     // **`card-id` があるときだけ一覧を読む。**無ければ送りも復元も出ないので、
     // 取りに行く理由が無い（**使わないものを取りに行かない**）
     if (this.getAttribute("card-id")) void this.#loadList(src);
-  }
-
-  /**
-   * 絵を地図へ入れる。**1 枚読めなくても地図は出す。**
-   *
-   * 読めなかった名前は読み替えに残るが、**MapLibre は無い画像を黙って飛ばす**。
-   * その点は丸も出ない（丸は「絵を持つ名前」で切ってあるため）ので、
-   * **必ずログに名前を残す**。
-   *
-   * @param {any} map
-   */
-  async #addIcons(map) {
-    const icons = parseIcons(this.getAttribute("icons"), isSafeLink);
-    if (icons.length === 0 || this.spec === null) return;
-
-    const ratio = typeof devicePixelRatio === "number" && devicePixelRatio > 0 ? devicePixelRatio : 1;
-    /** @type {string[]} */
-    const missing = [];
-
-    await Promise.all(
-      icons.map(async (icon) => {
-        const id = this.spec?.imageIdFor(icon.name);
-        if (id === undefined || map.hasImage(id)) return;
-        // **写真と同じピンの形に入れる。**片方だけ平らな丸だと、
-        // 同じ地図に 2 種類の目印が並んで、どちらが何なのか分からない
-        // （2026-10-09・「SVG アイコンも同様にかわいいピンに合わせたい」）。
-        // **絵はもともと丸い台**（`<circle r="11">` ＋ 白縁）なので、切らずに収める
-        const data = await loadPinImage(icon.url, ratio, {
-          color: this.getAttribute("color") ?? this.owner?.accent ?? POI_DEFAULTS.color,
-          casing: POI_DEFAULTS.haloColor,
-        }, false);
-        if (data === null) return void missing.push(`${icon.name}（${icon.url}）`);
-        // **倍率を伝える。**伝えないと、高精細の画面で 2 倍の大きさで出る
-        map.addImage(id, data, { pixelRatio: ratio });
-      }),
-    );
-
-    // 握り潰さない（§8）。**絵が出ない理由が画面にもログにも残らないのが一番困る**
-    if (missing.length > 0) {
-      console.error(`[mmj-poi] 読めなかったアイコン（その点には何も出ません）: ${missing.join(", ")}`);
-    }
   }
 
   /**
@@ -313,20 +277,20 @@ export class MmjPoi extends HTMLElement {
     if (pending !== undefined) return pending;
 
     // **自分の source のピンだけ。**同じ頁の別の地図の id は読まない
-    const raw = pinImageUrl(this.spec.sourceId, id);
-    if (raw === null) return false;
+    const parts = pinImageParts(this.spec.sourceId, id);
+    if (parts === null) return false;
     // **危ない URL はここで落ちる**（canvas へ読み込む前）
-    const url = firstImageUrl(raw);
+    const url = firstImageUrl(parts.url);
     if (url === null) return false;
 
     const ratio = typeof devicePixelRatio === "number" && devicePixelRatio > 0 ? devicePixelRatio : 1;
-    const colors = {
-      color: this.getAttribute("color") ?? this.owner?.accent ?? POI_DEFAULTS.color,
-      casing: POI_DEFAULTS.haloColor,
-    };
+    // **色は id に入っている**（地物ごとに違うため）
+    const colors = { color: parts.color, casing: POI_DEFAULTS.haloColor };
+    // **分類の絵は切らない。**もともと丸い台で描かれているので、切ると縁が欠ける
+    const crop = !this.iconUrls.has(url);
 
     const task = (async () => {
-      const data = await loadPinImage(url, ratio, colors);
+      const data = await loadPinImage(url, ratio, colors, crop);
       if (data === null) return false;
       if (map.hasImage(id)) return true;
       // **倍率を伝える。**伝えないと、高精細の画面で 2 倍の大きさで出る

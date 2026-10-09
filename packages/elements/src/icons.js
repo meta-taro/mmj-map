@@ -63,29 +63,6 @@ export function parseIcons(attribute, isSafe) {
 }
 
 /**
- * 点に出す絵の名前を、地図の式で表す。
- *
- * **地図に入れた名前（`imageId`）へ読み替える。**1 枚の頁に地図が何枚も載るので、
- * `ramen` のような素の名前をそのまま使うと、**別の地図の絵で上書きされる**。
- *
- * **知らない名前は空文字**。MapLibre は空の `icon-image` を「描かない」と読むので、
- * 分類の無い点や、綴りの違う点は**静かに丸のまま**になる。
- *
- * @param {string} key アイコン名が入っている属性
- * @param {readonly IconSource[]} icons
- * @param {(name: string) => string} imageId 名前 → 地図に入れた名前
- * @returns {unknown[]} MapLibre の式
- */
-export function iconImageExpression(key, icons, imageId) {
-  /** @type {unknown[]} */
-  const match = ["match", ["get", key]];
-  for (const icon of icons) match.push(icon.name, imageId(icon.name));
-  // 既定（知らない名前）は空文字＝描かない
-  match.push("");
-  return match;
-}
-
-/**
  * その点が絵を持つか。**丸を出すかどうかの裏返し。**
  *
  * 絵と丸を重ねると、**絵の下から丸がはみ出して汚れる**。

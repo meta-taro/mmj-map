@@ -60,13 +60,48 @@ export function pinPath(size) {
   );
 }
 
+/** 色と URL の区切り。**色に `|` は入らない**ので、最初の 1 つで割れる */
+const PIN_SPLIT = "|";
+
 /**
- * 画像の id を作る。**URL をそのまま入れる**ので、id から読み戻せる。
+ * 画像の id を作る。**色と URL をそのまま入れる**ので、id から読み戻せる。
+ *
+ * **色を入れないと使い回される。**MapLibre は id で画像を持つので、
+ * 色を入れないと**同じ写真を使う 2 店が、先に描かれたほうの色で両方描かれる**。
+ *
  * @param {string} sourceId
+ * @param {string} color
  * @param {string} url
  */
-export function pinImageId(sourceId, url) {
-  return `${sourceId}${PIN_MARK}${url}`;
+export function pinImageId(sourceId, color, url) {
+  return `${sourceId}${PIN_MARK}${color}${PIN_SPLIT}${url}`;
+}
+
+/**
+ * `名前:色` の対応を読む。**色は導入側が指定する**（§11・MMJ は色を作らない）。
+ *
+ * **色として読めないものは捨てる。**canvas は読めない色を黙って透明にするので、
+ * 通すと**ピンが消えた理由が分からない**。16 進だけを受ける。
+ *
+ * @param {string | null | undefined} attribute `ramen:#E4572E,cafe:#C9A227`
+ * @returns {{ name: string, color: string }[]}
+ */
+export function parsePinColors(attribute) {
+  if (typeof attribute !== "string") return [];
+  /** @type {{ name: string, color: string }[]} */
+  const found = [];
+  const seen = new Set();
+  for (const pair of attribute.split(",")) {
+    const at = pair.indexOf(":");
+    if (at < 0) continue;
+    const name = pair.slice(0, at).trim();
+    const color = pair.slice(at + 1).trim();
+    if (name === "" || seen.has(name)) continue;
+    if (!/^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(color)) continue;
+    seen.add(name);
+    found.push({ name, color });
+  }
+  return found;
 }
 
 /**
@@ -78,14 +113,19 @@ export function pinImageId(sourceId, url) {
  *
  * @param {string} sourceId
  * @param {unknown} id
- * @returns {string | null} ピンの id でなければ `null`
+ * @returns {{ color: string, url: string } | null} ピンの id でなければ `null`
  */
-export function pinImageUrl(sourceId, id) {
+export function pinImageParts(sourceId, id) {
   if (typeof id !== "string") return null;
   const head = `${sourceId}${PIN_MARK}`;
   if (!id.startsWith(head)) return null;
-  const url = id.slice(head.length);
-  return url === "" ? null : url;
+  const rest = id.slice(head.length);
+  const at = rest.indexOf(PIN_SPLIT);
+  if (at < 0) return null;
+  const color = rest.slice(0, at);
+  const url = rest.slice(at + 1);
+  if (color === "" || url === "") return null;
+  return { color, url };
 }
 
 /**
@@ -129,29 +169,53 @@ export function firstImageUrl(value) {
  * **値が無い地物は空の id**にして、描こうとさせない（いままでの丸が残る）。
  * 複数枚のときは `,` までを切る（**残りは要素側が `firstImageUrl` で詰める**）。
  *
- * @param {string} field 写真の URL が入っている属性名
- * @param {string} sourceId
+ * @param {{
+ *   sourceId: string, fallbackColor: string,
+ *   photoKey?: string | null, iconKey?: string | null,
+ *   icons?: readonly { name: string, url: string }[],
+ *   colorKey?: string | null, colors?: readonly { name: string, color: string }[],
+ * }} input
  * @returns {any[]}
  */
-export function pinImageExpression(field, sourceId) {
+export function pinImageExpression(input) {
+  const { sourceId, photoKey = null, iconKey = null, icons = [], colorKey = null, colors = [], fallbackColor } = input;
+
+  // 写真は `,` 区切りのことがある。**先頭までを切る**（残りは要素側が詰める）
+  const firstPhoto = [
+    "let",
+    "raw",
+    ["to-string", ["get", photoKey]],
+    [
+      "case",
+      [">", ["index-of", ",", ["var", "raw"]], -1],
+      ["slice", ["var", "raw"], 0, ["index-of", ",", ["var", "raw"]]],
+      ["var", "raw"],
+    ],
+  ];
+
+  // 分類の絵は **値 → URL** の対応。**知らない値は空**（描こうとしない）
+  const iconUrl =
+    iconKey === null || icons.length === 0
+      ? ""
+      : ["match", ["to-string", ["get", iconKey]], ...icons.flatMap((i) => [i.name, i.url]), ""];
+
+  // **写真が優先。**写真があるのに分類の絵を出す理由が無い
+  const url =
+    photoKey === null
+      ? iconUrl
+      : ["case", ["has", photoKey], firstPhoto, iconUrl];
+
+  // **色は値ごと。**対応に無ければ既定（要素の `color` / `accent`）
+  const color =
+    colorKey === null || colors.length === 0
+      ? fallbackColor
+      : ["match", ["to-string", ["get", colorKey]], ...colors.flatMap((c) => [c.name, c.color]), fallbackColor];
+
+  // **出すものが無ければ空の id。**MapLibre は空の `icon-image` を描こうとしない
   return [
     "case",
-    ["has", field],
-    [
-      "concat",
-      `${sourceId}${PIN_MARK}`,
-      [
-        "let",
-        "raw",
-        ["to-string", ["get", field]],
-        [
-          "case",
-          [">", ["index-of", ",", ["var", "raw"]], -1],
-          ["slice", ["var", "raw"], 0, ["index-of", ",", ["var", "raw"]]],
-          ["var", "raw"],
-        ],
-      ],
-    ],
+    ["==", url, ""],
     "",
+    ["concat", `${sourceId}${PIN_MARK}`, color, PIN_SPLIT, url],
   ];
 }

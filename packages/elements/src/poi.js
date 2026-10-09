@@ -4,7 +4,7 @@
  * ベース地図の `pois` とは別の層。**ベースには触らない**（D-001・データを持たない）。
  * まとめないのがこの部品の役目で、まとめたいときは `<mmj-cluster>`（D-011）。
  */
-import { hasIconFilter, iconImageExpression } from "./icons.js";
+import { hasIconFilter } from "./icons.js";
 import { PIN_PHOTO, pinImageExpression } from "./pin.js";
 
 
@@ -41,13 +41,15 @@ export const POI_DEFAULTS = {
  *   iconKey?: string,
  *   icons?: readonly { name: string, url: string }[],
  *   pinImage?: string,
+ *   pinColorKey?: string,
+ *   pinColors?: readonly { name: string, color: string }[],
  *   minZoom?: number,
  *   color?: string,
  *   textColor?: string,
  *   attribution?: string,
  * }} input
- * @returns {{ sourceId: string, hitId: string, pickedId: string | null, iconId: string | null,
- *   pinId: string | null, pinHitId: string | null, imageIdFor: (name: string) => string, source: any, layers: any[] }}
+ * @returns {{ sourceId: string, hitId: string, pickedId: string | null,
+ *   pinId: string | null, pinHitId: string | null, source: any, layers: any[] }}
  */
 export function buildPoiSpec(input) {
   if (!input.id) throw new Error("id が要ります（source 名が衝突すると後勝ちで消えます）");
@@ -79,8 +81,6 @@ export function buildPoiSpec(input) {
   // 何枚も載るので（`themes.html` は 6 枚）、**素の名前だと隣の地図と衝突する**。
   const iconKey = typeof input.iconKey === "string" && input.iconKey !== "" ? input.iconKey : null;
   const icons = Array.isArray(input.icons) ? input.icons : [];
-  const iconId = iconKey === null || icons.length === 0 ? null : `${sourceId}-icon`;
-  const imageIdFor = (/** @type {string} */ name) => `${sourceId}--${name}`;
 
   // **写真を持つ点は、ピンの中に写真を出す。**
   // 押す前に「ここに写真がある」と分かるようにするため（2026-10-09）。
@@ -88,7 +88,6 @@ export function buildPoiSpec(input) {
   // **先に全部登録しない。**MapLibre が描こうとしたぶんだけ要素側が作る
   // （`styleimagemissing`）。1,027 件あっても、作るのは画面に出ている数十枚だけ。
   const pinKey = typeof input.pinImage === "string" && input.pinImage !== "" ? input.pinImage : null;
-  const pinId = pinKey === null ? null : `${sourceId}-pin`;
 
   // **ピンになる点**（写真を持つ点と、分類の絵を持つ点）。
   // **絵もピンの形に入れる**ので、同じ扱いになる（2026-10-09）——
@@ -106,6 +105,7 @@ export function buildPoiSpec(input) {
   // **ピンは座標の上に立つ。**当たり判定は座標を中心にした丸のままなので、
   // **絵や写真のところを押しても反応しない**（触れそうに見えて触れないのは、無いより悪い）。
   // 中心ぶんだけ持ち上げた当たり判定を、もう 1 枚足す。
+  const pinId = coveredFilter === null ? null : `${sourceId}-pin`;
   const pinHitId = coveredFilter === null ? null : `${sourceId}-hit-pin`;
 
   // **同じ点に丸とピンを重ねない。**重なると下からはみ出して汚れる
@@ -115,10 +115,8 @@ export function buildPoiSpec(input) {
     sourceId,
     hitId: `${sourceId}-hit`,
     pickedId,
-    iconId,
     pinId,
     pinHitId,
-    imageIdFor,
     source: {
       type: "geojson",
       data: input.src,
@@ -233,38 +231,6 @@ export function buildPoiSpec(input) {
               },
             },
           ]),
-      // **一目で何屋か分かるようにする。**点が全部同じ丸だと、
-      // カードを 1 枚ずつ開くまで何の店か分からない
-      // （2026-09-30・うどん・ラーメン・ケーキ・コーヒーを絵で出したい、という依頼）。
-      //
-      // **絵は持ち込む側のもの**（D-001）。ここは置き場所と大きさだけ決める。
-      // **知らない名前は描かない**ので、分類の無い点は静かに丸のまま。
-      ...(iconId === null
-        ? []
-        : [
-            {
-              id: iconId,
-              type: "symbol",
-              source: sourceId,
-              minzoom,
-              // **ピンを出す点では、分類の絵を出さない。**ピンが全部を兼ねる
-              ...(pinKey === null ? {} : { filter: ["!", ["has", pinKey]] }),
-              layout: {
-                "icon-image": iconImageExpression(/** @type {string} */ (iconKey), icons, imageIdFor),
-                // **先がその地点。**ピンの形なので、中心合わせだと指す場所がずれる
-                "icon-anchor": "bottom",
-                // **重なっても消さない。**名前は消えてよいが、
-                // **何屋かが消えると地図の意味が変わる**
-                "icon-allow-overlap": true,
-                "icon-ignore-placement": true,
-                // **`feature-state` は layout では使えない**（MapLibre が投げる。
-                // 実測・2026-09-30「"feature-state" data expressions are not
-                // supported with layout properties」）。
-                // **選ばれている点を目立たせるのは `-picked` の丸に任せる**——
-                // 絵の後ろに大きな丸が出るので、絵の大きさは変えなくてよい
-              },
-            },
-          ]),
       // **写真を持つ点は、ピンの中に写真。**押す前に「写真がある」と分かるように
       // （2026-10-09・「ピンに画像があるとわからないですよ」）。
       //
@@ -281,8 +247,17 @@ export function buildPoiSpec(input) {
               type: "symbol",
               source: sourceId,
               minzoom,
+              filter: coveredFilter,
               layout: {
-                "icon-image": pinImageExpression(/** @type {string} */ (pinKey), sourceId),
+                "icon-image": pinImageExpression({
+                  sourceId,
+                  photoKey: pinKey,
+                  iconKey,
+                  icons,
+                  colorKey: typeof input.pinColorKey === "string" && input.pinColorKey !== "" ? input.pinColorKey : null,
+                  colors: Array.isArray(input.pinColors) ? input.pinColors : [],
+                  fallbackColor: color,
+                }),
                 "icon-anchor": "bottom",
                 // **重なっても消さない。**写真があることが消えると、合図の意味が無くなる
                 "icon-allow-overlap": true,
