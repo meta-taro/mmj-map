@@ -62,7 +62,8 @@
         "category": "cafe",
         "payment": "現金 / クレジットカード / 交通系 IC\nQR 決済は PayPay のみ。<strong>昼（11:00〜14:00）はカード不可</strong>、現金かコード決済でお願いします。",
         "reserve_url": "https://example.com/akari/reserve",
-        "recruit_url": "https://example.com/akari/jobs"
+        "recruit_url": "https://example.com/akari/jobs",
+        "plan": "gold"
       },
       "geometry": {
         "type": "Point",
@@ -125,7 +126,8 @@
         ],
         "category": "ramen",
         "payment": "現金のみ。<strong>カード・電子マネーは使えません。</strong>\n店頭の券売機は新千円札に対応しています。",
-        "reserve_url": "https://example.com/migiwa/reserve"
+        "reserve_url": "https://example.com/migiwa/reserve",
+        "plan": "silver"
       },
       "geometry": {
         "type": "Point",
@@ -178,7 +180,8 @@
           }
         ],
         "category": "books",
-        "payment": "現金 / クレジットカード（<strong>5,000 円以上から</strong>） / 交通系 IC\n海外発行カードは Visa・Mastercard のみ。Alipay・WeChat Pay も使えます。"
+        "payment": "現金 / クレジットカード（<strong>5,000 円以上から</strong>） / 交通系 IC\n海外発行カードは Visa・Mastercard のみ。Alipay・WeChat Pay も使えます。",
+        "plan": "bronze"
       },
       "geometry": {
         "type": "Point",
@@ -222,7 +225,8 @@
           ],
           "sun": []
         },
-        "category": "udon"
+        "category": "udon",
+        "plan": "platinum"
       },
       "geometry": {
         "type": "Point",

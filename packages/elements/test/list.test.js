@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { writeShopParam } from "../src/card.js";
-import { indexOfEntry, listEntries, needsScroll } from "../src/list.js";
+import { indexOfEntry, listEntries, needsScroll, parseRankOrder, sortByRank } from "../src/list.js";
 
 /** `card-id="shop_id"` / `card-title="shop_name"` を指定した想定 */
 const keys = { idKey: "shop_id", titleKey: "shop_name" };
@@ -99,5 +99,79 @@ describe("needsScroll", () => {
   it("**壊れた値で落とさない**", () => {
     expect(needsScroll(null, box)).toBe(false);
     expect(needsScroll({ top: 0, bottom: 1 }, null)).toBe(false);
+  });
+});
+
+/**
+ * 媒体のプランで並べ替える。**MMJ は「ゴールド」の意味を知らない**——
+ * 「どの属性を見るか」と「どの順に並べるか」だけを受け取る（D-001・データを持たない）。
+ *
+ * **お金を払った順に並ぶ一覧は広告。**並び順そのものは媒体の判断で、
+ * ここは渡された順に並べるだけ。
+ */
+describe("parseRankOrder", () => {
+  it("読点で割って、前後の空白を落とす", () => {
+    expect(parseRankOrder(" platinum , gold ,silver ")).toEqual(["platinum", "gold", "silver"]);
+  });
+
+  it("空と重複は落とす", () => {
+    expect(parseRankOrder("gold,,gold,silver")).toEqual(["gold", "silver"]);
+    expect(parseRankOrder("")).toEqual([]);
+    expect(parseRankOrder(null)).toEqual([]);
+  });
+});
+
+/** 並べ替えの試験で使う点。**プランを持たない点も作れる** */
+const feature = (/** @type {string} */ name, /** @type {string} */ plan = "") => ({
+  properties: plan === "" ? { name } : { name, plan },
+});
+const names = (/** @type {any[]} */ list) => list.map((f) => f.properties.name);
+
+describe("sortByRank", () => {
+
+  it("渡された順に並べる", () => {
+    const out = sortByRank([feature("a", "silver"), feature("b", "gold")], {
+      key: "plan",
+      order: ["gold", "silver"],
+    });
+    expect(names(out)).toEqual(["b", "a"]);
+  });
+
+  /**
+   * **安定でないと、同じプランの店が読み込むたびに入れ替わる。**
+   * 媒体の「掲載順」がぶれるのは、お金の話なので重い。
+   */
+  it("**同じ順位の中では、元の順をそのまま保つ**", () => {
+    const out = sortByRank(
+      [feature("a", "gold"), feature("b", "gold"), feature("c", "gold")],
+      { key: "plan", order: ["gold"] },
+    );
+    expect(names(out)).toEqual(["a", "b", "c"]);
+  });
+
+  /** **知らない値で店を消さない。**綴り違いも新しいプランも、末尾に出す */
+  it("**並びに無い値と、値を持たない点は末尾**（元の順のまま）", () => {
+    const out = sortByRank(
+      [feature("a", "zzz"), feature("b", "gold"), feature("c", ""), feature("d", "gold")],
+      { key: "plan", order: ["gold"] },
+    );
+    expect(names(out)).toEqual(["b", "d", "a", "c"]);
+  });
+
+  it("**元の配列を変えない**（ECC coding-style）", () => {
+    const input = [feature("a", "silver"), feature("b", "gold")];
+    sortByRank(input, { key: "plan", order: ["gold", "silver"] });
+    expect(names(input)).toEqual(["a", "b"]);
+  });
+
+  it("属性名や並びが無ければ、そのまま", () => {
+    const input = [feature("a", "silver"), feature("b", "gold")];
+    expect(names(sortByRank(input, { key: null, order: ["gold"] }))).toEqual(["a", "b"]);
+    expect(names(sortByRank(input, { key: "plan", order: [] }))).toEqual(["a", "b"]);
+  });
+
+  it("壊れたデータでも落ちない", () => {
+    expect(sortByRank(null, { key: "plan", order: ["gold"] })).toEqual([]);
+    expect(sortByRank([null, feature("a", "gold")], { key: "plan", order: ["gold"] })).toHaveLength(2);
   });
 });

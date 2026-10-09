@@ -66,6 +66,25 @@ export function ensureListContrast(colors) {
 }
 
 /**
+ * HTML にある項目を、渡された順に並べ替える。**要素は作り直さない。**
+ *
+ * **一覧に無い項目は動かさない。**置く側が意図して置いたもの（「その他」など）を、
+ * 黙って末尾へ飛ばさないため。
+ *
+ * @param {HTMLElement} container
+ * @param {readonly { id: string }[]} entries
+ */
+function reorderList(container, entries) {
+  if (!Array.isArray(entries) || entries.length === 0) return;
+  for (const entry of entries) {
+    const item = container.querySelector(`[${ITEM_ATTR}="${CSS.escape(entry.id)}"]`);
+    // **項目そのものではなく、一覧の直下にある行を動かす**（`<li>` の中に `<a>` がある）
+    const row = item instanceof HTMLElement ? (item.closest("li") ?? item) : null;
+    if (row instanceof HTMLElement && row.parentElement === container) container.append(row);
+  }
+}
+
+/**
  * 一覧を地図へ繋ぐ。
  *
  * @param {{
@@ -84,6 +103,15 @@ export function mountList(input) {
   if (container.querySelectorAll(`[${ITEM_ATTR}]`).length === 0) {
     build(container, input.entries, input.className);
   }
+
+  // **一覧の順を、送りの順と揃える。**
+  //
+  // 一覧は HTML に書かれている（検索に出すため）。プランで並べ替えたとき、
+  // **ここを揃えないと「一覧の順」と「[‹] [›] の送り順」が食い違う**——
+  // どちらを見ているのか分からなくなり、何もしないより悪い。
+  //
+  // **作り直さない。**置く側が書いた要素を、そのまま並べ替える（文字は消えない）。
+  reorderList(container, input.entries);
 
   /** @param {any} event */
   const onClick = (event) => {

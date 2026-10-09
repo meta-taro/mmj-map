@@ -37,7 +37,7 @@ import {
 } from "./card.js";
 import { mountCard } from "./card-dom.js";
 import { parseIcons } from "./icons.js";
-import { listEntries } from "./list.js";
+import { listEntries, parseRankOrder, sortByRank } from "./list.js";
 import { ensureListContrast, mountList } from "./list-dom.js";
 import { PIN_PHOTO, firstImageUrl, parsePinColors, pinImageParts, pinPath } from "./pin.js";
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
@@ -320,7 +320,13 @@ export class MmjPoi extends HTMLElement {
       const response = await fetch(src);
       if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
       const json = await response.json();
-      this.features = Array.isArray(json?.features) ? json.features : [];
+      // **媒体のプラン順に並べ替える。**一覧・`‹ ›` の送り・`?shop=` の復元は
+      // すべてこの配列の順に従うので、**ここ 1 か所で揃う**。
+      // 指定が無ければ、いままでどおり GeoJSON の順
+      this.features = sortByRank(Array.isArray(json?.features) ? json.features : [], {
+        key: this.getAttribute("rank-key"),
+        order: parseRankOrder(this.getAttribute("rank-order")),
+      });
     } catch (error) {
       // 握り潰さない（§8）。**送りと復元だけが消える**ことを名乗る
       console.error("[mmj-poi] 一覧を読めませんでした。次/前と URL の復元は出ません", error);

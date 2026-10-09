@@ -93,3 +93,67 @@ export function needsScroll(item, box) {
   if (!item || !box) return false;
   return item.top < box.top || item.bottom > box.bottom;
 }
+
+/**
+ * 並び順の指定を読む。`platinum,gold,silver,bronze` のような**値の並び**。
+ *
+ * **MMJ は「ゴールド」の意味を知らない。**段の数も名前も媒体ごとに違うので、
+ * 受け取るのは「どの順に並べるか」だけ（D-001・データを持たない）。
+ *
+ * @param {string | null | undefined} attribute
+ * @returns {string[]} 左が上。空と重複は落とす
+ */
+export function parseRankOrder(attribute) {
+  if (typeof attribute !== "string") return [];
+  /** @type {string[]} */
+  const order = [];
+  for (const raw of attribute.split(",")) {
+    const name = raw.trim();
+    if (name !== "" && !order.includes(name)) order.push(name);
+  }
+  return order;
+}
+
+/**
+ * 点を、媒体のプラン順に並べ替える。**元の配列は変えない**（ECC coding-style）。
+ *
+ * ## 安定であること
+ *
+ * **同じ順位の中では、元の順をそのまま保つ。**安定でないと、
+ * **同じプランの店が読み込むたびに入れ替わる**。媒体の「掲載順」がぶれるのは、
+ * お金の話なので重い。
+ *
+ * ## 知らない値を捨てない
+ *
+ * **並びに無い値と、値を持たない点は末尾**（そこでも元の順のまま）。
+ * 綴り違いや新しいプランが来たときに、**店が一覧から消えるより末尾に出るほうがよい**
+ * （`icons` の「知らない名前は描かない＝丸のまま」と同じ考え方）。
+ *
+ * ## これは広告である
+ *
+ * **お金を払った順に並ぶ一覧は広告。**並べるかどうかも、
+ * 広告だと分かる表示を出すかどうかも**媒体の判断**で、ここは渡された順に並べるだけ。
+ *
+ * @param {readonly any[] | null | undefined} features
+ * @param {{ key: string | null, order: readonly string[] }} input
+ * @returns {any[]}
+ */
+export function sortByRank(features, input) {
+  const list = Array.isArray(features) ? [...features] : [];
+  const { key, order } = input;
+  if (typeof key !== "string" || key === "" || !Array.isArray(order) || order.length === 0) {
+    return list;
+  }
+
+  const rankOf = (/** @type {any} */ feature) => {
+    const value = feature?.properties?.[key];
+    const at = typeof value === "string" ? order.indexOf(value) : -1;
+    // **知らない値は末尾。**`Infinity` は使わない——同点どうしの引き算が
+    // `NaN` になり、比較関数として壊れる（並びが環境任せになる）
+    return at < 0 ? order.length : at;
+  };
+
+  // **`Array.prototype.sort` は安定**（ES2019 以降）。
+  // 位置を添えて比べ直す必要は無いが、**同点のとき 0 を返すこと**が要る
+  return list.sort((a, b) => rankOf(a) - rankOf(b));
+}
