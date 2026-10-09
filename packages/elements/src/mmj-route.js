@@ -185,14 +185,14 @@ let clipSeq = 0;
  *
  * @param {{
  *   href: string | null, radius: number,
- *   tail: number, tailWidth: number, tailInset: number,
+ *   body: number, tail: number,
  *   width: number, height: number, color: string, casing: string,
  * }} spec
  * @param {string} label 読み上げ用（その点の案内文）
  * @returns {SVGSVGElement}
  */
 function photoPin(spec, label) {
-  const { width, height, radius, tailWidth, tailInset, color, casing } = spec;
+  const { width, height, radius, body, color, casing } = spec;
   const center = width / 2;
   const clipId = `mmj-route-pin-${(clipSeq += 1)}`;
 
@@ -223,34 +223,29 @@ function photoPin(spec, label) {
   image.setAttribute("clip-path", `url(#${clipId})`);
 
   // **縁は線の色と揃える。**地図の上では、縁が無いと写真が背景へ溶ける
-  const ring = circleAt(center, radius);
-  ring.setAttribute("fill", "none");
-  ring.setAttribute("stroke", color);
-  ring.setAttribute("stroke-width", "2.5");
-
-  // **その外側をもう 1 本、細く囲う。**色だけだと経路の線の上で溶ける
-  // （線と同じ色なので）。線が「色＋縁取り」で浮いているのと同じ作りにする
-  const border = circleAt(center, radius + 1.9);
-  border.setAttribute("fill", "none");
-  border.setAttribute("stroke", casing);
-  border.setAttribute("stroke-width", "1.5");
-
-  // **尖りは丸より先に描く。**あとに描くと、丸の縁の上に三角が乗って濁る。
-  // 三角にも同じ囲いを `stroke` で付ける（線の上に置いても形が残る）
-  const point = document.createElementNS(SVG_NS, "polygon");
-  // **形は `route.js` が決めている**（底辺・差し込み・高さの比）。ここは置くだけ
-  const half = tailWidth / 2;
-  const base = width - tailInset;
-  point.setAttribute(
-    "points",
-    `${center - half},${base} ${center + half},${base} ${center},${height}`,
+  // **本体は、丸と先が繋がった 1 本の形（雫形）。**
+  // 丸と三角を別々に置くと継ぎ目ができて、**「丸に針が刺さっている」**ように見える
+  // （2026-10-09・「ちょと鋭利すぎてこわいので、かわいらしいピンがいい」）。
+  //
+  // 塗りは `color`。写真の丸より**本体のほうが大きい**ので、差がそのまま輪になる。
+  // 縁取りは `casing`——経路の線と同じ色なので、**線の上でも溶けない**。
+  const shape = document.createElementNS(SVG_NS, "path");
+  const tipY = height - 1;
+  shape.setAttribute(
+    "d",
+    `M ${center},${tipY}` +
+      ` C ${center - body * 0.62},${center + body * 0.78}` +
+      ` ${center - body},${center + body * 0.42} ${center - body},${center}` +
+      ` A ${body},${body} 0 1,1 ${center + body},${center}` +
+      ` C ${center + body},${center + body * 0.42}` +
+      ` ${center + body * 0.62},${center + body * 0.78} ${center},${tipY} Z`,
   );
-  point.setAttribute("fill", color);
-  point.setAttribute("stroke", casing);
-  point.setAttribute("stroke-width", "1.5");
-  point.setAttribute("stroke-linejoin", "round");
+  shape.setAttribute("fill", color);
+  shape.setAttribute("stroke", casing);
+  shape.setAttribute("stroke-width", "1.5");
+  shape.setAttribute("stroke-linejoin", "round");
 
-  svg.append(defs, point, image, ring, border);
+  svg.append(defs, shape, image);
   return svg;
 }
 

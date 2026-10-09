@@ -52,26 +52,27 @@ const PIN_RADIUS = { dot: 7, photo: 12 };
  * 「先端がその地点」という読み方が共通していて、丸を中央に置くと
  * **半径のぶん、指す場所がぼやける**（2026-10-09 の依頼）。
  *
- * **形は 2 回直している。**どちらも実物を見ての指摘（同日）。
+ * **形は 3 回直している。**全部、実物を見ての指摘（同日）。
  *
- * 1. 8px は小さすぎた——「**さんかくがちいさくて視認できません**」。
- *    囲い（1.5px）は尖りの外側にも付くので、細い三角は囲いで潰れる
- * 2. 高さで稼いだら、今度は鋭くなった——「**ぴんのとがりをもうすこし緩和してほしい。
- *    2 等辺三角形をもうちょっと正三角形に近い感じで**」
+ * 1. 8px は小さすぎた——「**さんかくがちいさくて視認できません**」
+ * 2. 高さ 15px にしたら鋭くなった——「もうすこし緩和してほしい」
+ * 3. 底辺を広げて比を 0.85（ほぼ正三角形）にしても変わらなかった——
+ *    「**ちょと鋭利すぎてこわいのでかわいらしいピンがいいのです**」
  *
- * **底辺を広げて、高さを抑える。**高さで稼ぐと鋭くなるが、
- * 底辺を広げれば**面積は増えたまま、形はなだらかになる**。
- * 正三角形は 高さ ÷ 底辺 = 0.866。
+ * **3 で、比を直す路線そのものが誤りだと分かった。**
+ * 原因は比ではなく、**丸と三角を別々に置いていたこと**。
+ * 継ぎ目があるので「丸に針が刺さっている」ように見え、
+ * 三角をどう整えても消えない。
+ *
+ * **一体の雫形にする。**本体の丸がそのまま下へ流れて先になる形
+ * （地図のピンで一般的な形）。角が立たず、先も短い。
  */
 
-/** 尖りの底辺。**丸の半径より広い**（細いと囲いで潰れる） */
-const PIN_TAIL_WIDTH = Math.round(PIN_RADIUS.photo * 1.65);
+/** 本体の丸の半径。**写真より一回り大きく**、その差がそのまま輪になる */
+const PIN_BODY = PIN_RADIUS.photo + 2.5;
 
-/** 付け根を丸の内側へ差し込む深さ。**離すと「丸と三角」に見えて、ピンに見えない** */
-const PIN_TAIL_INSET = 7;
-
-/** 箱から下へ出るぶん。三角の高さ（底辺 × 0.866）から、差し込んだぶんを引く */
-const PIN_TAIL = Math.round(PIN_TAIL_WIDTH * 0.866) - PIN_TAIL_INSET;
+/** 本体の丸の下端から、先までの長さ。**短くする**（長いと針に見える） */
+const PIN_TAIL = 7;
 
 /**
  * ピンの中に何を出すかを決める。**ここは判断だけ**で、SVG は `mmj-route.js` が組む。
@@ -105,7 +106,7 @@ const PIN_TAIL = Math.round(PIN_TAIL_WIDTH * 0.866) - PIN_TAIL_INSET;
  * @param {string} [casing] 囲いの色。既定は経路の線の縁取りと同じ
  * @returns {{
  *   kind: "photo" | "dot", href: string | null,
- *   radius: number, tail: number, tailWidth: number, tailInset: number,
+ *   radius: number, body: number, tail: number,
  *   width: number, height: number, color: string, casing: string,
  * }}
  */
@@ -113,16 +114,15 @@ export function stepPinSpec(step, color, casing = ROUTE_DEFAULTS.casingColor) {
   const image = typeof step?.image === "string" ? step.image.trim() : "";
   const usable = image !== "" && isSafeImage(image);
   const radius = usable ? PIN_RADIUS.photo : PIN_RADIUS.dot;
-  // 色の輪（2.5px）と、その外側の囲い（1.5px）が外へ出る。
-  // **箱を 3px ぶん広く取る**（狭いと囲いが切れて、縁が欠けて見える）
-  const width = (radius + 3) * 2;
+  const body = usable ? PIN_BODY : radius;
+  // 囲い（1.5px）の半分が外へ出る。**箱を少し広く取る**（狭いと縁が欠けて見える）
+  const width = Math.round((body + 1) * 2);
   return {
     kind: usable ? "photo" : "dot",
     href: usable ? image : null,
     radius,
+    body,
     tail: PIN_TAIL,
-    tailWidth: PIN_TAIL_WIDTH,
-    tailInset: PIN_TAIL_INSET,
     width,
     height: width + PIN_TAIL,
     color,
