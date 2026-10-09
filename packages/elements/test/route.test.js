@@ -76,6 +76,19 @@ describe("stepPinSpec", () => {
     // 箱の高さは、丸の直径（縁を含む）＋ 尖りのぶん
     expect(photo.height).toBe(photo.width + photo.tail);
   });
+
+  /**
+   * **小さい尖りは、ピンに見えない。**
+   * 2026-10-09 に「**ピンにしては、下の▼がちょっと小さいです。
+   * ボーダーもあいまって、さんかくがちいさくて視認できません**」と指摘を受けた。
+   *
+   * 囲い（1.5px）は尖りの外側にも付くので、**細い三角だと囲いで潰れる**。
+   * 丸の半径と釣り合う高さにして、**形が残るようにする**。
+   */
+  it("**尖りは、丸の半径より高い**（小さいとピンに見えない）", () => {
+    const photo = stepPinSpec({ image: "./a.jpg" }, "#000");
+    expect(photo.tail).toBeGreaterThanOrEqual(photo.radius);
+  });
 });
 
 /**

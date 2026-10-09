@@ -188,7 +188,8 @@ let clipSeq = 0;
  * @returns {SVGSVGElement}
  */
 function photoPin(spec, label) {
-  const { width, height, radius, tail, color, casing } = spec;
+  // `tail`（尖りの高さ）は `height` に入っているので、ここでは取り出さない
+  const { width, height, radius, color, casing } = spec;
   const center = width / 2;
   const clipId = `mmj-route-pin-${(clipSeq += 1)}`;
 
@@ -234,11 +235,12 @@ function photoPin(spec, label) {
   // **尖りは丸より先に描く。**あとに描くと、丸の縁の上に三角が乗って濁る。
   // 三角にも同じ囲いを `stroke` で付ける（線の上に置いても形が残る）
   const point = document.createElementNS(SVG_NS, "polygon");
-  const half = tail * 0.62;
-  // 付け根は丸の内側へ入れる。**離すと「丸と三角」に見えて、ピンに見えない**
+  // **底辺は丸の半径に合わせる。**細いと囲いで潰れて、三角に見えない
+  const half = radius * 0.62;
+  // 付け根は丸の内側へ深く入れる。**離すと「丸と三角」に見えて、ピンに見えない**
   point.setAttribute(
     "points",
-    `${center - half},${width - 8} ${center + half},${width - 8} ${center},${height - 1}`,
+    `${center - half},${width - 12} ${center + half},${width - 12} ${center},${height - 1}`,
   );
   point.setAttribute("fill", color);
   point.setAttribute("stroke", casing);
