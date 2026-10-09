@@ -20,6 +20,7 @@
 import { buildPopupOptions } from "./attrs.js";
 import { buildPopupContent } from "./popup.js";
 import { ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
+import { pinPath } from "./pin.js";
 import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, routeBounds, stepPinSpec } from "./route.js";
 
 /** 同じページに複数置ける。source 名が衝突すると後勝ちで消えるため、番号で分ける */
@@ -192,7 +193,7 @@ let clipSeq = 0;
  * @returns {SVGSVGElement}
  */
 function photoPin(spec, label) {
-  const { width, height, radius, body, color, casing } = spec;
+  const { width, height, radius, color, casing } = spec;
   const center = width / 2;
   const clipId = `mmj-route-pin-${(clipSeq += 1)}`;
 
@@ -230,16 +231,8 @@ function photoPin(spec, label) {
   // 塗りは `color`。写真の丸より**本体のほうが大きい**ので、差がそのまま輪になる。
   // 縁取りは `casing`——経路の線と同じ色なので、**線の上でも溶けない**。
   const shape = document.createElementNS(SVG_NS, "path");
-  const tipY = height - 1;
-  shape.setAttribute(
-    "d",
-    `M ${center},${tipY}` +
-      ` C ${center - body * 0.62},${center + body * 0.78}` +
-      ` ${center - body},${center + body * 0.42} ${center - body},${center}` +
-      ` A ${body},${body} 0 1,1 ${center + body},${center}` +
-      ` C ${center + body},${center + body * 0.42}` +
-      ` ${center + body * 0.62},${center + body * 0.78} ${center},${tipY} Z`,
-  );
+  // **形は `pin.js` が持つ。**お店の点（canvas）でも同じ文字列を使う
+  shape.setAttribute("d", pinPath(spec));
   shape.setAttribute("fill", color);
   shape.setAttribute("stroke", casing);
   shape.setAttribute("stroke-width", "1.5");

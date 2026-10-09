@@ -5,6 +5,7 @@
  * まとめないのがこの部品の役目で、まとめたいときは `<mmj-cluster>`（D-011）。
  */
 import { hasIconFilter, iconImageExpression } from "./icons.js";
+import { PIN_PHOTO, pinImageExpression } from "./pin.js";
 
 
 /**
@@ -39,13 +40,14 @@ export const POI_DEFAULTS = {
  *   idKey?: string,
  *   iconKey?: string,
  *   icons?: readonly { name: string, url: string }[],
+ *   pinImage?: string,
  *   minZoom?: number,
  *   color?: string,
  *   textColor?: string,
  *   attribution?: string,
  * }} input
  * @returns {{ sourceId: string, hitId: string, pickedId: string | null, iconId: string | null,
- *   imageIdFor: (name: string) => string, source: any, layers: any[] }}
+ *   pinId: string | null, pinHitId: string | null, imageIdFor: (name: string) => string, source: any, layers: any[] }}
  */
 export function buildPoiSpec(input) {
   if (!input.id) throw new Error("id が要ります（source 名が衝突すると後勝ちで消えます）");
@@ -80,11 +82,35 @@ export function buildPoiSpec(input) {
   const iconId = iconKey === null || icons.length === 0 ? null : `${sourceId}-icon`;
   const imageIdFor = (/** @type {string} */ name) => `${sourceId}--${name}`;
 
+  // **写真を持つ点は、ピンの中に写真を出す。**
+  // 押す前に「ここに写真がある」と分かるようにするため（2026-10-09）。
+  // 絵は**地物ごとに別**なので、分類ごとの `icons` とは別の仕組みが要る——
+  // **先に全部登録しない。**MapLibre が描こうとしたぶんだけ要素側が作る
+  // （`styleimagemissing`）。1,027 件あっても、作るのは画面に出ている数十枚だけ。
+  const pinKey = typeof input.pinImage === "string" && input.pinImage !== "" ? input.pinImage : null;
+  const pinId = pinKey === null ? null : `${sourceId}-pin`;
+  // **ピンは座標の上に立つ。**当たり判定は座標を中心にした丸のままなので、
+  // **写真のところを押しても反応しない**（触れそうに見えて触れないのは、無いより悪い）。
+  // 写真の中心ぶんだけ持ち上げた当たり判定を、もう 1 枚足す。
+  const pinHitId = pinKey === null ? null : `${sourceId}-hit-pin`;
+
+  // **同じ点に丸と絵とピンを重ねない。**重なると下からはみ出して汚れる。
+  // ピンを出す点は丸も分類の絵も出さない（ピンが全部を兼ねる）
+  const covered = [
+    ...(iconKey === null ? [] : [hasIconFilter(iconKey, icons)]),
+    ...(pinKey === null ? [] : [["has", pinKey]]),
+  ];
+  const plainOnly = covered.length === 0
+    ? {}
+    : { filter: ["!", covered.length === 1 ? covered[0] : ["any", ...covered]] };
+
   return {
     sourceId,
     hitId: `${sourceId}-hit`,
     pickedId,
     iconId,
+    pinId,
+    pinHitId,
     imageIdFor,
     source: {
       type: "geojson",
@@ -112,14 +138,34 @@ export function buildPoiSpec(input) {
         minzoom,
         paint: { "circle-radius": HIT_RADIUS, "circle-color": color, "circle-opacity": 0 },
       },
+      // **ピンの写真のところも押せるようにする。**`circle-translate` は層ごとなので、
+      // **ピンを出す点だけの層**にする（丸のままの点を持ち上げると、ずれて押せなくなる）
+      ...(pinHitId === null
+        ? []
+        : [
+            {
+              id: pinHitId,
+              type: "circle",
+              source: sourceId,
+              minzoom,
+              filter: ["has", pinKey],
+              paint: {
+                "circle-radius": HIT_RADIUS,
+                "circle-color": color,
+                "circle-opacity": 0,
+                // 画像は下端が座標。写真の中心は、そこから `height - width/2` だけ上
+                "circle-translate": [0, -(PIN_PHOTO.height - PIN_PHOTO.width / 2)],
+              },
+            },
+          ]),
       {
         id: `${sourceId}-dot`,
         type: "circle",
         source: sourceId,
         minzoom,
-        // **絵を持つ点には丸を出さない。**重ねると絵の下から丸がはみ出して汚れる。
-        // 絵の指定が無ければ誰にも当たらない＝今までどおり全部が丸
-        ...(iconKey === null ? {} : { filter: ["!", hasIconFilter(iconKey, icons)] }),
+        // **絵やピンを持つ点には丸を出さない。**重ねると下から丸がはみ出して汚れる。
+        // どちらの指定も無ければ誰にも当たらない＝今までどおり全部が丸
+        ...plainOnly,
         paint: {
           "circle-color": color,
           "circle-radius": 5,
@@ -136,6 +182,28 @@ export function buildPoiSpec(input) {
       //
       // 選ばれていないうちは半径 0 ＝ 何も出ない。**別の source を作らない**
       // （同じ点を 2 回配ることになり、ずれる余地ができる）。
+      // **ピンを出す点の「いまここ」。**ピンは座標の上に立つので、
+      // 印を座標へ置くと**ピンの下に青い丸が離れて出る**（実測で見た）。
+      // 当たり判定と同じだけ持ち上げて、写真を囲む輪にする。
+      ...(pickedId === null || pinKey === null
+        ? []
+        : [
+            {
+              id: `${pickedId}-pin`,
+              type: "circle",
+              source: sourceId,
+              minzoom,
+              filter: ["has", pinKey],
+              paint: {
+                // ピンの本体（半径 14.5）より外。**内側だと写真に隠れる**
+                "circle-radius": ["case", ["boolean", ["feature-state", "picked"], false], 19, 0],
+                "circle-color": "transparent",
+                "circle-stroke-width": ["case", ["boolean", ["feature-state", "picked"], false], 3, 0],
+                "circle-stroke-color": color,
+                "circle-translate": [0, -(PIN_PHOTO.height - PIN_PHOTO.width / 2)],
+              },
+            },
+          ]),
       ...(pickedId === null
         ? []
         : [
@@ -144,6 +212,8 @@ export function buildPoiSpec(input) {
               type: "circle",
               source: sourceId,
               minzoom,
+              // **ピンを出す点は、上の層が受け持つ**（二重に出さない）
+              ...(pinKey === null ? {} : { filter: ["!", ["has", pinKey]] }),
               paint: {
                 // **絵があるときは輪を大きくする。**絵（22px）より内側だと
                 // 絵に隠れて、選ばれていることが見えない（実測・2026-09-30）
@@ -169,6 +239,8 @@ export function buildPoiSpec(input) {
               type: "symbol",
               source: sourceId,
               minzoom,
+              // **ピンを出す点では、分類の絵を出さない。**ピンが全部を兼ねる
+              ...(pinKey === null ? {} : { filter: ["!", ["has", pinKey]] }),
               layout: {
                 "icon-image": iconImageExpression(/** @type {string} */ (iconKey), icons, imageIdFor),
                 // **重なっても消さない。**名前は消えてよいが、
@@ -180,6 +252,31 @@ export function buildPoiSpec(input) {
                 // supported with layout properties」）。
                 // **選ばれている点を目立たせるのは `-picked` の丸に任せる**——
                 // 絵の後ろに大きな丸が出るので、絵の大きさは変えなくてよい
+              },
+            },
+          ]),
+      // **写真を持つ点は、ピンの中に写真。**押す前に「写真がある」と分かるように
+      // （2026-10-09・「ピンに画像があるとわからないですよ」）。
+      //
+      // **`icon-anchor` は `bottom`。**ピンは先がその地点を指す形なので、
+      // 中心を合わせると**半径のぶん、指す場所がずれる**。
+      //
+      // 絵は要素側が作る。**ここが指す id のうち、MapLibre が実際に描こうとした
+      // ぶんだけ**問い合わせが来る（`styleimagemissing`）。
+      ...(pinId === null
+        ? []
+        : [
+            {
+              id: pinId,
+              type: "symbol",
+              source: sourceId,
+              minzoom,
+              layout: {
+                "icon-image": pinImageExpression(/** @type {string} */ (pinKey), sourceId),
+                "icon-anchor": "bottom",
+                // **重なっても消さない。**写真があることが消えると、合図の意味が無くなる
+                "icon-allow-overlap": true,
+                "icon-ignore-placement": true,
               },
             },
           ]),

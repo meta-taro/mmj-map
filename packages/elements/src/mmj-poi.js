@@ -39,6 +39,7 @@ import { mountCard } from "./card-dom.js";
 import { loadIcon, parseIcons } from "./icons.js";
 import { listEntries } from "./list.js";
 import { ensureListContrast, mountList } from "./list-dom.js";
+import { PIN_PHOTO, firstImageUrl, pinImageUrl, pinPath } from "./pin.js";
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
 import { buildCardContent, isSafeLink } from "./popup.js";
 import { isRichField, parseRichFields } from "./rich.js";
@@ -72,6 +73,24 @@ export class MmjPoi extends HTMLElement {
   map = null;
   /** @type {ReturnType<typeof buildPoiSpec> | null} */
   spec = null;
+
+  /** ピンの写真を作る受け口を外す手。**外れるときに外す**（地図は生き続ける） */
+  /** @type {(() => void) | null} */
+  pinCleanup = null;
+
+  /** 地図へ入れたピンの画像 id。**古い順**に捨てる（上限 `PIN_CAP`） */
+  /** @type {string[]} */
+  pinIds = [];
+
+  /**
+   * 読み込み中の id と、その約束。**同じ写真を何度も作らない。**
+   *
+   * **同時に何度も聞かれる**（描き直しのたび・タイルごと）。2 本目に
+   * 「引き受けない」と返すと、MapLibre が**まだ無い**と判断して警告を出す
+   * （実測で 2 件出た）。**同じ約束を待たせれば、どちらも引き受けたことになる。**
+   * @type {Map<string, Promise<boolean>>}
+   */
+  pinLoading = new Map();
 
   /** 開いているカード。**開き直すたびに片付ける**（重ねて開かない） */
   /** @type {any} */
@@ -138,6 +157,14 @@ export class MmjPoi extends HTMLElement {
   disconnectedCallback() {
     this.list?.destroy();
     this.list = null;
+    if (this.map && this.pinCleanup) {
+      this.pinCleanup();
+      this.pinCleanup = null;
+      // **置いていった画像を片付ける。**残すと、次に同じ地図へ置いたとき
+      // 古い写真がそのまま出る（URL が同じなら id も同じなので当たってしまう）
+      for (const id of this.pinIds) if (this.map.hasImage(id)) this.map.removeImage(id);
+      this.pinIds = [];
+    }
     if (this.map && this.spec) {
       for (const layer of this.spec.layers) if (this.map.getLayer(layer.id)) this.map.removeLayer(layer.id);
       if (this.map.getSource(this.spec.sourceId)) this.map.removeSource(this.spec.sourceId);
@@ -172,6 +199,8 @@ export class MmjPoi extends HTMLElement {
         // **一目で何屋か分かるようにする。**絵は持ち込む側のもの（D-001）
         iconKey: this.getAttribute("icon-key") ?? undefined,
         icons: parseIcons(this.getAttribute("icons"), isSafeLink),
+        // **写真を持つ点は、ピンの中に写真を出す。**押す前に分かるように
+        pinImage: this.getAttribute("pin-image") ?? undefined,
         minZoom: parseCount(this.getAttribute("min-zoom"), POI_DEFAULTS.minZoom),
         // 指定が無ければ、サイトのテーマカラー（`<mmj-map accent>`）を既定にする。
         // 名前は地図のラベルと同じ色を借りる。**ここで色を作らない**
@@ -187,6 +216,15 @@ export class MmjPoi extends HTMLElement {
     }
 
     map.addSource(this.spec.sourceId, this.spec.source);
+
+    // **ピンの写真は、描こうとしたぶんだけ作る。**
+    // 先に全件登録すると、1,000 件規模で地図が止まる。MapLibre は
+    // **実際に描く画像だけ**を `styleimagemissing` で聞いてくるので、
+    // 画面の外もズームで間引かれた点も問い合わせが来ない。
+    if (this.spec.pinId !== null) {
+      this.pinCleanup = addPinResolver(map, (/** @type {unknown} */ id) => this.#addPinImage(map, id));
+    }
+
     // **絵を先に入れてから層を足す。**逆にすると、MapLibre が
     // 「そんな画像は無い」と言い続ける（層は出るが絵は出ない）
     const spec = this.spec;
@@ -196,10 +234,14 @@ export class MmjPoi extends HTMLElement {
 
     // **押す対象は、見える点ではなく当たり判定の層**（直径 36px）。
     // 見える点は 13px しかなく、指で狙うには小さい
-    const hitId = this.spec.hitId;
-    map.on("click", hitId, (/** @type {any} */ event) => this.#emit(event));
-    map.on("mouseenter", hitId, () => (map.getCanvas().style.cursor = "pointer"));
-    map.on("mouseleave", hitId, () => (map.getCanvas().style.cursor = ""));
+    // **ピンを出す点は、写真のところにも当たり判定がある**（座標の上に立つため）。
+    // 両方へ同じ操作を繋ぐ——片方だけだと「押せるところと押せないところ」ができる
+    for (const hitId of [this.spec.hitId, this.spec.pinHitId]) {
+      if (hitId === null) continue;
+      map.on("click", hitId, (/** @type {any} */ event) => this.#emit(event));
+      map.on("mouseenter", hitId, () => (map.getCanvas().style.cursor = "pointer"));
+      map.on("mouseleave", hitId, () => (map.getCanvas().style.cursor = ""));
+    }
 
     this.style.display = "none"; // 点は地図の上に出る。要素そのものは場所を取らない
 
@@ -239,6 +281,62 @@ export class MmjPoi extends HTMLElement {
     // 握り潰さない（§8）。**絵が出ない理由が画面にもログにも残らないのが一番困る**
     if (missing.length > 0) {
       console.error(`[mmj-poi] 読めなかったアイコン（その点には何も出ません）: ${missing.join(", ")}`);
+    }
+  }
+
+  /**
+   * ピンの写真を 1 枚作って、地図へ入れる。
+   *
+   * **読めなくても穴を開けない。**失敗したら何も入れないので、その点は
+   * いままでの丸（または分類の絵）のまま残る。
+   *
+   * **溜めすぎない。**上限を超えたら古いものから捨てる。捨てた写真は、
+   * また描こうとしたときに作り直される（`styleimagemissing` がまた来る）。
+   *
+   * @param {any} map
+   * @param {unknown} id
+   * @returns {Promise<boolean>} 自分が引き受けたら `true`
+   */
+  async #addPinImage(map, id) {
+    if (this.spec === null || typeof id !== "string") return false;
+    if (map.hasImage(id)) return true;
+
+    // **同じ id が同時に来たら、同じ約束を待たせる**（2 本目に false を返すと警告が出る）
+    const pending = this.pinLoading.get(id);
+    if (pending !== undefined) return pending;
+
+    // **自分の source のピンだけ。**同じ頁の別の地図の id は読まない
+    const raw = pinImageUrl(this.spec.sourceId, id);
+    if (raw === null) return false;
+    // **危ない URL はここで落ちる**（canvas へ読み込む前）
+    const url = firstImageUrl(raw);
+    if (url === null) return false;
+
+    const ratio = typeof devicePixelRatio === "number" && devicePixelRatio > 0 ? devicePixelRatio : 1;
+    const colors = {
+      color: this.getAttribute("color") ?? this.owner?.accent ?? POI_DEFAULTS.color,
+      casing: POI_DEFAULTS.haloColor,
+    };
+
+    const task = (async () => {
+      const data = await loadPinPhoto(url, ratio, colors);
+      if (data === null) return false;
+      if (map.hasImage(id)) return true;
+      // **倍率を伝える。**伝えないと、高精細の画面で 2 倍の大きさで出る
+      map.addImage(id, data, { pixelRatio: ratio });
+      this.pinIds.push(id);
+      while (this.pinIds.length > PIN_CAP) {
+        const oldest = this.pinIds.shift();
+        if (oldest !== undefined && oldest !== id && map.hasImage(oldest)) map.removeImage(oldest);
+      }
+      return true;
+    })();
+
+    this.pinLoading.set(id, task);
+    try {
+      return await task;
+    } finally {
+      this.pinLoading.delete(id);
     }
   }
 
@@ -707,4 +805,139 @@ export class MmjPoi extends HTMLElement {
     const id = raw === undefined || raw === null ? null : String(raw);
     history.replaceState(null, "", `${location.pathname}${writeShopParam(location.search, id)}${location.hash}`);
   }
+}
+
+/**
+ * 地図へ同時に置くピンの写真の上限。
+ *
+ * **超えたら古いものから捨てる。**捨てた写真は、また描こうとしたときに
+ * 作り直される（`styleimagemissing` がまた来る）ので、見た目は変わらない。
+ * **1,027 件を全部持つと地図が止まる**ので、画面に出ているぶん＋少しに抑える。
+ * **数字は実測で決め直すこと。**
+ */
+const PIN_CAP = 96;
+
+/**
+ * 写真を雫形のピンに描いて、地図へ渡せる画素にする。
+ *
+ * **形は `pin.js` の `d` をそのまま使う**（`Path2D` が SVG の `d` を受ける）。
+ * 道のり案内の SVG と**同じ文字列**なので、形が食い違わない。
+ *
+ * **別オリジンの写真には CORS が要る。**canvas から画素を読み戻すため
+ * （`getImageData`）、`Access-Control-Allow-Origin` が無いと例外になる。
+ * **そのときは `null` を返して、何も入れない**——その点は丸のまま残る。
+ *
+ * @param {string} url
+ * @param {number} ratio 画面の倍率
+ * @param {{ color: string, casing: string }} colors
+ * @returns {Promise<ImageData | null>}
+ */
+async function loadPinPhoto(url, ratio, colors) {
+  const scale = Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
+  const { width, height, radius } = PIN_PHOTO;
+  const pixelWidth = Math.round(width * scale);
+  const pixelHeight = Math.round(height * scale);
+
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const element = new Image();
+      // **画素を読み戻すので、許可が要る。**無ければ読み込み自体が失敗する
+      element.crossOrigin = "anonymous";
+      element.addEventListener("load", () => resolve(element), { once: true });
+      element.addEventListener("error", () => reject(new Error(`読めません: ${url}`)), { once: true });
+      element.src = url;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+    const context = canvas.getContext("2d");
+    if (context === null) return null;
+    context.scale(scale, scale);
+
+    const shape = new Path2D(pinPath(PIN_PHOTO));
+    context.fillStyle = colors.color;
+    // **これは配列の `fill` ではない。**canvas の `fill(path)` で、Path2D を塗る。
+    // 規則は名前だけを見ているので、ここだけ外す（配列側の検査は残す）
+    // oxlint-disable-next-line unicorn/no-array-fill-with-reference-type
+    context.fill(shape);
+    context.lineJoin = "round";
+    context.lineWidth = 1.5;
+    context.strokeStyle = colors.casing;
+    context.stroke(shape);
+
+    // **中央を正方形に切ってから入れる。**縦長でも横長でも丸が欠けない
+    const source = /** @type {HTMLImageElement} */ (image);
+    const side = Math.min(source.naturalWidth, source.naturalHeight);
+    if (side > 0) {
+      const center = width / 2;
+      context.save();
+      context.beginPath();
+      context.arc(center, center, radius, 0, Math.PI * 2);
+      context.clip();
+      context.drawImage(
+        source,
+        (source.naturalWidth - side) / 2,
+        (source.naturalHeight - side) / 2,
+        side,
+        side,
+        center - radius,
+        center - radius,
+        radius * 2,
+        radius * 2,
+      );
+      context.restore();
+    }
+
+    return context.getImageData(0, 0, pixelWidth, pixelHeight);
+  } catch {
+    // 穴を開けない。**その点は丸（または分類の絵）のまま残る**
+    return null;
+  }
+}
+
+/**
+ * 地図ごとの「ピンの写真を作る受け口」。
+ *
+ * **`setMissingStyleImageResolver` は地図に 1 本しか置けない。**
+ * 1 枚の頁に `<mmj-poi>` が何本置かれても共存できるよう、
+ * **束ねたものを 1 本だけ置いて、各要素はこの配列へ入る**。
+ * @type {WeakMap<any, ((id: unknown) => Promise<boolean>)[]>}
+ */
+const pinResolvers = new WeakMap();
+
+/**
+ * ピンの写真を作る受け口を足す。**外す手を返す。**
+ *
+ * **新しい API（`setMissingStyleImageResolver`）があればそちらを使う。**
+ * MapLibre が結果を待ってくれるので、**「画像がありません」の警告が出ない**
+ * （`styleimagemissing` だと、作り終わる前に 1 件ずつ警告が出る——実測で
+ * `shops.html` に 3 件出た）。古い版では従来の催促で動かす。
+ *
+ * @param {any} map
+ * @param {(id: unknown) => Promise<boolean>} handler 引き受けたら `true`
+ * @returns {() => void}
+ */
+function addPinResolver(map, handler) {
+  if (typeof map.setMissingStyleImageResolver !== "function") {
+    const listener = (/** @type {any} */ event) => void handler(event.id);
+    map.on("styleimagemissing", listener);
+    return () => map.off("styleimagemissing", listener);
+  }
+
+  let list = pinResolvers.get(map);
+  if (list === undefined) {
+    list = [];
+    pinResolvers.set(map, list);
+    map.setMissingStyleImageResolver(async (/** @type {unknown} */ id) => {
+      // **引き受けたものが出たら、そこで止める**（同じ id を 2 回作らない）
+      for (const fn of list ?? []) if (await fn(id)) return;
+    });
+  }
+  list.push(handler);
+
+  return () => {
+    const at = list?.indexOf(handler) ?? -1;
+    if (at >= 0) list?.splice(at, 1);
+  };
 }

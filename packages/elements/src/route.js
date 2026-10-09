@@ -15,6 +15,7 @@
  * **後から足せる。**経路を描いたあとで案内の点だけ増やしても、同じ形で描ける。
  */
 import { isSafeImage } from "./popup.js";
+import { PIN_PHOTO } from "./pin.js";
 
 /**
  * 渡されなかったときの値。
@@ -66,13 +67,10 @@ const PIN_RADIUS = { dot: 7, photo: 12 };
  *
  * **一体の雫形にする。**本体の丸がそのまま下へ流れて先になる形
  * （地図のピンで一般的な形）。角が立たず、先も短い。
+ *
+ * **寸法と `d` は `pin.js` が持つ。**お店の点（canvas）でも同じ形を使うので、
+ * **ここに数字を書き戻さないこと**（片方だけ直すと形が食い違う）。
  */
-
-/** 本体の丸の半径。**写真より一回り大きく**、その差がそのまま輪になる */
-const PIN_BODY = PIN_RADIUS.photo + 2.5;
-
-/** 本体の丸の下端から、先までの長さ。**短くする**（長いと針に見える） */
-const PIN_TAIL = 7;
 
 /**
  * ピンの中に何を出すかを決める。**ここは判断だけ**で、SVG は `mmj-route.js` が組む。
@@ -113,18 +111,14 @@ const PIN_TAIL = 7;
 export function stepPinSpec(step, color, casing = ROUTE_DEFAULTS.casingColor) {
   const image = typeof step?.image === "string" ? step.image.trim() : "";
   const usable = image !== "" && isSafeImage(image);
-  const radius = usable ? PIN_RADIUS.photo : PIN_RADIUS.dot;
-  const body = usable ? PIN_BODY : radius;
-  // 囲い（1.5px）の半分が外へ出る。**箱を少し広く取る**（狭いと縁が欠けて見える）
-  const width = Math.round((body + 1) * 2);
+  // **寸法は `pin.js` から。**写真を出さない点は、いままでの小さい丸のまま
+  const size = usable
+    ? PIN_PHOTO
+    : { radius: PIN_RADIUS.dot, body: PIN_RADIUS.dot, tail: 0, width: PIN_RADIUS.dot * 2, height: PIN_RADIUS.dot * 2 };
   return {
     kind: usable ? "photo" : "dot",
     href: usable ? image : null,
-    radius,
-    body,
-    tail: PIN_TAIL,
-    width,
-    height: width + PIN_TAIL,
+    ...size,
     color,
     casing,
   };
