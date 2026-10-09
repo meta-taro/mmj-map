@@ -52,13 +52,26 @@ const PIN_RADIUS = { dot: 7, photo: 12 };
  * 「先端がその地点」という読み方が共通していて、丸を中央に置くと
  * **半径のぶん、指す場所がぼやける**（2026-10-09 の依頼）。
  *
- * **最初 8px にしたら、小さすぎて見えなかった**——
- * 「ピンにしては、下の▼がちょっと小さいです。**ボーダーもあいまって、
- * さんかくがちいさくて視認できません**」（同日・実物を見ての指摘）。
- * 囲い（1.5px）は尖りの外側にも付くので、**細い三角は囲いで潰れる**。
- * **丸の半径（12px）より高くする。**
+ * **形は 2 回直している。**どちらも実物を見ての指摘（同日）。
+ *
+ * 1. 8px は小さすぎた——「**さんかくがちいさくて視認できません**」。
+ *    囲い（1.5px）は尖りの外側にも付くので、細い三角は囲いで潰れる
+ * 2. 高さで稼いだら、今度は鋭くなった——「**ぴんのとがりをもうすこし緩和してほしい。
+ *    2 等辺三角形をもうちょっと正三角形に近い感じで**」
+ *
+ * **底辺を広げて、高さを抑える。**高さで稼ぐと鋭くなるが、
+ * 底辺を広げれば**面積は増えたまま、形はなだらかになる**。
+ * 正三角形は 高さ ÷ 底辺 = 0.866。
  */
-const PIN_TAIL = 15;
+
+/** 尖りの底辺。**丸の半径より広い**（細いと囲いで潰れる） */
+const PIN_TAIL_WIDTH = Math.round(PIN_RADIUS.photo * 1.65);
+
+/** 付け根を丸の内側へ差し込む深さ。**離すと「丸と三角」に見えて、ピンに見えない** */
+const PIN_TAIL_INSET = 7;
+
+/** 箱から下へ出るぶん。三角の高さ（底辺 × 0.866）から、差し込んだぶんを引く */
+const PIN_TAIL = Math.round(PIN_TAIL_WIDTH * 0.866) - PIN_TAIL_INSET;
 
 /**
  * ピンの中に何を出すかを決める。**ここは判断だけ**で、SVG は `mmj-route.js` が組む。
@@ -92,8 +105,8 @@ const PIN_TAIL = 15;
  * @param {string} [casing] 囲いの色。既定は経路の線の縁取りと同じ
  * @returns {{
  *   kind: "photo" | "dot", href: string | null,
- *   radius: number, tail: number, width: number, height: number,
- *   color: string, casing: string,
+ *   radius: number, tail: number, tailWidth: number, tailInset: number,
+ *   width: number, height: number, color: string, casing: string,
  * }}
  */
 export function stepPinSpec(step, color, casing = ROUTE_DEFAULTS.casingColor) {
@@ -108,6 +121,8 @@ export function stepPinSpec(step, color, casing = ROUTE_DEFAULTS.casingColor) {
     href: usable ? image : null,
     radius,
     tail: PIN_TAIL,
+    tailWidth: PIN_TAIL_WIDTH,
+    tailInset: PIN_TAIL_INSET,
     width,
     height: width + PIN_TAIL,
     color,

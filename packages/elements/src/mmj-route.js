@@ -183,13 +183,16 @@ let clipSeq = 0;
  * **`preserveAspectRatio="xMidYMid slice"` で中央を切る。**縦長でも横長でも
  * 丸が欠けない。`slice` が無いと余白が出て、**丸の中に四角が浮く**。
  *
- * @param {{ href: string | null, radius: number, tail: number, width: number, height: number, color: string, casing: string }} spec
+ * @param {{
+ *   href: string | null, radius: number,
+ *   tail: number, tailWidth: number, tailInset: number,
+ *   width: number, height: number, color: string, casing: string,
+ * }} spec
  * @param {string} label 読み上げ用（その点の案内文）
  * @returns {SVGSVGElement}
  */
 function photoPin(spec, label) {
-  // `tail`（尖りの高さ）は `height` に入っているので、ここでは取り出さない
-  const { width, height, radius, color, casing } = spec;
+  const { width, height, radius, tailWidth, tailInset, color, casing } = spec;
   const center = width / 2;
   const clipId = `mmj-route-pin-${(clipSeq += 1)}`;
 
@@ -235,12 +238,12 @@ function photoPin(spec, label) {
   // **尖りは丸より先に描く。**あとに描くと、丸の縁の上に三角が乗って濁る。
   // 三角にも同じ囲いを `stroke` で付ける（線の上に置いても形が残る）
   const point = document.createElementNS(SVG_NS, "polygon");
-  // **底辺は丸の半径に合わせる。**細いと囲いで潰れて、三角に見えない
-  const half = radius * 0.62;
-  // 付け根は丸の内側へ深く入れる。**離すと「丸と三角」に見えて、ピンに見えない**
+  // **形は `route.js` が決めている**（底辺・差し込み・高さの比）。ここは置くだけ
+  const half = tailWidth / 2;
+  const base = width - tailInset;
   point.setAttribute(
     "points",
-    `${center - half},${width - 12} ${center + half},${width - 12} ${center},${height - 1}`,
+    `${center - half},${base} ${center + half},${base} ${center},${height}`,
   );
   point.setAttribute("fill", color);
   point.setAttribute("stroke", casing);
