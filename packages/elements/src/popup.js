@@ -17,9 +17,13 @@
  * `javascript:` は `src` に入れられると押した瞬間に走る。
  * `data:` は「画像に見せかけた SVG」からスクリプトが走る経路がある。
  * **迷ったら通さない**（通した結果は、置いた人のページで起きる）。
+ *
+ * **外にも出す。**吹き出しの `<img src>` だけでなく、ピンの中に写真を入れる
+ * SVG の `<image href>` も同じ経路で危ない URL を踏む（`route.js` の `stepPinSpec`）。
+ * **判定を写すと、片方だけ直す事故が起きる**ので、同じものを呼ぶ。
  * @param {string} value
  */
-function isSafeImage(value) {
+export function isSafeImage(value) {
   const trimmed = value.trim();
   if (trimmed === "") return false;
   // 相対パスは土台から見て https になる。**通すのは http / https だけ**

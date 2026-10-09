@@ -20,7 +20,7 @@
 import { buildPopupOptions } from "./attrs.js";
 import { buildPopupContent } from "./popup.js";
 import { ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
-import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, routeBounds } from "./route.js";
+import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, routeBounds, stepPinSpec } from "./route.js";
 
 /** 同じページに複数置ける。source 名が衝突すると後勝ちで消えるため、番号で分ける */
 let serial = 0;
@@ -139,7 +139,12 @@ export class MmjRoute extends HTMLElement {
     const color = this.getAttribute("step-color") ?? accent ?? undefined;
 
     for (const step of extractSteps(data, key)) {
-      const options = color ? { color } : {};
+      const spec = stepPinSpec(step, color ?? ROUTE_DEFAULTS.color);
+      // **写真を持つ点だけ、自前の丸にする。**持たない点は既定のピンのまま
+      // （見た目が違うこと自体が「ここに写真がある」の合図になる）
+      const options = spec.kind === "photo"
+        ? { element: photoPin(spec, step.text), anchor: "center" }
+        : (color ? { color } : {});
       const marker = new maplibregl.Marker(options).setLngLat(step.lngLat);
       // **写真も文字も DOM で組む。**`setHTML` は使わない（popup.js の頭に理由）
       const content = buildPopupContent({ text: step.text, image: step.image });
@@ -161,4 +166,72 @@ function readWidth(value) {
   const parsed = Number(value.trim());
   if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
   return parsed;
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+/** 丸く切るための `clipPath` の id。**同じ頁に何本経路があっても衝突しない** */
+let clipSeq = 0;
+
+/**
+ * 写真を丸に入れたピンを組む。**`setHTML` は使わない**（`popup.js` の頭に理由）。
+ *
+ * **canvas を通さない。**画素を読み戻す必要が無いので、
+ * **別オリジンの写真でも CORS の設定が要らない**（`<img src>` と同じ扱い）。
+ *
+ * **`preserveAspectRatio="xMidYMid slice"` で中央を切る。**縦長でも横長でも
+ * 丸が欠けない。`slice` が無いと余白が出て、**丸の中に四角が浮く**。
+ *
+ * @param {{ href: string | null, radius: number, size: number, color: string }} spec
+ * @param {string} label 読み上げ用（その点の案内文）
+ * @returns {SVGSVGElement}
+ */
+function photoPin(spec, label) {
+  const { size, radius, color } = spec;
+  const center = size / 2;
+  const clipId = `mmj-route-pin-${(clipSeq += 1)}`;
+
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("width", String(size));
+  svg.setAttribute("height", String(size));
+  svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
+  svg.setAttribute("role", "img");
+  // **読み上げに「写真あり」まで伝える。**丸の中身は目で見た人にしか分からない
+  svg.setAttribute("aria-label", label === "" ? "写真のある地点" : `${label}（写真あり）`);
+  svg.style.display = "block";
+  svg.style.cursor = "pointer";
+
+  const clip = document.createElementNS(SVG_NS, "clipPath");
+  clip.setAttribute("id", clipId);
+  clip.append(circleAt(center, radius));
+  const defs = document.createElementNS(SVG_NS, "defs");
+  defs.append(clip);
+
+  const image = document.createElementNS(SVG_NS, "image");
+  // **URL は確かめ済みのものだけが来る**（`route.js` の `stepPinSpec`）
+  image.setAttribute("href", spec.href ?? "");
+  image.setAttribute("x", String(center - radius));
+  image.setAttribute("y", String(center - radius));
+  image.setAttribute("width", String(radius * 2));
+  image.setAttribute("height", String(radius * 2));
+  image.setAttribute("preserveAspectRatio", "xMidYMid slice");
+  image.setAttribute("clip-path", `url(#${clipId})`);
+
+  // **縁は線の色と揃える。**地図の上では、縁が無いと写真が背景へ溶ける
+  const ring = circleAt(center, radius);
+  ring.setAttribute("fill", "none");
+  ring.setAttribute("stroke", color);
+  ring.setAttribute("stroke-width", "2.5");
+
+  svg.append(defs, image, ring);
+  return svg;
+}
+
+/** @param {number} center @param {number} radius */
+function circleAt(center, radius) {
+  const circle = document.createElementNS(SVG_NS, "circle");
+  circle.setAttribute("cx", String(center));
+  circle.setAttribute("cy", String(center));
+  circle.setAttribute("r", String(radius));
+  return circle;
 }

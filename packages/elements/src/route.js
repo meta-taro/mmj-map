@@ -14,6 +14,7 @@
  *
  * **後から足せる。**経路を描いたあとで案内の点だけ増やしても、同じ形で描ける。
  */
+import { isSafeImage } from "./popup.js";
 
 /**
  * 渡されなかったときの値。
@@ -34,6 +35,52 @@ export const ROUTE_DEFAULTS = {
 
 /** 線だけを描く。**同じ source に入っている点まで線にしない** */
 const LINE_ONLY = ["==", ["geometry-type"], "LineString"];
+
+/**
+ * ピンの丸の半径（px）。**写真が入るほうを大きくする。**
+ *
+ * 写真を既定の点（7px）に入れても、**何かが入っているのか汚れなのか分からない**。
+ * 12px は「小さくて何が写っているかは分からないが、写真だと分かる」ところ。
+ * **実測で決め直すこと**（2026-10-09 に手元と本番で見て決めた値）。
+ */
+const PIN_RADIUS = { dot: 7, photo: 12 };
+
+/**
+ * ピンの中に何を出すかを決める。**ここは判断だけ**で、SVG は `mmj-route.js` が組む。
+ *
+ * ## なぜ要るのか
+ *
+ * **写真があることは、押す前に分からないといけない。**
+ * 2026-10-09 に「**ピンに画像があるとわからないですよ**」と指摘を受けた。
+ * 吹き出しを開くまで分からないなら、**写真は無いのと同じ**になる
+ * （`3d-route.html` を独立させたときの「押さないと出ない機能は、無いのと同じ」と同型）。
+ *
+ * **合図のために別の印を足さない。**丸の中が写真になっていれば、
+ * **小さくて何が写っているか分からなくても「写真がある」は伝わる**
+ * （「ちいさくてみえなくてもよくて、そうするとなんかがぞうあるなってわかる感じ」）。
+ * 輪や角マークを足すのは、同じことを二重に言うことになる。
+ *
+ * **安全でない URL は写真として扱わない。**SVG の `<image href>` は
+ * 吹き出しの `<img src>` と同じ経路で危ない URL を踏むので、
+ * **`popup.js` と同じ判定**を通す（写すと片方だけ直す事故が起きる）。
+ *
+ * @param {{ image?: unknown }} step `extractSteps` が返す 1 件
+ * @param {string} color 丸と縁の色（`step-color` / `accent` / 既定）
+ * @returns {{ kind: "photo" | "dot", href: string | null, radius: number, size: number, color: string }}
+ */
+export function stepPinSpec(step, color) {
+  const image = typeof step?.image === "string" ? step.image.trim() : "";
+  const usable = image !== "" && isSafeImage(image);
+  const radius = usable ? PIN_RADIUS.photo : PIN_RADIUS.dot;
+  return {
+    kind: usable ? "photo" : "dot",
+    href: usable ? image : null,
+    radius,
+    // 縁のぶん 2px ずつ外へ出る。**切れないように箱を大きく取る**
+    size: (radius + 2) * 2,
+    color,
+  };
+}
 
 /**
  * 経路の source と layer を組む。

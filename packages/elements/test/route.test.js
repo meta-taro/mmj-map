@@ -1,6 +1,49 @@
 import { describe, expect, it } from "vitest";
 
-import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, routeBounds } from "../src/route.js";
+import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, routeBounds, stepPinSpec } from "../src/route.js";
+
+/**
+ * ピンの中身を決める。**判断はここ（純粋関数）で、SVG の組み立ては要素側。**
+ *
+ * **写真があることは、押す前に分からないといけない。**
+ * 2026-10-09 に「ピンに画像があるとわからないですよ」と指摘を受けた。
+ * 吹き出しを開くまで分からないなら、**写真は無いのと同じ**になる。
+ *
+ * 合図のために別の印（輪・角マーク・点）は足さない。
+ * **丸の中が写真になっていれば、小さくて何が写っているか分からなくても伝わる**
+ * （「ちいさくてみえなくてもよくて、そうするとなんかがぞうあるなってわかる感じ」）。
+ */
+describe("stepPinSpec", () => {
+  it("**写真があれば、丸の中に入れる**", () => {
+    const spec = stepPinSpec({ image: "./photos/a.jpg" }, "#3FB1CE");
+    expect(spec.kind).toBe("photo");
+    expect(spec.href).toBe("./photos/a.jpg");
+    expect(spec.color).toBe("#3FB1CE");
+  });
+
+  it("写真が無ければ、いままでどおりの点", () => {
+    expect(stepPinSpec({ image: null }, "#3FB1CE").kind).toBe("dot");
+    expect(stepPinSpec({ image: "" }, "#3FB1CE").kind).toBe("dot");
+    expect(stepPinSpec({}, "#3FB1CE").kind).toBe("dot");
+  });
+
+  /**
+   * **`href` に入れる前に弾く。**SVG の `<image href>` は、
+   * 吹き出しの `<img src>` と同じ経路で危ない URL を踏む。
+   * 判定は `popup.js` と**同じもの**を使う（片方だけ直す事故を避ける）。
+   */
+  it("**安全でない URL は、写真として扱わない**", () => {
+    expect(stepPinSpec({ image: "javascript:alert(1)" }, "#000").kind).toBe("dot");
+    expect(stepPinSpec({ image: "java\tscript:alert(1)" }, "#000").kind, "分断も").toBe("dot");
+    expect(stepPinSpec({ image: "data:image/svg+xml,<svg onload=alert(1)>" }, "#000").kind).toBe("dot");
+  });
+
+  it("**写真の丸は、いまの点より大きい**（小さいと汚れに見える）", () => {
+    const photo = stepPinSpec({ image: "./a.jpg" }, "#000");
+    const dot = stepPinSpec({ image: null }, "#000");
+    expect(photo.radius).toBeGreaterThan(dot.radius);
+  });
+});
 
 /**
  * 経路を描く。**経路を計算しない。**
