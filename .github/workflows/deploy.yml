@@ -32,6 +32,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # **タグが要る。**公開済みの版を `elements-v*` のタグから読む
+          # （下の「公開版とずれていたら注記を出す」で使う）。
+          # 既定の浅い取得だとタグが来ない。
+          fetch-depth: 0
 
       # **同梱するものが node_modules から来るので、install が要る。**
       # 以前は素の HTML を配るだけで install は不要だったが、
@@ -231,6 +236,47 @@ jobs:
           };
           JS
           cat apps/demo/config.js
+
+      # **「ここで見たもの」と「入れて使えるもの」がずれていたら、そう書く。**
+      #
+      # 2026-10-09、デモと LP には出ているのに npm は 2 つ前の版、という日が
+      # 2 日以上あった。**LP で見た機能を入れても使えない。**利用者の指摘で気づいた。
+      #
+      # 原因は作りの差（デモは push で自動、npm は人の手）で、`release-elements.yml`
+      # で縮めたが、**ずれる時間は必ず残る**。残る間は、**見た人に分かるようにする**。
+      #
+      # **揃っているときは何も出さない**（常に出すとノイズになり、読まれなくなる）。
+      #
+      # 公開版は `elements-v*` のタグから読む。**npm を叩かない**——
+      # レジストリが落ちている日に deploy まで巻き込まれるのは割に合わない。
+      - name: 公開版とずれていたら、LP に注記を出す
+        run: |
+          PKG="$(node -p "require('./packages/elements/package.json').version")"
+          TAG="$(git tag --list 'elements-v*' --sort=-v:refname | head -1)"
+          if [ -z "$TAG" ]; then
+            # **黙って通さない。**タグが無いとこの仕組みが効かないので、気づけるようにする
+            echo "::error::elements-v* のタグが 1 つもありません。公開版が分からないので注記を出せません"
+            exit 1
+          fi
+          PUBLISHED="${TAG#elements-v}"
+          echo "手元: $PKG / 公開済み: $PUBLISHED"
+          if [ "$PKG" = "$PUBLISHED" ]; then
+            echo "揃っています。注記は出しません"
+            exit 0
+          fi
+          # **色は作らない**（baseline §11）。`currentColor` を借りるので、
+          # 明るい配色でも暗い配色でも、頁の文字色に合う
+          export NOTE="<p class=\"lp-unreleased\" style=\"margin:0;padding:.6rem 1.1rem;border-bottom:1px solid currentColor;font-size:.9rem;opacity:.85\">このデモは<strong>開発中の版（${PKG}）</strong>の内容です。npm で配っているのは <code>${PUBLISHED}</code> なので、<strong>ここで見た機能が、入れてもまだ使えないことがあります</strong>。</p>"
+          node -e '
+            const fs = require("fs");
+            const file = "apps/demo/index.html";
+            const html = fs.readFileSync(file, "utf8");
+            const at = html.indexOf("<body class=\"lp\">");
+            if (at < 0) { console.error("::error::<body class=\"lp\"> が見つかりません"); process.exit(1); }
+            const cut = at + "<body class=\"lp\">".length;
+            fs.writeFileSync(file, html.slice(0, cut) + "\n" + process.env.NOTE + html.slice(cut));
+          '
+          grep -c "lp-unreleased" apps/demo/index.html
 
       - uses: actions/configure-pages@v5
 

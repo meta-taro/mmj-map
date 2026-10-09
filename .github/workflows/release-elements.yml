@@ -79,14 +79,27 @@ jobs:
             exit 1
           fi
 
+      # **もう出ている版なら、何もしない。**
+      # 過去の版に後からタグを付け直すことがある（仕組みを入れる前に手で出した版など）。
+      # そこで落ちると、**本当の失敗と見分けが付かない赤**が残る。
+      - name: もう公開されていないか
+        run: |
+          LATEST="$(npm view @mmj-map/elements version 2>/dev/null || true)"
+          if [ "$LATEST" = "$VERSION" ]; then
+            echo "::notice::$VERSION は既に公開されています。何もしません"
+            echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
+
       # **手元と同じゲート。**タグを押した時点の中身で測り直す
       # （develop が緑でも、タグが指す commit が緑とは限らない）
-      - run: pnpm gate
+      - if: env.SKIP != '1'
+        run: pnpm gate
 
       # **トークンを使わない。**`id-token: write` と npm 側の Trusted Publisher 登録で、
       # npm が GitHub Actions の身元を直接確かめる。
       # `--provenance` は「どの commit のどの workflow から出たか」を npm に残す。
       - name: npm へ公開
+        if: env.SKIP != '1'
         working-directory: packages/elements
         run: npm publish --access public --provenance
 
@@ -94,6 +107,7 @@ jobs:
       # （2026-10-09 の実測で約 150 秒）、待ってから見る。
       # **1 回読んで古かっただけで「失敗」と書かない**（2026-10-07 に実際に誤判定した）。
       - name: レジストリに出たか確かめる
+        if: env.SKIP != '1'
         run: |
           for i in $(seq 1 20); do
             LATEST="$(npm view @mmj-map/elements version 2>/dev/null || true)"
