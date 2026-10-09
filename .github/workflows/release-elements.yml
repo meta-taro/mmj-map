@@ -1,0 +1,107 @@
+name: Release @mmj-map/elements
+
+# **出す経路を、人の手から外す。**
+#
+# 2026-10-09、**デモと LP には出ているのに npm は 0.3.0 のまま**という日が
+# 2 日以上あった。「LP で見た機能を入れても使えない」と利用者から指摘を受けた。
+#
+# 原因は作りにある。**デモは push したら自動で出る**（`deploy.yml`）のに、
+# **npm は人が手で publish する**（2FA の往復つき）。手間の差がそのまま時間差になる。
+#
+# ここでその差を縮める。**人がやるのはタグを打つことだけ**にする。
+#
+#     git tag elements-v0.5.0 && git push origin elements-v0.5.0
+#
+# **トークンは置かない。**npm の Trusted Publishing（OIDC）で、GitHub Actions の
+# 身元を npm 側が直接確かめる。**秘密情報を人が投入する工程が無い**＝そこで止まらない
+# （baseline §14 / §29）。
+#
+# ## 先に人がやること（1 回だけ）
+#
+# npmjs.com の `@mmj-map/elements` の設定で、**Trusted Publisher** に
+# このリポジトリとこの workflow（`release-elements.yml`）を登録する。
+# **登録前に走らせると publish が 404 で落ちる**（未認証の PUT はそう返る）。
+#
+# ## タグの名前
+#
+# このリポのタグは接頭辞つき（`demo-tiles-20260915` / `regions-20260923`）。
+# **パッケージは 2 つある**（`elements` と `tiles`）ので、
+# **どちらの版かがタグから分かる形**にする。`v0.5.0` だけにしない。
+
+on:
+  push:
+    tags:
+      - "elements-v*"
+
+permissions:
+  contents: read
+  # Trusted Publishing と provenance に要る。**これが無いと OIDC が使えない**
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # fork から同じタグを押されても動かさない
+    if: github.repository == 'meta-taro/mmj-map'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      # **CI と同じ系列。**ここがずれると「CI は通ったのに公開物が違う」が起きる
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # **タグと版が食い違ったまま出さない。**
+      # `elements-v0.5.0` を押したのに package.json が 0.4.0 のままだと、
+      # **0.4.0 を上書き公開しようとして失敗する**か、別物が出る。
+      - name: タグと package.json の版が一致するか
+        run: |
+          TAG="${GITHUB_REF_NAME#elements-v}"
+          PKG="$(node -p "require('./packages/elements/package.json').version")"
+          echo "タグ: $TAG / package.json: $PKG"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::タグ($TAG)と package.json($PKG)の版が違います。どちらかを直してください"
+            exit 1
+          fi
+          echo "VERSION=$PKG" >> "$GITHUB_ENV"
+
+      # **何が変わったか書かずに出さない。**CHANGELOG は npm の頁に出る
+      # （`files` に入れてある）ので、空のまま出すと利用者が更新の是非を判断できない。
+      - name: CHANGELOG にその版の節があるか
+        run: |
+          if ! grep -q "^## ${VERSION}（" packages/elements/CHANGELOG.md; then
+            echo "::error::CHANGELOG.md に「## ${VERSION}（…）」の節がありません"
+            exit 1
+          fi
+
+      # **手元と同じゲート。**タグを押した時点の中身で測り直す
+      # （develop が緑でも、タグが指す commit が緑とは限らない）
+      - run: pnpm gate
+
+      # **トークンを使わない。**`id-token: write` と npm 側の Trusted Publisher 登録で、
+      # npm が GitHub Actions の身元を直接確かめる。
+      # `--provenance` は「どの commit のどの workflow から出たか」を npm に残す。
+      - name: npm へ公開
+        working-directory: packages/elements
+        run: npm publish --access public --provenance
+
+      # **出したことを、出した本人が確かめる。**レジストリは反映に数分かかるので
+      # （2026-10-09 の実測で約 150 秒）、待ってから見る。
+      # **1 回読んで古かっただけで「失敗」と書かない**（2026-10-07 に実際に誤判定した）。
+      - name: レジストリに出たか確かめる
+        run: |
+          for i in $(seq 1 20); do
+            LATEST="$(npm view @mmj-map/elements version 2>/dev/null || true)"
+            if [ "$LATEST" = "$VERSION" ]; then
+              echo "反映されました: $LATEST（${i} 回目）"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::公開は成功したようですが、7 分待っても latest が $VERSION になりません（いま: ${LATEST:-不明}）"
+          exit 1
