@@ -43,6 +43,39 @@ describe("stepPinSpec", () => {
     const dot = stepPinSpec({ image: null }, "#000");
     expect(photo.radius).toBeGreaterThan(dot.radius);
   });
+
+  /**
+   * **丸だけだと、どこを指しているのか分からない。**
+   * 地図の目印は「先端がその地点」という読み方が共通していて、
+   * 丸を中央に置くと**半径のぶん、指す場所がぼやける**。
+   *
+   * 下に尖りを付けて、**尖りの先が座標**になるようにする（2026-10-09 の依頼）。
+   */
+  /**
+   * **線と同じ色だけで描くと、線の上で溶ける。**
+   * 2026-10-09 に「**みちあんないの線といろがどうかしています。
+   * ボーダーでほそいせんでかこめるといいかも**」と指摘を受けた。
+   *
+   * 経路の線は「色＋縁取り（casing）」で地図から浮かせている。
+   * **ピンも同じ作りにする**——新しい色は作らず、線の縁取りと同じ値で囲う。
+   */
+  it("**細い縁で囲む**（経路の線の上でも溶けない）", () => {
+    const photo = stepPinSpec({ image: "./a.jpg" }, "#3FB1CE");
+    expect(photo.casing).toBeTruthy();
+    expect(photo.casing).not.toBe(photo.color);
+  });
+
+  it("縁のぶん、箱を広く取る（**囲いが切れない**）", () => {
+    const photo = stepPinSpec({ image: "./a.jpg" }, "#000");
+    expect(photo.width).toBeGreaterThan(photo.radius * 2 + 4);
+  });
+
+  it("**丸の下に尖りを付ける**（先端がその地点になる）", () => {
+    const photo = stepPinSpec({ image: "./a.jpg" }, "#000");
+    expect(photo.tail).toBeGreaterThan(0);
+    // 箱の高さは、丸の直径（縁を含む）＋ 尖りのぶん
+    expect(photo.height).toBe(photo.width + photo.tail);
+  });
 });
 
 /**

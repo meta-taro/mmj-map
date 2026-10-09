@@ -46,6 +46,15 @@ const LINE_ONLY = ["==", ["geometry-type"], "LineString"];
 const PIN_RADIUS = { dot: 7, photo: 12 };
 
 /**
+ * 丸の下に付ける尖りの高さ（px）。**先端がその地点になる。**
+ *
+ * **丸だけだと、どこを指しているのか分からない。**地図の目印は
+ * 「先端がその地点」という読み方が共通していて、丸を中央に置くと
+ * **半径のぶん、指す場所がぼやける**（2026-10-09 の依頼）。
+ */
+const PIN_TAIL = 8;
+
+/**
  * ピンの中に何を出すかを決める。**ここは判断だけ**で、SVG は `mmj-route.js` が組む。
  *
  * ## なぜ要るのか
@@ -64,21 +73,39 @@ const PIN_RADIUS = { dot: 7, photo: 12 };
  * 吹き出しの `<img src>` と同じ経路で危ない URL を踏むので、
  * **`popup.js` と同じ判定**を通す（写すと片方だけ直す事故が起きる）。
  *
+ * ## 線の上で溶けないようにする
+ *
+ * **色だけで描くと、経路の線と同化する。**2026-10-09 に
+ * 「みちあんないの線といろがどうかしています。**ボーダーでほそいせんでかこめるといいかも**」
+ * と指摘を受けた。線は「色 ＋ 縁取り（casing）」で地図から浮かせているので、
+ * **ピンも同じ作りにする**。**新しい色は作らない**（baseline §11）——
+ * 線の縁取りと同じ値（`casingColor`）で細く囲う。
+ *
  * @param {{ image?: unknown }} step `extractSteps` が返す 1 件
  * @param {string} color 丸と縁の色（`step-color` / `accent` / 既定）
- * @returns {{ kind: "photo" | "dot", href: string | null, radius: number, size: number, color: string }}
+ * @param {string} [casing] 囲いの色。既定は経路の線の縁取りと同じ
+ * @returns {{
+ *   kind: "photo" | "dot", href: string | null,
+ *   radius: number, tail: number, width: number, height: number,
+ *   color: string, casing: string,
+ * }}
  */
-export function stepPinSpec(step, color) {
+export function stepPinSpec(step, color, casing = ROUTE_DEFAULTS.casingColor) {
   const image = typeof step?.image === "string" ? step.image.trim() : "";
   const usable = image !== "" && isSafeImage(image);
   const radius = usable ? PIN_RADIUS.photo : PIN_RADIUS.dot;
+  // 色の輪（2.5px）と、その外側の囲い（1.5px）が外へ出る。
+  // **箱を 3px ぶん広く取る**（狭いと囲いが切れて、縁が欠けて見える）
+  const width = (radius + 3) * 2;
   return {
     kind: usable ? "photo" : "dot",
     href: usable ? image : null,
     radius,
-    // 縁のぶん 2px ずつ外へ出る。**切れないように箱を大きく取る**
-    size: (radius + 2) * 2,
+    tail: PIN_TAIL,
+    width,
+    height: width + PIN_TAIL,
     color,
+    casing,
   };
 }
 

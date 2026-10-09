@@ -142,8 +142,9 @@ export class MmjRoute extends HTMLElement {
       const spec = stepPinSpec(step, color ?? ROUTE_DEFAULTS.color);
       // **写真を持つ点だけ、自前の丸にする。**持たない点は既定のピンのまま
       // （見た目が違うこと自体が「ここに写真がある」の合図になる）
+      // **尖りの先が座標。**`anchor: "bottom"` で箱の下端を地点へ合わせる
       const options = spec.kind === "photo"
-        ? { element: photoPin(spec, step.text), anchor: "center" }
+        ? { element: photoPin(spec, step.text), anchor: "bottom" }
         : (color ? { color } : {});
       const marker = new maplibregl.Marker(options).setLngLat(step.lngLat);
       // **写真も文字も DOM で組む。**`setHTML` は使わない（popup.js の頭に理由）
@@ -182,19 +183,19 @@ let clipSeq = 0;
  * **`preserveAspectRatio="xMidYMid slice"` で中央を切る。**縦長でも横長でも
  * 丸が欠けない。`slice` が無いと余白が出て、**丸の中に四角が浮く**。
  *
- * @param {{ href: string | null, radius: number, size: number, color: string }} spec
+ * @param {{ href: string | null, radius: number, tail: number, width: number, height: number, color: string, casing: string }} spec
  * @param {string} label 読み上げ用（その点の案内文）
  * @returns {SVGSVGElement}
  */
 function photoPin(spec, label) {
-  const { size, radius, color } = spec;
-  const center = size / 2;
+  const { width, height, radius, tail, color, casing } = spec;
+  const center = width / 2;
   const clipId = `mmj-route-pin-${(clipSeq += 1)}`;
 
   const svg = document.createElementNS(SVG_NS, "svg");
-  svg.setAttribute("width", String(size));
-  svg.setAttribute("height", String(size));
-  svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
+  svg.setAttribute("width", String(width));
+  svg.setAttribute("height", String(height));
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
   svg.setAttribute("role", "img");
   // **読み上げに「写真あり」まで伝える。**丸の中身は目で見た人にしか分からない
   svg.setAttribute("aria-label", label === "" ? "写真のある地点" : `${label}（写真あり）`);
@@ -223,7 +224,28 @@ function photoPin(spec, label) {
   ring.setAttribute("stroke", color);
   ring.setAttribute("stroke-width", "2.5");
 
-  svg.append(defs, image, ring);
+  // **その外側をもう 1 本、細く囲う。**色だけだと経路の線の上で溶ける
+  // （線と同じ色なので）。線が「色＋縁取り」で浮いているのと同じ作りにする
+  const border = circleAt(center, radius + 1.9);
+  border.setAttribute("fill", "none");
+  border.setAttribute("stroke", casing);
+  border.setAttribute("stroke-width", "1.5");
+
+  // **尖りは丸より先に描く。**あとに描くと、丸の縁の上に三角が乗って濁る。
+  // 三角にも同じ囲いを `stroke` で付ける（線の上に置いても形が残る）
+  const point = document.createElementNS(SVG_NS, "polygon");
+  const half = tail * 0.62;
+  // 付け根は丸の内側へ入れる。**離すと「丸と三角」に見えて、ピンに見えない**
+  point.setAttribute(
+    "points",
+    `${center - half},${width - 8} ${center + half},${width - 8} ${center},${height - 1}`,
+  );
+  point.setAttribute("fill", color);
+  point.setAttribute("stroke", casing);
+  point.setAttribute("stroke-width", "1.5");
+  point.setAttribute("stroke-linejoin", "round");
+
+  svg.append(defs, point, image, ring, border);
   return svg;
 }
 
