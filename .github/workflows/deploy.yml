@@ -247,18 +247,37 @@ jobs:
       #
       # **揃っているときは何も出さない**（常に出すとノイズになり、読まれなくなる）。
       #
-      # 公開版は `elements-v*` のタグから読む。**npm を叩かない**——
-      # レジストリが落ちている日に deploy まで巻き込まれるのは割に合わない。
+      # ## 公開版は npm に聞く（タグではない）
+      #
+      # **以前はタグ（`elements-v*`）を公開版の代わりに使っていた。外れた。**
+      #
+      # 2026-10-10、`elements-v0.5.0` を押したあと publish が `ENEEDAUTH` で落ちた
+      # （Trusted Publisher が未登録だった）。**タグはある。npm は 0.4.0。**
+      # 帯は「タグと一致」と判断して**何も出さなかった**——
+      # まさにこの帯が拾うべき状態を、作りのせいで見逃した。
+      #
+      # タグは「出すつもり」でしかない。**知りたいのは「入れて使えるか」**なので、
+      # レジストリに聞く。
+      #
+      # **レジストリが落ちている日に deploy を巻き込まない。**聞けなければタグへ落とし、
+      # 警告を出す（帯は注記であって門ではないので、ここで赤くはしない）。
       - name: 公開版とずれていたら、LP に注記を出す
         run: |
           PKG="$(node -p "require('./packages/elements/package.json').version")"
-          TAG="$(git tag --list 'elements-v*' --sort=-v:refname | head -1)"
-          if [ -z "$TAG" ]; then
-            # **黙って通さない。**タグが無いとこの仕組みが効かないので、気づけるようにする
-            echo "::error::elements-v* のタグが 1 つもありません。公開版が分からないので注記を出せません"
-            exit 1
+          PUBLISHED=""
+          if NPM="$(npm view @mmj-map/elements version 2>/dev/null)" && [ -n "$NPM" ]; then
+            PUBLISHED="$NPM"
+            echo "公開版の出どころ: npm"
+          else
+            TAG="$(git tag --list 'elements-v*' --sort=-v:refname | head -1)"
+            if [ -z "$TAG" ]; then
+              # **黙って通さない。**npm もタグも無いと、この仕組みが何も見ていない
+              echo "::error::npm に聞けず、elements-v* のタグもありません。公開版が分からないので注記を出せません"
+              exit 1
+            fi
+            PUBLISHED="${TAG#elements-v}"
+            echo "::warning::npm に聞けなかったので、タグ（$TAG）から推測します。publish が落ちた直後は、この値が実際より進んでいることがあります"
           fi
-          PUBLISHED="${TAG#elements-v}"
           echo "手元: $PKG / 公開済み: $PUBLISHED"
           if [ "$PKG" = "$PUBLISHED" ]; then
             echo "揃っています。注記は出しません"
