@@ -92,7 +92,7 @@ grep -oE 'https://meta-taro\.github\.io/mmj-map/[^)]*' apps/demo/llms.txt | sort
 | 検査 | 何を見るか |
 | --- | --- |
 | `pnpm asset:check` | 参照されているのに無いファイル／データに混ざった文章の記法 |
-| `pnpm agent-doc:check` | 属性と文書のずれ／索引のリンク切れ／生成物の古び |
+| `pnpm agent-doc:check` | 属性と文書のずれ／索引のリンク切れ／生成物の古び／**AI が読む素材**（`description`・`keywords`・使いどころが最初の節か） |
 | `pnpm smoke` | 全頁を 2 幅で開いて、押す目標の大きさや重なり |
 | `oss-placement-check` | 作業の記録が git に入っていないか |
 | `oss-privacy-check` | 個人名とメールアドレス |
@@ -105,11 +105,13 @@ grep -oE 'https://meta-taro\.github\.io/mmj-map/[^)]*' apps/demo/llms.txt | sort
 **落とせない**: 「AI に見つかるか」そのもの。相手の中身も時期も変わるので、
 **人が引いて、記録して、日を置いて比べる**しかない（上の測り方）。
 
-**落とせる**: **素材が揃っているか**。これは機械で見られる。
+**落とせる**: **素材が揃っているか**。これは機械で見られる——**`agent-doc:check` が見ています**
+（`tools/agent-doc/src/materials.ts`）。
 
-- `description` と `keywords` が空でないか
-- README の冒頭に、**使いどころの 1 文**があるか
-- `llms.txt` が属性と揃っているか（`agent-doc:check` が既に見ている）
+- `description` が空でないか・切られる長さを超えていないか
+- `keywords` に**問題の言い方**が入っているか（`self-hosted` / `no-api-key` など）
+- **使いどころが最初の節か**（`<!-- aeo:use-cases -->` の印より前に節があったら落ちる）
+- `llms.txt` が属性と揃っているか
 
 **「見つかるか」を緑にしようとしない**。緑にできるのは素材までで、
 **結果は測って記録する側**にある。混ぜると、測っていないのに緑になる。
@@ -134,6 +136,7 @@ grep -oE 'https://meta-taro\.github\.io/mmj-map/[^)]*' apps/demo/llms.txt | sort
 | npm の頁で画像が死んでいた（`../screenshots/` がパッケージの外を指していた） | 0（出した頁を実際に開く） |
 | publish 直後に 1 回だけレジストリを読んで「出ていない」と断定した（反映に数分かかるだけだった。人に余計な publish を叩かせた） | 0（**出した直後の確認は、時間を置いて数回見る**。1 回の応答で結論を出さない） |
 | robots.txt を置いたが、下の階層なので読まれない（GitHub Pages の project site は `/<repo>/` 以下。robots.txt はホストの根しか読まれない） | 0（置いたものを実際に叩く）→ ファイル自身へ「効いていない」と書いた |
+| AI が MMJ を要約すると、**制約が先に出ていた**（npm の README の最初の節が「データは持たない」だった）。名前では引けるが、**問題の言い方では候補に入らなかった** | 1（AEO / GEO を測る）→ 4（検査に落とした） |
 
 ---
 

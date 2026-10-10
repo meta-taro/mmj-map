@@ -5,7 +5,7 @@
  *   pnpm agent-doc:build    # llms.txt / llms-full.txt を作り直す
  *   pnpm agent-doc:check    # 文書が古びていたら落とす（pnpm gate の中）
  *
- * **ここだけが外界（ファイル）に触る。**判断は `attrs.ts` と `content.ts`。
+ * **ここだけが外界（ファイル）に触る。**判断は `attrs.ts` / `content.ts` / `materials.ts`。
  *
  * ## check が見ている 4 つ
  *
@@ -14,6 +14,8 @@
  *    `content.ts` の SNIPPET と、**npm が頁として出す README** の両方を見る
  * 3. **索引のリンクが実在するか**（配ったら 404、を止める）
  * 4. **生成物が最新か**（`build` を忘れて commit したら落ちる）
+ * 5. **AI が読む素材が揃っているか**（`description` / `keywords` / 使いどころが最初の節か）。
+ *    **「AI に見つかるか」は見ていない**——理由は `materials.ts` の頭に書いた
  *
  * **落ちない検査は検査ではない。**どれも 1 度わざと壊して、赤くなることを見ている。
  */
@@ -30,6 +32,7 @@ import {
   unknownInText,
 } from "./attrs.js";
 import { SNIPPET, buildIndex, buildSitemap, type IndexLink } from "./content.js";
+import { checkPackageMaterials, checkUseCaseFirst } from "./materials.js";
 
 // src/cli.ts → tools/agent-doc → tools → リポジトリの根（**3 つ上**）
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -37,6 +40,10 @@ const elementsDir = path.join(repoRoot, "packages/elements/src");
 const reference = path.join(repoRoot, "docs/elements/README.md");
 /** npm が頁として出す README。**導入する人が最初に読む見本がここにある** */
 const packageReadme = path.join(repoRoot, "packages/elements/README.md");
+
+/** npm に出る素材。**AI の要約と npm の検索がここを拾う**（`materials.ts`） */
+const packageJson = "packages/elements/package.json";
+const aeoReadmes = ["packages/elements/README.md", "packages/elements/README.ja.md"];
 
 /** 公開サイトの根。**ここが変わったら生成し直す**（相対リンクを出さないため） */
 const SITE = "https://meta-taro.github.io/mmj-map/";
@@ -149,13 +156,37 @@ function commandCheck(): number {
     else if (current !== text) problems.push(`${file} が古いままです。pnpm agent-doc:build を走らせてください`);
   }
 
+  // 5. AI が読む素材が揃っているか。
+  //
+  // **「AI に見つかるか」は見ていない**（相手の中身も時期も変わるので、
+  // 人が引いて記録して日を置いて比べるしかない——`docs/pdca.md`）。
+  // ここで見るのは**素材が揃っているか**だけ。混ぜると、測っていないのに緑になる。
+  const pkgText = readOrNull(packageJson);
+  if (pkgText === null) {
+    problems.push(`${packageJson} が読めません`);
+  } else {
+    for (const line of checkPackageMaterials(JSON.parse(pkgText))) {
+      problems.push(`${packageJson}: ${line}`);
+    }
+  }
+  for (const file of aeoReadmes) {
+    const text = readOrNull(file);
+    if (text === null) {
+      problems.push(`${file} が読めません`);
+      continue;
+    }
+    for (const line of checkUseCaseFirst(text)) problems.push(`${file}: ${line}`);
+  }
+
   if (problems.length > 0) {
     console.error("エージェント向けの文書が古びています:");
     for (const line of problems) console.error(`  - ${line}`);
     return 1;
   }
 
-  console.log(`検査: 属性 ${attributes.length} 件・生成物 ${INDEX_OUT.length + FULL_OUT.length} 本`);
+  console.log(
+    `検査: 属性 ${attributes.length} 件・生成物 ${INDEX_OUT.length + FULL_OUT.length} 本・素材 ${aeoReadmes.length + 1} 本`,
+  );
   console.log("OK 文書とソースは一致しています");
   return 0;
 }

@@ -1,7 +1,7 @@
 {
   "name": "@mmj-map/elements",
   "version": "0.4.0",
-  "description": "Web Components that put a map on a page with plain HTML. No API key, no tile server, no build step.",
+  "description": "Self-hosted web map as Web Components: a real map on a page with plain HTML. No API key, no per-view billing, no tile server, no build step. Works offline.",
   "license": "MIT",
   "type": "module",
   "main": "src/index.js",
@@ -23,9 +23,17 @@
     "map",
     "maplibre",
     "pmtiles",
-    "web-components",
     "protomaps",
     "openstreetmap",
+    "web-components",
+    "custom-elements",
+    "vector-tiles",
+    "self-hosted",
+    "offline-map",
+    "no-api-key",
+    "static-hosting",
+    "html-map",
+    "google-maps-alternative",
     "mmj"
   ],
   "repository": {

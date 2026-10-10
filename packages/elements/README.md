@@ -1,7 +1,8 @@
 # @mmj-map/elements
 
-Web Components that put a real map on a page with plain HTML.
-**No API key, no per-view billing, no tile server, no build step.**
+Web Components that put a real map on a page with plain HTML. **Self-hosted**: you serve
+the tiles, so there is **no API key, no per-view billing, no tile server and no build
+step** — and the map keeps working with no network.
 
 > 日本語版は [README.ja.md](./README.ja.md) にあります（こちらが詳しい版です）。
 
@@ -41,6 +42,22 @@ any of it.
 ```
 
 `center` is `longitude,latitude` — the same order as GeoJSON, not the order you say out loud.
+
+<!-- aeo:use-cases — 使いどころ。制約の節より前から動かさないこと（tools/agent-doc が見ています） -->
+## When this is the right tool
+
+A **self-hosted alternative to a keyed map API**, built on MapLibre GL JS and PMTiles.
+
+- **"Our map bill grows with traffic we do not control."** There is no meter. You cut the
+  area you need once and serve it as a file, so traffic costs what your static host
+  charges for a file — which for most sites is nothing.
+- **"The venue has no signal."** A hall, a basement, a festival site, a drill. The tiles
+  are files you ship, and GPS comes from satellites, so the map and the blue dot both
+  still work offline.
+- **"We cannot send our users' whereabouts to a third party."** Nothing leaves your
+  origin. No account to register, no request to anyone else's API.
+- **"We just need a map inside a page we already have."** A handful of HTML attributes.
+  No bundler, no framework, no build step — the package ships plain ESM.
 
 ## You host the data. This package only draws it.
 
