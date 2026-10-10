@@ -1,6 +1,6 @@
 {
   "name": "@mmj-map/elements",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Self-hosted web map as Web Components: a real map on a page with plain HTML. No API key, no per-view billing, no tile server, no build step. Works offline.",
   "license": "MIT",
   "type": "module",
