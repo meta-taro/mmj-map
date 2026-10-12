@@ -29,9 +29,12 @@ function fields(style) {
 }
 
 describe("applyLanguage", () => {
+  // ラベル層は 5 つ（都市名・駅名・町名・水域・POI）。
+  // **POI は 2026-10-12 に足した**（Issue #3）。層が増えたらここも増える——
+  // 数が合わないのは、たいてい「足した層を言語切り替えから漏らした」とき。
   it("**すべてのラベル層を差し替える**（1 つ残すと、そこだけ言語が違う）", () => {
     const result = applyLanguage(loadStyle("modern-dark"), "zh-Hant");
-    expect(result.applied).toBe(4);
+    expect(result.applied).toBe(5);
     for (const f of fields(result.style)) {
       expect(f).toContain("name:zh-Hant");
       expect(f).not.toContain("name:ja");
@@ -62,7 +65,7 @@ describe("applyLanguage", () => {
       "modern-candy",
     ].map((/** @type {string} */ n) => applyLanguage(loadStyle(n), "en").applied);
     expect(new Set(counts).size).toBe(1);
-    expect(counts[0]).toBe(4);
+    expect(counts[0]).toBe(5);
   });
 
   it("言語を渡さなければ、そのまま返す（**既定を勝手に変えない**）", () => {

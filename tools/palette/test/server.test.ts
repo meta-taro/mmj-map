@@ -65,9 +65,9 @@ describe("tools/list", () => {
 });
 
 describe("mmj_list_roles", () => {
-  it("24 の役割と、それが何を変えるかを返す", () => {
+  it("26 の役割と、それが何を変えるかを返す", () => {
     const roles = payload(call("mmj_list_roles", {}));
-    expect(Object.keys(roles)).toHaveLength(24);
+    expect(Object.keys(roles)).toHaveLength(26);
     expect(roles["water"]).toContain("水");
   });
 });
@@ -81,9 +81,9 @@ describe("mmj_list_bases", () => {
 describe("mmj_derive_palette", () => {
   const anchors = { land: "#f7f9fb", water: "#bfd7e8", ink: "#16202b", accent: "#0a5fff" };
 
-  it("指し値から 24 色を返す", () => {
+  it("指し値から 26 色を返す", () => {
     const palette = payload(call("mmj_derive_palette", anchors));
-    expect(Object.keys(palette)).toHaveLength(24);
+    expect(Object.keys(palette)).toHaveLength(26);
     expect(palette["background"]).toBe(anchors.land);
   });
 

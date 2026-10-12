@@ -9,7 +9,7 @@
  * 想定している使い方は 2 つ。
  *
  *   <mmj-map accent="#0A5FFF">             サイトのテーマカラー 1 色
- *   <mmj-map palette-url="./brand.json">   24 の役割を全部指定する
+ *   <mmj-map palette-url="./brand.json">   26 の役割を全部指定する
  *
  * どちらも、土台になるスタイル（`style-url`）は導入者が選ぶ。
  */
@@ -41,6 +41,8 @@ export const ROLE_LAYERS = {
   "highway-casing": [{ layer: "roads-highway-casing", prop: "line-color" }],
   highway: [{ layer: "roads-highway", prop: "line-color" }],
   rail: [{ layer: "rail", prop: "line-color" }],
+  // **線路に見せるための重ね**（地の色の破線）。鉄道の色を変えたら、ここも合わせる
+  "rail-hatch": [{ layer: "rail-hatch", prop: "line-color" }],
   boundary: [{ layer: "boundaries", prop: "line-color" }],
   station: [{ layer: "station-dot", prop: "circle-stroke-color" }],
   "station-fill": [{ layer: "station-dot", prop: "circle-color" }],
@@ -48,12 +50,14 @@ export const ROLE_LAYERS = {
   "label-station": [{ layer: "label-station", prop: "text-color" }],
   "label-neighbourhood": [{ layer: "label-place-neighbourhood", prop: "text-color" }],
   "label-water": [{ layer: "label-water", prop: "text-color" }],
+  "label-poi": [{ layer: "label-poi", prop: "text-color" }],
   // 縁取りは 4 つのラベル全部に同じ色が要る。**1 つ漏らすと、そのラベルだけ縁が残る**
   halo: [
     { layer: "label-place-city", prop: "text-halo-color" },
     { layer: "label-station", prop: "text-halo-color" },
     { layer: "label-place-neighbourhood", prop: "text-halo-color" },
     { layer: "label-water", prop: "text-halo-color" },
+    { layer: "label-poi", prop: "text-halo-color" },
   ],
 };
 

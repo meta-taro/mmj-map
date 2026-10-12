@@ -1,5 +1,5 @@
 /**
- * 指し値（アンカー）から 24 の役割を作る。**D-021 で人が認めた範囲。**
+ * 指し値（アンカー）から 26 の役割を作る。**D-021 で人が認めた範囲。**
  *
  * ここで作った配色は**導入者のもの**で、MMJ が配る 6 枚は手書きのまま（D-002）。
  * 出したものは編集される前提なので、**後から手で直せる形**（役割 → 色の JSON）で返す。
@@ -29,7 +29,7 @@ describe("ROLE_ORDER", () => {
 });
 
 describe("deriveRoles", () => {
-  it("24 の役割をすべて返す（**書き漏らした役割は土台のままになる**）", () => {
+  it("26 の役割をすべて返す（**書き漏らした役割は土台のままになる**）", () => {
     const roles = deriveRoles(LIGHT);
     expect(Object.keys(roles).sort()).toEqual([...ROLE_ORDER].sort());
     for (const value of Object.values(roles)) expect(value).toMatch(/^#[0-9a-f]{6}$/);
@@ -118,14 +118,14 @@ describe("deriveRoles", () => {
 });
 
 describe("実物のスタイルに当たる", () => {
-  it("作った 24 色が、配っている 6 枚すべてに当たる", async () => {
+  it("作った 26 色が、配っている 6 枚すべてに当たる", async () => {
     const { applyPalette } = await import("@mmj-map/elements/palette");
     const roles = deriveRoles(LIGHT);
     for (const name of ["modern-dark", "modern-light", "modern-ink", "modern-sand", "modern-neon", "modern-candy"]) {
       const style = JSON.parse(
         readFileSync(new URL(`../../../styles/${name}.json`, import.meta.url), "utf8"),
       );
-      expect(applyPalette(style, roles).applied, name).toBe(27);
+      expect(applyPalette(style, roles).applied, name).toBe(30);
     }
   });
 });

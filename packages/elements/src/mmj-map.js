@@ -38,6 +38,8 @@ import {
 } from "./attrs.js";
 import { ensureControlContrast } from "./controls-dom.js";
 import { popupColorsFrom } from "./popup-dom.js";
+import { isSafeImage } from "./popup.js";
+import { withStationIcon } from "./station.js";
 import {
   EXTRUSION_ID,
   addExtrusion,
@@ -92,9 +94,50 @@ function missingFor(archive) {
   return created;
 }
 
+/**
+ * 駅の記号の SVG を、地図へ入れられる画像にする。
+ *
+ * **読めなければ `null`。**そのときは円のまま進む（地図を殺さない）。
+ * 別オリジンの SVG には CORS が要る——画素を読み戻すため。
+ *
+ * @param {string} url
+ * @param {number} ratio 画面の倍率
+ * @returns {Promise<{ data: ImageData, ratio: number } | null>}
+ */
+async function loadStationImage(url, ratio) {
+  const scale = Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
+  // 地図の上での大きさ（px）。**円（直径 13〜17px）と釣り合う大きさ**
+  const side = 18;
+  const pixels = Math.round(side * scale);
+
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const element = new Image();
+      // **画素を読み戻すので、許可が要る**
+      element.crossOrigin = "anonymous";
+      element.addEventListener("load", () => resolve(element), { once: true });
+      element.addEventListener("error", () => reject(new Error(`読めません: ${url}`)), { once: true });
+      element.src = url;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = pixels;
+    canvas.height = pixels;
+    const context = canvas.getContext("2d");
+    if (context === null) return null;
+    context.drawImage(image, 0, 0, pixels, pixels);
+    return { data: context.getImageData(0, 0, pixels, pixels), ratio: scale };
+  } catch {
+    return null;
+  }
+}
+
 export class MmjMap extends HTMLElement {
   /** @type {any} */
   map = null;
+
+  /** `station-icon` で読んだ画像。**地図ができてから入れる** @type {{ data: ImageData, ratio: number } | null} */
+  #stationImage = null;
 
   /**
    * 読み込んだスタイルから読んだ色。子要素がここから借りる。
@@ -280,10 +323,18 @@ export class MmjMap extends HTMLElement {
     // （手書きの 6 枚には無いので null のまま＝子要素は自分の既定を使う）
     this.accent ??= readDeclaredAccent(style);
 
+    // 駅の印を、置く側の SVG に差し替える（**書いた地図だけ**）。
+    //
+    // **既定はスタイルの中の円で、そこは触らない。**スタイルを MapLibre へ
+    // そのまま渡している人にも駅が出る必要がある（Issue #3 の報告者がその使い方）。
+    // スプライトは使えない——MapLibre は `sprite` の相対 URL を認めず、
+    // 絶対 URL を焼くと**自前配信なのにこちらのドメインに依存する**（D-001）。
+    const stationStyle = await this.#withStationIcon(style);
+
     this.map = new maplibregl.Map(
       buildMapOptions({
         container,
-        style: wants3d ? addExtrusion(style) : style,
+        style: wants3d ? addExtrusion(stationStyle) : stationStyle,
         center: parseLngLat(this.getAttribute("center")) ?? [135.5023, 34.6937],
         zoom: parseZoom(this.getAttribute("zoom"), 12),
         hash: this.hasAttribute("hash"),
@@ -297,6 +348,20 @@ export class MmjMap extends HTMLElement {
         ideographFonts: this.getAttribute("ideograph-fonts") ?? undefined,
       }),
     );
+
+    // 読んだ記号を地図へ入れる。**層は既に style に入っている**ので、
+    // 入れるのが遅れると「画像が無い」と警告が出る。スタイルが載った直後に入れる。
+    if (this.#stationImage !== null) {
+      const put = () => {
+        if (this.#stationImage === null || this.map === null) return;
+        if (this.map.hasImage(MmjMap.#STATION_IMAGE)) return;
+        this.map.addImage(MmjMap.#STATION_IMAGE, this.#stationImage.data, {
+          pixelRatio: this.#stationImage.ratio,
+        });
+      };
+      if (this.map.isStyleLoaded()) put();
+      else this.map.once("styledata", put);
+    }
 
     // **`hash` は pitch を奪う。**MapLibre の hash は `#zoom/lat/lng/bearing/pitch` で、
     // 3 要素しか書かれていない URL を開くと bearing と pitch が 0 に戻る。
@@ -351,6 +416,38 @@ export class MmjMap extends HTMLElement {
     this.map.on("error", (/** @type {any} */ event) => console.error("[mmj-map]", event?.error ?? event));
 
     this.dispatchEvent(new CustomEvent("mmj-ready", { detail: { map: this.map } }));
+  }
+
+  /** 地図へ入れる画像の名前。**衝突しないよう接頭辞を付ける** */
+  static #STATION_IMAGE = "mmj-station";
+
+  /**
+   * `station-icon` が書かれていたら、その SVG を地図の画像にして層を足す。
+   *
+   * **読めなければ、円のまま進む。**記号が出ないのは惜しいが、
+   * 地図そのものが出ないよりずっとよい（§8 の握り潰しではなく、既定へ戻す）。
+   *
+   * @param {any} style
+   * @returns {Promise<any>}
+   */
+  async #withStationIcon(style) {
+    const url = this.getAttribute("station-icon");
+    if (url === null || url.trim() === "") return style;
+    // **URL を信用しない**（`javascript:` などを弾く。popup.js と同じ判定）
+    if (!isSafeImage(url)) {
+      console.warn(`[mmj-map] station-icon が読めない形です: ${url}`);
+      return style;
+    }
+
+    const size = Number.parseFloat(this.getAttribute("station-icon-size") ?? "");
+    const image = await loadStationImage(url, window.devicePixelRatio || 1);
+    if (image === null) {
+      console.warn(`[mmj-map] station-icon を読めませんでした: ${url}`);
+      return style;
+    }
+
+    this.#stationImage = image;
+    return withStationIcon(style, MmjMap.#STATION_IMAGE, Number.isFinite(size) && size > 0 ? size : 1);
   }
 
   /**

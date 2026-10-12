@@ -1,5 +1,5 @@
 /**
- * 指し値（アンカー）から 24 の役割を作る。**ここは純粋関数。**
+ * 指し値（アンカー）から 26 の役割を作る。**ここは純粋関数。**
  *
  * **これは D-002 が採らなかった「配色をアルゴリズムで振る」そのものです。**
  * 人が範囲を決めて認めました（D-021・2026-09-21）:
@@ -35,6 +35,7 @@ export const ROLE_ORDER = [
   "highway-casing",
   "highway",
   "rail",
+  "rail-hatch",
   "boundary",
   "station",
   "station-fill",
@@ -42,6 +43,7 @@ export const ROLE_ORDER = [
   "label-station",
   "label-neighbourhood",
   "label-water",
+  "label-poi",
   "halo",
 ] as const;
 
@@ -82,6 +84,8 @@ const LAND_TO_INK: Readonly<Partial<Record<Role, number>>> = {
   boundary: 0.42,
   rail: 0.56,
   "label-neighbourhood": 0.72,
+  // 目印の名前は、町名と同じ控えめな段に置く。**これ以上濃いと駅と地名を食う**
+  "label-poi": 0.72,
   "label-station": 0.86,
 };
 
@@ -89,7 +93,7 @@ const LAND_TO_INK: Readonly<Partial<Record<Role, number>>> = {
 const GREEN_HINT = "#6f9e58";
 
 /**
- * 指し値から 24 の役割を作る。
+ * 指し値から 26 の役割を作る。
  *
  * @param anchors 人が決める 4〜5 色
  * @param overrides 手で決めた色。**ここが最後に勝つ**
@@ -123,6 +127,9 @@ export function deriveRoles(
     "label-city": ink,
     // 縁取りは地色。文字と同じ側にすると、ラベルが背景に溶ける
     halo: land,
+    // 線路のハッチは**地色そのもの**。線路の上に地色の刻みを入れて「線路」に見せる。
+    // ここを地色から外すと、刻みが別の線に見えて道が 2 本あるように読める
+    "rail-hatch": land,
     // 高速の縁取りは本体より濃い。**同じにすると太い線が塊になる**（Modern Ink で実際に潰れた）
     "highway-casing": mix(accent, ink, 0.4),
   } as Record<Role, string>;
