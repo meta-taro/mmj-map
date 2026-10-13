@@ -17,10 +17,50 @@ import { fileURLToPath } from "node:url";
 
 import { handle, type Deps } from "./server.js";
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const styleDir = resolve(repoRoot, "styles");
+/**
+ * 土台のスタイルを探す。**配った包みの中が先、リポジトリの根が後。**
+ *
+ * - 配ったとき: `<package>/styles/`（`prepublishOnly` が正本から写す）
+ * - リポジトリで動かすとき: `<repo>/styles/`（**正本はこちら**・D-002）
+ *
+ * **両方を見る。**どちらか一方にすると、
+ * 「手元では動くのに `npx` で動かない」か、その逆が起きる。
+ */
+function findStyleDir(): string {
+  const here = dirname(fileURLToPath(import.meta.url));
+  // src/mcp.ts なら ../styles、dist/mcp.js でも ../styles（どちらも包みの直下）
+  const candidates = [resolve(here, "../styles"), resolve(here, "../../..", "styles")];
+  for (const dir of candidates) {
+    try {
+      if (readdirSync(dir).some((name) => name.endsWith(".json"))) return dir;
+    } catch {
+      // 無い候補は次へ。**最後まで無ければ下で落とす**（黙って空で動かさない）
+    }
+  }
+  throw new Error(`土台のスタイルが見つかりません: ${candidates.join(" / ")}`);
+}
+
+const styleDir = findStyleDir();
+
+/**
+ * 名乗る版を package.json から読む。**ここで数字を決め打たない。**
+ * 決め打つと、版を上げた日に名乗りだけ古いまま残る（気づけない）。
+ */
+function readVersion(): string {
+  const here = dirname(fileURLToPath(import.meta.url));
+  for (const path of [resolve(here, "../package.json"), resolve(here, "../../package.json")]) {
+    try {
+      const value = JSON.parse(readFileSync(path, "utf8")).version;
+      if (typeof value === "string" && value !== "") return value;
+    } catch {
+      // 次の候補へ。**両方だめなら下で分かる値を返す**
+    }
+  }
+  return "0.0.0-unknown";
+}
 
 const deps: Deps = {
+  version: readVersion(),
   listBases: () =>
     readdirSync(styleDir)
       .filter((name) => name.endsWith(".json"))

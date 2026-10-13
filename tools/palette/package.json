@@ -1,22 +1,59 @@
 {
   "name": "@mmj-map/palette",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
-  "description": "配色の指し値から、導入者が持つスタイルを作る道具（D-021）。MMJ が配る 6 枚は手書きのまま",
+  "license": "MIT",
+  "description": "MCP server that derives a full map palette from four anchor colours and builds a ready MapLibre style. Self-hosted maps, no API key.",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "maplibre",
+    "map-style",
+    "palette",
+    "color",
+    "self-hosted",
+    "no-api-key",
+    "mmj"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meta-taro/mmj-map.git",
+    "directory": "tools/palette"
+  },
+  "homepage": "https://meta-taro.github.io/mmj-map/",
+  "bugs": {
+    "url": "https://github.com/meta-taro/mmj-map/issues"
+  },
+  "mcpName": "io.github.meta-taro/mmj-palette",
+  "bin": {
+    "mmj-palette-mcp": "dist/mcp.js"
+  },
+  "files": [
+    "dist",
+    "styles",
+    "server.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "bundle-styles": "node scripts/bundle-styles.mjs",
     "make": "tsx src/cli.ts",
     "mcp": "tsx src/mcp.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
-  },
-  "dependencies": {
-    "@mmj-map/elements": "workspace:*"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepublishOnly": "pnpm bundle-styles && pnpm build"
   },
   "devDependencies": {
     "@types/node": "^26.5.1",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0"
+  },
+  "dependencies": {
+    "@mmj-map/elements": "workspace:*"
   }
 }

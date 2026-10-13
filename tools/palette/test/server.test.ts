@@ -13,6 +13,8 @@ import { readFileSync } from "node:fs";
 import { PROTOCOL_VERSION, TOOLS, handle } from "../src/server.js";
 
 const deps = {
+  // **名乗る版は決め打たない。**実物は package.json から読む（mcp.ts）
+  version: "9.9.9-test",
   listBases: () => ["modern-dark", "modern-light"],
   loadBase: (name: string) =>
     JSON.parse(readFileSync(new URL(`../../../styles/${name}.json`, import.meta.url), "utf8")),
@@ -24,6 +26,14 @@ function call(name: string, args: unknown) {
     deps,
   );
 }
+
+describe("initialize", () => {
+  /** **版を決め打つと、上げた日に名乗りだけ古いまま残る**（画面に出ないので気づけない） */
+  it("名乗る版は、渡された版になる", () => {
+    const res: any = handle({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} } as never, deps);
+    expect(res.result.serverInfo).toEqual({ name: "mmj-palette", version: "9.9.9-test" });
+  });
+});
 
 /** 道具の返り値は文字列で来る。中身が JSON のものはここで開く */
 function payload(response: any) {

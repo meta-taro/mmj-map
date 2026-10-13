@@ -108,6 +108,8 @@ export const TOOLS: readonly Tool[] = [
 export interface Deps {
   readonly listBases: () => string[];
   readonly loadBase: (name: string) => unknown;
+  /** 名乗る版。**package.json と揃える**（`mcp.ts` が読む。ここで決め打たない） */
+  readonly version: string;
 }
 
 interface Request {
@@ -191,7 +193,7 @@ export function handle(request: Request, deps: Deps): object | null {
       result: {
         protocolVersion: PROTOCOL_VERSION,
         capabilities: { tools: {} },
-        serverInfo: { name: "mmj-palette", version: "0.0.0" },
+        serverInfo: { name: "mmj-palette", version: deps.version },
       },
     };
   }
