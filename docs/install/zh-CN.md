@@ -144,7 +144,7 @@ cp -r packages/elements/src/ your-site/elements/
 <html lang="zh-Hans">
 <head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.14.0/dist/maplibre-gl.css">
 <style>
   mmj-map { display: block; height: 70vh; }
 </style>
@@ -160,10 +160,10 @@ cp -r packages/elements/src/ your-site/elements/
 </mmj-map>
 
 <script type="module">
-  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.14.0/dist/maplibre-gl.mjs";
   window.maplibregl = maplibregl;
 </script>
-<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.5.0/dist/pmtiles.js"></script>
 <script type="module" src="./elements/index.js"></script>
 </body>
 </html>

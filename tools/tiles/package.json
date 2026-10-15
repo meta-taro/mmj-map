@@ -52,6 +52,6 @@
   },
   "dependencies": {
     "@mmj-map/elements": "workspace:*",
-    "pmtiles": "4.4.0"
+    "pmtiles": "4.5.0"
   }
 }

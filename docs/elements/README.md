@@ -5,10 +5,10 @@ HTML だけで地図を置くための部品です。**ビルド工程はあり�
 
 ```html
 <script type="module">
-  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.14.0/dist/maplibre-gl.mjs";
   window.maplibregl = maplibregl;
 </script>
-<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.5.0/dist/pmtiles.js"></script>
 <script type="module" src="/elements/index.js"></script>
 
 <mmj-map tiles="https://tiles.example.com/japan.pmtiles"

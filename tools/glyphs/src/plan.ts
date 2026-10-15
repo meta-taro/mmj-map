@@ -10,8 +10,13 @@
  * 残るラテン系だけなら **561.7 KB**——**10 分の 1** で足りる。
  *
  * **足りることは実測で確かめた**（2026-09-25）。日本語・ベトナム語・繁體中文・
- * ハングルの 4 地域を描いて、**404 は 0 件**、記号も欠けなかった
+ * ハングルの 4 地域を描いて、記号も欠けなかった
  * （`Hà Nội` / `Cửa Nam` / `Văn Miếu - Quốc Tử Giám` / `서울특별시` まで出る）。
+ *
+ * **ただし 4 地域では足りていなかった。**2026-10-15 の定期点検で、
+ * 経路の見本（`御堂筋 → 曽根崎通`）が **8448-8703 を 404 にしている**ことが
+ * 本番で見つかった。**地図は出るので、見ても気づけない**壊れ方だった。
+ * 地域を変えるだけでは、地名に出ない記号は踏めない。
  *
  * **ただしラテンとかなだけ。**キリル・ギリシャ・タイ・アラビアの地域を切り出す人には
  * `--all` が要る。**黙って足りないことにしない**ので、`missingRanges` で数える。
@@ -38,9 +43,10 @@ const MAX_CODEPOINT = 65535;
  * | 512 | ラテン拡張 B | 同上 |
  * | 768 | 結合記号 | 分解表記の濁点類 |
  * | 7680 | ラテン拡張追加 | **ベトナム語**（`ế` `ộ` `ữ`）。ハノイで実際に使う |
- * | 8192 | 一般句読点 | `—` `’` `…`。地名に混ざる |
+ * | 8192 | 一般句読点 | `—` `’` `…`。地名に混ざる
+ * | 8448 | 文字様記号・矢印 | **`→`**。経路の案内と、注記に混ざる（2026-10-15 に本番で 404 を実測） |
  */
-const DEFAULT_STARTS = [0, 256, 512, 768, 7680, 8192] as const;
+export const DEFAULT_STARTS = [0, 256, 512, 768, 7680, 8192, 8448] as const;
 
 /** `0-255` のような、MapLibre が要求するファイル名（拡張子なし） */
 export function rangeName(start: number): string {
@@ -95,4 +101,44 @@ export function sizeReport(bytes: number, count: number): string {
     `${count} 範囲 / ${kb} KB — 通信が無くてもラベルが出ます。` +
     "漢字・かな・ハングルは閲覧側のフォントで描くので、ここには入っていません。"
   );
+}
+
+/**
+ * 閲覧側のフォントで描かれる符号位置か。**配る必要がない字。**
+ *
+ * MapLibre の `localIdeographFontFamily` が受け持つ帯。グリフに CJK を入れていないのは、
+ * ここが閲覧側で描かれるから（この判断は {@link FONT} の節に書いた）。
+ *
+ * @param codepoint 符号位置
+ */
+export function isLocallyRendered(codepoint: number): boolean {
+  return (
+    (codepoint >= 0x30_00 && codepoint <= 0x30_3f) || // CJK の約物
+    (codepoint >= 0x30_40 && codepoint <= 0x30_ff) || // かな
+    (codepoint >= 0x4e_00 && codepoint <= 0x9f_ff) || // 漢字
+    (codepoint >= 0xac_00 && codepoint <= 0xd7_af) || // ハングル
+    (codepoint >= 0xff_00 && codepoint <= 0xff_ef) // 全角・半角
+  );
+}
+
+/**
+ * 配っている範囲で描けない符号位置を返す。**空なら足りている。**
+ *
+ * **0 件を「見ていない」と区別するため、呼ぶ側は入力の文字数も数えること。**
+ *
+ * @param text 地図のラベルになる文字列
+ * @param starts 配る範囲の開始位置（{@link plannedRanges} に渡すもの）
+ */
+export function uncoveredCodepoints(text: string, starts: readonly number[]): number[] {
+  const covered = new Set(starts);
+  const found = new Set<number>();
+  for (const character of text) {
+    const codepoint = character.codePointAt(0);
+    if (codepoint === undefined) continue;
+    if (codepoint <= 0x1f || isLocallyRendered(codepoint)) continue;
+    if (codepoint > MAX_CODEPOINT) continue; // 面外は別の話（絵文字など）
+    const start = Math.floor(codepoint / RANGE_SIZE) * RANGE_SIZE;
+    if (!covered.has(start)) found.add(codepoint);
+  }
+  return [...found].sort((a, b) => a - b);
 }

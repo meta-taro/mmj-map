@@ -41,7 +41,7 @@ export type IndexInput = {
  * ここを手で書き換えると、**文書と食い違ったまま配られる**。
  * `cli.ts` の検査が、ここで使っている属性が実在するかを見ている。
  */
-export const SNIPPET = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.css">
+export const SNIPPET = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.14.0/dist/maplibre-gl.css">
 <style>mmj-map { display: block; height: 70vh; }</style>
 
 <mmj-map
@@ -53,10 +53,10 @@ export const SNIPPET = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/np
 </mmj-map>
 
 <script type="module">
-  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.12.0/dist/maplibre-gl.mjs";
+  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.14.0/dist/maplibre-gl.mjs";
   window.maplibregl = maplibregl;
 </script>
-<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.4.0/dist/pmtiles.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pmtiles@4.5.0/dist/pmtiles.js"></script>
 <script type="module" src="./elements/index.js"></script>`;
 
 const SUMMARY =
