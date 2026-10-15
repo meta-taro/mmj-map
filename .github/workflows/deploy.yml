@@ -72,10 +72,14 @@ jobs:
       # 地図が 1 ピクセルも出ない**（§23）。閉じた網では CDN が遮断されていることもある。
       #
       # **MapLibre 6 は 1 本では動かない。**配っているのは ESM だけで、
-      # `maplibre-gl.js`（UMD）は存在しない。入口の `maplibre-gl.mjs` は
-      # 隣の `maplibre-gl-shared.mjs` を輸入し、worker は `import.meta.url` から
-      # `maplibre-gl-worker.mjs` を組み立てて起動する。**3 本が揃って初めて動く。**
+      # `maplibre-gl.js`（UMD）は存在しない。入口の `maplibre-gl.mjs` と、
+      # `import.meta.url` から組み立てられる `maplibre-gl-worker.mjs` が要る。
       # 1 本忘れると、ビルドもテストも通ったまま実行時にだけ地図が出ない（§23）。
+      #
+      # **`maplibre-gl-shared.mjs` は 6.13.0 で空ファイルになった**（実測 0 バイト・2026-10-15）。
+      # worker が自己完結になり、輸入されなくなったため。**上流が次のメジャーで削除する**と
+      # 言っているので、そのとき下の `test -f` が落ちる。**落ちたらこの 1 本を外すこと**
+      # （残っているのは、既存のコピー手順を壊さないための置き土産）。
       - name: Bundle MapLibre and pmtiles into the artifact
         run: |
           mkdir -p apps/demo/vendor/maplibre-gl apps/demo/vendor/pmtiles
