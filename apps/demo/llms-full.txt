@@ -542,6 +542,8 @@ AI に経路と案内文を作らせて、この形で渡す使い方を想定�
 | `card-rich` | **本文を HTML として読む項目**の名前。既定は読みません（下記） |
 | `card-live` | **時間で変わる中身**を、開いたときに取りに行く。`"見出し:URLの型"`（下記） |
 | `list` | 一覧の入れ物の CSS セレクタ。地図と一覧を繋ぐ（下記） |
+| `search` | 名前で探す窓（`<input>` か入れ物）の CSS セレクタ。**渡された点だけ**を探す（下記） |
+| `search-keys` | 探す項目名の並び。`shop_name,shop_kana`。省くと `card-title` の項目だけ |
 | `icon-key` | 業種などの名前が入っている属性（下記） |
 | `icons` | 名前 → SVG の URL。`ramen:./icons/ramen.svg,…`（下記） |
 | `pin-image` | **ピンの中に出す写真**の URL が入っている属性名（下記） |
@@ -933,6 +935,57 @@ AI に経路と案内文を作らせて、この形で渡す使い方を想定�
 > 実際のサイトでは CMS や静的サイト生成が、地図の GeoJSON と一覧を同じ元から出します
 > （MMJ はデータを持ちません）。
 
+#### `search` — 名前で探す窓
+
+```html
+<mmj-poi src="./shops.geojson" card-id="shop_id" card-title="shop_name"
+         list="#shop-list"
+         search="#shop-search" search-keys="shop_name,shop_kana"></mmj-poi>
+
+<label for="shop-search">名前で探す</label>
+<input id="shop-search" type="search" autocomplete="off">
+```
+
+**探すのは、この地図に渡された点だけです**。地名や住所からは探しません（D-033）。
+
+- **打つと一覧が絞られます**（項目は消さずに `hidden` で隠すので、HTML の文字は残ります）。
+  行に `display` を指定しているなら、`[hidden] { display: none; }` も書いてください
+  （書かないと、隠したはずの行が見えたままになります）
+- **Enter で、当たった先頭の点が開きます**（並びは `rank-order` の順のまま）
+- **Esc で窓を空にします**。空の窓で押した Esc は、開いているカードへ届きます
+- 窓の後ろに**件数の行**（`role="status"`・クラス `mmj-search-status`）が付きます。読み上げにも届きます
+- **打ち方の揺れは揃えます**: 全角・半角、大文字・小文字、カタカナ・ひらがな、空白
+- `search-keys` を省くと、`card-title` の項目だけを探します。
+  **読みがなの項目を足すと、漢字が打てなくても当たります**（「みぎわ」で「汀」）
+
+`search` が `<input>` を指せば、それに繋ぐだけです（見た目は置く側が決めます）。
+入れ物を指せば、部品が窓を作ります（色は読み込んだスタイルから借ります）。
+**`card-id` が要ります**（点を id で引けないと開けません）。
+
+##### 住所で探したいとき（`geocode`）
+
+**MMJ は住所検索を持ちません**。使いたい住所検索を、置く側が `geocode` につなぎます。
+名前で当たらなかった問いだけが渡ります。**`[経度, 緯度]`**（または `{ lng, lat }`）を返してください。
+
+```js
+// **部品を読み込む前に要素を取っておく**（描画のあと、<mmj-poi> は DOM から外れます）
+const poi = document.getElementById('shops');
+poi.geocode = async (query) => {
+  const hit = await yourGeocoder(query); // 置く側が選んだ住所検索
+  return hit ? [hit.lng, hit.lat] : null;
+};
+await import('./elements/index.js');
+```
+
+- **何もつながなければ、外へは 1 通も出ません**
+- **名前で当たったものは住所検索へ回しません**（つないだ先が従量課金でも、回数を増やさない）
+- 地図は**街区が見える倍率（15）まで寄せます**。すでにそれより寄っていれば、そのまま
+- 返りが読めないとき・失敗したときは「見つかりません」と出し、**理由を console に残します**
+- **答えが返る前に打ち直したら、古い答えでは飛びません**
+
+> **どの住所検索を使うかは、置く側の判断です**。外の住所検索に問いを送ると、
+> **利用者が何を探したかがその提供元に渡ります**。MMJ が既定で持たないのはそのためです。
+
 **矢印で送ったとき、どの点の話かが分かります。**
 
 - 開いている点だけ**大きくなります**（別のレイヤなので、**密集していても隣の点に隠れません**）
@@ -964,6 +1017,7 @@ AI に経路と案内文を作らせて、この形で渡す使い方を想定�
 | `mmj-poi-click` | **点が押された**とき | `properties` / `lngLat` |
 | `mmj-card-open` | **カードが開いた**とき（押した・送った・URL から復元した、すべて） | `properties` / `lngLat` / `index` / `total` / `id` |
 | `mmj-card-step` | **[‹] [›] で送った**とき | `delta`（次へ 1・前へ -1） / `index` / `total` |
+| `mmj-poi-search` | **検索窓で Enter を押した**とき | `query` / `via`（`name`・`geocode`・`none`） / `id` / `lngLat` |
 
 **数えるなら `mmj-card-open` です**。`mmj-poi-click` は「点が押された」ことしか
 言いません。送って回ったぶんも、共有 URL から開いたぶんも入りません。

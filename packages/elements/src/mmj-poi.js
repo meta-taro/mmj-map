@@ -43,6 +43,8 @@ import { PIN_PHOTO, firstImageUrl, parsePinColors, pinImageParts, pinPath } from
 import { POI_DEFAULTS, buildPoiSpec } from "./poi.js";
 import { buildCardContent, isSafeLink } from "./popup.js";
 import { isRichField, parseRichFields } from "./rich.js";
+import { buildSearchIndex, parseSearchKeys } from "./search.js";
+import { ensureSearchContrast, mountSearch } from "./search-dom.js";
 import {
   ensureCardContrast,
   ensurePopupContrast,
@@ -64,6 +66,12 @@ const CARD_WIDTH = "min(20rem, 86vw)";
  * 点の見た目（直径 13px）より少し広く取る。
  */
 const MARK_HALF = 18;
+
+/**
+ * 住所検索で飛んだときの寄せ方。**いまより引かない。**
+ * 街区まで見える倍率にするが、すでに寄っている人を遠くへ戻さない。
+ */
+const GEOCODE_ZOOM = 15;
 
 /** 同じページに複数置ける。source 名が衝突すると後勝ちで消えるため、番号で分ける */
 let serial = 0;
@@ -133,6 +141,28 @@ export class MmjPoi extends HTMLElement {
   /** 繋いだ一覧。`list` 属性が無ければ null @type {any} */
   list = null;
 
+  /** 繋いだ検索窓。`search` 属性が無ければ null @type {{ destroy: () => void } | null} */
+  searchBox = null;
+
+  /** @type {((query: string) => unknown) | null} */
+  #geocode = null;
+
+  /**
+   * 置き手がつなぐ住所検索。**MMJ は持たない**（PRD §2・D-033）。
+   * 名前で当たらなかった問いだけを渡し、`[経度, 緯度]` を受け取る。
+   *
+   * **ふつうの欄にしない。**部品を読み込む前に付けた値を、欄の初期値（null）が
+   * 上書きして消す（実測・2026-10-23、つないだのに一度も呼ばれなかった）。
+   * 読み込む前の値は `connectedCallback` で拾い直す。
+   */
+  get geocode() {
+    return this.#geocode;
+  }
+
+  set geocode(value) {
+    this.#geocode = typeof value === "function" ? value : null;
+  }
+
   /**
    * 開いた回数。**取りに行った結果が遅れて返ったとき、古いものを捨てるため。**
    * 送って回っている間に前の応答が返ると、**別の店の情報が今の店の顔で出る**。
@@ -148,6 +178,14 @@ export class MmjPoi extends HTMLElement {
   owner = null;
 
   connectedCallback() {
+    // **読み込む前に付けられた値を拾い直す。**要素そのものに付いた値が、
+    // 上の get/set を隠している（カスタム要素の「格上げ前の値」）
+    if (Object.prototype.hasOwnProperty.call(this, "geocode")) {
+      const early = /** @type {any} */ (this).geocode;
+      delete (/** @type {any} */ (this).geocode);
+      this.geocode = early;
+    }
+
     const parent = this.closest("mmj-map");
     if (!parent) return void console.error("[mmj-poi] <mmj-map> の中に置いてください");
     this.owner = parent;
@@ -160,6 +198,8 @@ export class MmjPoi extends HTMLElement {
   disconnectedCallback() {
     this.list?.destroy();
     this.list = null;
+    this.searchBox?.destroy();
+    this.searchBox = null;
     if (this.map && this.pinCleanup) {
       this.pinCleanup();
       this.pinCleanup = null;
@@ -333,7 +373,47 @@ export class MmjPoi extends HTMLElement {
       return;
     }
     this.#mountList();
+    this.#mountSearch();
     this.#restore();
+  }
+
+  /**
+   * 名前で探す窓を繋ぐ。**`search` に入れ物か `<input>` のセレクタが指定されたときだけ。**
+   *
+   * **探すのは渡された点だけ**（ジオコーダは持たない・PRD §2・D-033）。
+   * 名前で当たらず、置き手が `geocode` をつないでいれば、そちらへ回す。
+   */
+  #mountSearch() {
+    const selector = this.getAttribute("search");
+    if (selector === null || selector === "") return;
+
+    // **`card-id` が無いと、名前では 1 件も当たらない。**黙って通すと、
+    // Enter のたびに住所検索（従量課金かもしれない）へ回ってしまう
+    const idKey = this.getAttribute("card-id");
+    if (!idKey) return void console.error("[mmj-poi] search には card-id が要ります（点を id で引けないと開けません）");
+
+    const target = findElement(selector);
+    if (target === null) {
+      // 握り潰さない（§8）。**窓だけが黙って出ないのが一番気づきにくい**
+      return void console.error(`[mmj-poi] search の指す入れ物がありません: ${selector}`);
+    }
+
+    const keys = parseSearchKeys(this.getAttribute("search-keys"), this.getAttribute("card-title"));
+    const listSelector = this.getAttribute("list");
+    const list = listSelector ? findElement(listSelector) : null;
+
+    this.searchBox = mountSearch({
+      target,
+      index: buildSearchIndex(this.features, idKey, keys),
+      list,
+      className: ensureSearchContrast(popupColorsFrom(this.owner)),
+      // **押した瞬間に読む。**読み込んだ後からつないでも効くように
+      geocoder: () => this.geocode,
+      onOpen: (id) => this.#openAt(indexOfShop(this.features, idKey, id), true),
+      onPlace: (lngLat) =>
+        this.map?.easeTo({ center: lngLat, zoom: Math.max(this.map.getZoom(), GEOCODE_ZOOM) }),
+      onSearch: (detail) => this.#announce("mmj-poi-search", detail),
+    });
   }
 
   /**
@@ -793,6 +873,25 @@ export class MmjPoi extends HTMLElement {
  * **数字は実測で決め直すこと。**
  */
 const PIN_CAP = 96;
+
+/**
+ * 置く側が書いたセレクタで要素を探す。**書き間違いで点の層ごと止めない。**
+ *
+ * `querySelector` は `#` のような壊れたセレクタで投げる。投げたまま上がると
+ * `#attach` が途中で止まり、**点も URL の復元も出なくなる**。
+ *
+ * @param {string} selector
+ * @returns {HTMLElement | null}
+ */
+function findElement(selector) {
+  try {
+    const found = document.querySelector(selector);
+    return found instanceof HTMLElement ? found : null;
+  } catch (error) {
+    console.error(`[mmj-poi] セレクタを読めません: ${selector}`, error);
+    return null;
+  }
+}
 
 /**
  * 写真を雫形のピンに描いて、地図へ渡せる画素にする。

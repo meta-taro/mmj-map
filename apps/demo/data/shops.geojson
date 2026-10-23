@@ -6,6 +6,7 @@
       "properties": {
         "shop_id": "akari",
         "shop_name": "町家カフェ 灯",
+        "shop_kana": "まちやかふぇ あかり",
         "rating": 4.3,
         "description": "町家を直した喫茶店。二階は<strong>予約席</strong>です。<a href=\"https://example.com/akari/reserve\">席を予約する</a>と、窓際を確保できます。<a href=\"https://example.com/akari/jobs\">スタッフ募集中</a>（週 2 日から）。※これは見本の文章です。この店は実在しません。",
         "photos": "./data/photos/akari-1.jpg,./data/photos/akari-2.jpg,./data/photos/akari-3.jpg",
@@ -78,6 +79,7 @@
       "properties": {
         "shop_id": "migiwa",
         "shop_name": "らーめん 汀",
+        "shop_kana": "らーめん みぎわ",
         "rating": 4.1,
         "description": "夜だけ開く小さな店。醤油と煮干し、替玉は半分から。カウンターは 8 席しかないので、雨の日は傘を畳んで入ってください。※これは見本の文章です。この店は実在しません。",
         "photos": "./data/photos/migiwa-1.jpg,./data/photos/migiwa-2.jpg,./data/photos/migiwa-3.jpg",
@@ -142,6 +144,7 @@
       "properties": {
         "shop_id": "misaki",
         "shop_name": "古本 みさき",
+        "shop_kana": "ふるほん みさき",
         "rating": 4.6,
         "description": "文庫と郷土資料。店先の棚は 100 円から。奥の通路は人がすれ違えないので、先に入った人が出るまで待つのが作法です。※これは見本の文章です。この店は実在しません。",
         "photos": "./data/photos/misaki-1.jpg,./data/photos/misaki-2.jpg,./data/photos/misaki-3.jpg",
@@ -196,6 +199,7 @@
       "properties": {
         "shop_id": "hiiragi",
         "shop_name": "手打ちうどん 柊",
+        "shop_kana": "てうちうどん ひいらぎ",
         "rating": 4.4,
         "review_count": 211,
         "description": "昼だけ開く立ち食い。釜揚げと、だし巻きが看板です。席は 12 で、12 時台は外に並びます。※これは見本の文章です。この店は実在しません。",
@@ -241,6 +245,7 @@
       "properties": {
         "shop_id": "komichi",
         "shop_name": "焼菓子 こみち",
+        "shop_kana": "やきがし こみち",
         "rating": 4.7,
         "review_count": 84,
         "description": "持ち帰りだけの焼菓子屋。土曜はタルトが昼過ぎに無くなります。箱は 6 個入りから。※これは見本の文章です。この店は実在しません。",

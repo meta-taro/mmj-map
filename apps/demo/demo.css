@@ -610,6 +610,44 @@ mmj-map,
   font-size: 0.9rem;
 }
 
+/* **名前で探す窓。**探すのはこの地図にある店だけ（住所は探さない・D-033）。
+   件数の行（`role="status"`）は部品が窓の後ろに足す。 */
+.shop-search {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.shop-search-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.shop-search input {
+  box-sizing: border-box;
+  width: 100%;
+  /* 指の的は 36px を割らない。**16px 未満だと iOS が入力時に頁を拡大する** */
+  min-height: 36px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+}
+
+.shop-search input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.shop-search .mmj-search-status {
+  min-height: 1.4em;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .shop-list {
   list-style: none;
   margin: 0;

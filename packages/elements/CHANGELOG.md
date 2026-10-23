@@ -5,6 +5,31 @@
 
 ---
 
+## 次の版（未公開）
+
+### 地図に渡した点を、名前で探せます（`search` / `search-keys`）
+
+```html
+<mmj-poi card-id="shop_id" card-title="shop_name" list="#shop-list"
+         search="#shop-search" search-keys="shop_name,shop_kana"></mmj-poi>
+<input id="shop-search" type="search">
+```
+
+- **打つと一覧が絞られ、Enter で先頭の点が開きます**
+- 全角・半角、カタカナ・ひらがな、大文字・小文字、空白の揺れは揃えます。
+  **読みがなの項目を足すと、漢字が打てなくても当たります**
+- **探すのは渡された点だけです**。地名や住所からは探しません
+
+### 住所検索を、置く側がつなげます（`geocode`）
+
+**MMJ は住所検索を持ちません**。使いたいものを `poi.geocode = async (query) => [lng, lat]` でつなぐと、
+**名前で当たらなかった問いだけ**が渡り、返った位置へ地図が寄ります。
+**何もつながなければ、外へは 1 通も出ません**。
+
+Enter を押すと `mmj-poi-search`（`query` / `via` / `id` / `lngLat`）が出ます。
+
+---
+
 ## 0.5.0（2026-10-10）
 
 ### ピンの色を、点ごとに変えられます（`pin-color-key` / `pin-colors`）

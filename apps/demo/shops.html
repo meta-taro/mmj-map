@@ -86,6 +86,7 @@
              card-hours="open_hours" card-reviews="review_items"
              card-live="いま:./data/live/{id}.json"
              list="#shop-list"
+             search="#shop-search" search-keys="shop_name,shop_kana"
              icon-key="category"
              icons="cafe:./icons/cafe.svg,ramen:./icons/ramen.svg,udon:./icons/udon.svg,cake:./icons/cake.svg,books:./icons/books.svg"
              attribution="見本（架空の店舗です）"></mmj-poi>
@@ -114,6 +115,15 @@
 -->
 <aside class="shop-list-area" aria-labelledby="shop-list-title">
   <h2 id="shop-list-title">この地図にある店（5 件）</h2>
+  <!--
+    **探すのは、この地図にある店だけです**（住所や地名からは探しません・D-033）。
+    読みがな（`shop_kana`）も探すので、「みぎわ」でも「汀」の店に当たります。
+    Enter で先頭の店を開きます。窓は HTML に書くので、見た目はこの頁が決めます。
+  -->
+  <label class="shop-search" for="shop-search">
+    <span class="shop-search-label">名前で探す</span>
+    <input id="shop-search" type="search" autocomplete="off" placeholder="例: みさき・うどん">
+  </label>
   <ul id="shop-list" class="shop-list">
     <li>
       <a href="?shop=akari" data-shop="akari">
