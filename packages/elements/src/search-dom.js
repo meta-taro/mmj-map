@@ -14,6 +14,9 @@
  *    地図が作り直される
  * 3. **住所検索の遅い返事で上書きしない。**打ち直した後に前の答えが返ると、
  *    いま打った語と関係のない場所へ地図が飛ぶ
+ * 4. **一覧を読み終える前から繋ぐ。**読み終えてから繋ぐと、それまでに打った字にも
+ *    Enter にも何も起きない（窓が死んで見える）。読み込み中はそう言い、
+ *    読み終えたら打ってあった字で絞り、押してあった Enter をそこで効かせる
  */
 import { matchIds, planSearch, readLngLat, searchCountLabel } from "./search.js";
 import { themeClassName } from "./palette.js";
@@ -64,35 +67,40 @@ export function ensureSearchContrast(colors) {
  *
  * @param {{
  *   target: HTMLElement,
- *   index: readonly import("./search.js").SearchEntry[],
+ *   index: readonly import("./search.js").SearchEntry[] | null,
  *   list: HTMLElement | null,
  *   className: string,
  *   geocoder: () => ((query: string) => unknown) | null,
  *   onOpen: (id: string) => void,
  *   onPlace: (lngLat: [number, number]) => void,
  *   onSearch: (detail: { query: string, via: "name" | "geocode" | "none", id?: string, lngLat?: [number, number] }) => void,
- * }} input
- * @returns {{ destroy: () => void }}
+ * }} input `index` は一覧を読み終える前なら `null`（読み終えたら `setIndex` で渡す）
+ * @returns {{ destroy: () => void, setIndex: (index: readonly import("./search.js").SearchEntry[]) => void }}
  */
 export function mountSearch(input) {
   const parts = resolveParts(input.target, input.className);
-  const total = input.index.length;
+  let index = input.index;
   /** 打ち直した回数。**遅れて返った住所検索の答えを捨てるため** */
   let asked = 0;
+  /** 読み込み中に押された Enter。**打ち直したら取り消す**（古い語で開かない） */
+  let pending = false;
 
   const say = (/** @type {string} */ text) => {
     if (parts.status) parts.status.textContent = text;
   };
 
+  /** @returns {string[] | null} 当たった id。読み込み中で打ってあれば `null` */
   const filter = () => {
-    const ids = matchIds(input.index, parts.field.value);
-    showOnly(input.list, ids);
-    say(searchCountLabel(ids === null ? null : ids.length, total));
-    return ids ?? [];
+    // 読み込み中は一覧に触らない（空の索引で絞ると、全部が隠れる）
+    const ids = matchIds(index ?? [], parts.field.value);
+    if (index !== null) showOnly(input.list, ids);
+    say(searchCountLabel(ids === null ? null : ids.length, index === null ? null : index.length));
+    return index === null ? null : (ids ?? []);
   };
 
   const onInput = () => {
     asked += 1;
+    pending = false;
     filter();
   };
 
@@ -111,16 +119,19 @@ export function mountSearch(input) {
     }
     if (event.key !== "Enter") return;
     event.preventDefault(); // **フォームを送らない**（頁が読み込み直され、地図が作り直される）
-    // 握り潰さない（§8）。開く・寄せるの途中で投げても、窓は使えるまま残す
-    submit().catch((error) => console.error("[mmj-poi] 検索の途中で失敗しました", error));
+    run();
   };
+
+  // 握り潰さない（§8）。開く・寄せるの途中で投げても、窓は使えるまま残す
+  const run = () => void submit().catch((error) => console.error("[mmj-poi] 検索の途中で失敗しました", error));
 
   const submit = async () => {
     const query = parts.field.value;
     const ids = filter();
     const geocode = input.geocoder();
-    const plan = planSearch(query, ids.length, typeof geocode === "function");
-    if (plan === "clear") return;
+    const plan = planSearch(query, ids === null ? null : ids.length, typeof geocode === "function");
+    pending = plan === "wait";
+    if (plan === "clear" || plan === "wait" || ids === null) return;
     if (plan === "open") {
       const id = /** @type {string} */ (ids[0]);
       input.onOpen(id);
@@ -148,8 +159,14 @@ export function mountSearch(input) {
 
   parts.field.addEventListener("input", onInput);
   parts.field.addEventListener("keydown", onKeydown);
+  filter(); // **繋ぐ前に打ってあった字も拾う**
 
   return {
+    setIndex: (next) => {
+      index = next;
+      filter();
+      if (pending) run();
+    },
     destroy: () => {
       // **外したあとに返った住所検索の答えで、地図を動かさない**
       asked += 1;

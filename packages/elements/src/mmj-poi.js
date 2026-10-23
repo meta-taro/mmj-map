@@ -141,7 +141,7 @@ export class MmjPoi extends HTMLElement {
   /** 繋いだ一覧。`list` 属性が無ければ null @type {any} */
   list = null;
 
-  /** 繋いだ検索窓。`search` 属性が無ければ null @type {{ destroy: () => void } | null} */
+  /** 繋いだ検索窓。`search` 属性が無ければ null @type {ReturnType<typeof mountSearch> | null} */
   searchBox = null;
 
   /** @type {((query: string) => unknown) | null} */
@@ -292,6 +292,8 @@ export class MmjPoi extends HTMLElement {
 
     // **`card-id` があるときだけ一覧を読む。**無ければ送りも復元も出ないので、
     // 取りに行く理由が無い（**使わないものを取りに行かない**）
+    // **検索窓は読む前に繋ぐ。**読み終えてからだと、それまで打った字が効かない
+    this.#mountSearch();
     if (this.getAttribute("card-id")) void this.#loadList(src);
   }
 
@@ -356,6 +358,9 @@ export class MmjPoi extends HTMLElement {
    * @param {string} src
    */
   async #loadList(src) {
+    // **読み始めた時の窓だけを相手にする。**読み込み中に付け外しされると窓が作り直され、
+    // 古い読み込みの失敗で新しい窓を消してしまう
+    const box = this.searchBox;
     try {
       const response = await fetch(src);
       if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
@@ -369,12 +374,25 @@ export class MmjPoi extends HTMLElement {
       });
     } catch (error) {
       // 握り潰さない（§8）。**送りと復元だけが消える**ことを名乗る
-      console.error("[mmj-poi] 一覧を読めませんでした。次/前と URL の復元は出ません", error);
+      console.error("[mmj-poi] 一覧を読めませんでした。次/前と URL の復元と、名前で探す窓は出ません", error);
+      // 「読み込み中…」のまま残さない
+      if (box !== null && this.searchBox === box) {
+        box.destroy();
+        this.searchBox = null;
+      }
       return;
     }
     this.#mountList();
-    this.#mountSearch();
     this.#restore();
+    // **復元の後に渡す。**読み込み中に押された Enter は、URL の店より新しい意思
+    if (box === null || this.searchBox !== box) return;
+    box.setIndex(
+      buildSearchIndex(
+        this.features,
+        this.getAttribute("card-id") ?? "",
+        parseSearchKeys(this.getAttribute("search-keys"), this.getAttribute("card-title")),
+      ),
+    );
   }
 
   /**
@@ -382,6 +400,8 @@ export class MmjPoi extends HTMLElement {
    *
    * **探すのは渡された点だけ**（ジオコーダは持たない・PRD §2・D-033）。
    * 名前で当たらず、置き手が `geocode` をつないでいれば、そちらへ回す。
+   *
+   * **一覧を読む前に繋ぐ**（索引は `#loadList` が読み終えてから渡す）。
    */
   #mountSearch() {
     const selector = this.getAttribute("search");
@@ -398,13 +418,12 @@ export class MmjPoi extends HTMLElement {
       return void console.error(`[mmj-poi] search の指す入れ物がありません: ${selector}`);
     }
 
-    const keys = parseSearchKeys(this.getAttribute("search-keys"), this.getAttribute("card-title"));
     const listSelector = this.getAttribute("list");
     const list = listSelector ? findElement(listSelector) : null;
 
     this.searchBox = mountSearch({
       target,
-      index: buildSearchIndex(this.features, idKey, keys),
+      index: null,
       list,
       className: ensureSearchContrast(popupColorsFrom(this.owner)),
       // **押した瞬間に読む。**読み込んだ後からつないでも効くように

@@ -119,13 +119,16 @@ export function matchIds(index, query) {
  * **名前で当たるものを住所検索へ回さない。**外へ問い合わせる回数を増やさない
  * （置き手がつないだ先が従量課金かもしれない）。
  *
+ * **一覧を読み終える前は待つ。**まだ 0 件に見えるだけなので、住所検索へ回さない。
+ *
  * @param {unknown} query
- * @param {number} matchCount 名前で当たった数
+ * @param {number | null} matchCount 名前で当たった数。一覧を読み終える前は `null`
  * @param {boolean} hasGeocoder 置き手が `geocode` をつないでいるか
- * @returns {"clear" | "open" | "geocode" | "none"}
+ * @returns {"clear" | "wait" | "open" | "geocode" | "none"}
  */
 export function planSearch(query, matchCount, hasGeocoder) {
   if (normalizeForSearch(query) === "") return "clear";
+  if (matchCount === null) return "wait";
   if (matchCount > 0) return "open";
   return hasGeocoder ? "geocode" : "none";
 }
@@ -162,12 +165,15 @@ export function readLngLat(value) {
 /**
  * 窓の脇に出す件数。**絞り込んでいなければ空**（何も出さない）。
  *
+ * **読み込み中に「見つかりません」と言わない。**まだ探していないだけ。
+ *
  * @param {number | null} matched 当たった数。絞り込んでいなければ `null`
- * @param {number} total
+ * @param {number | null} total 一覧を読み終える前は `null`
  * @returns {string}
  */
 export function searchCountLabel(matched, total) {
   if (matched === null) return "";
+  if (total === null) return "読み込み中…";
   if (matched === 0) return "見つかりません";
   return `${matched} / ${total} 件`;
 }

@@ -119,6 +119,19 @@ describe("planSearch", () => {
   it("どちらも無ければ、見つからない", () => {
     expect(planSearch("大阪市北区", 0, false)).toBe("none");
   });
+
+  /**
+   * **一覧を読み終える前の Enter を、住所検索へ回さない。**まだ 0 件に見えるだけで、
+   * 読み終えれば名前で当たるかもしれない。読み終えるまで待たせる
+   */
+  it("一覧を読み終える前は、住所検索へ回さず待つ", () => {
+    expect(planSearch("みさき", null, true)).toBe("wait");
+    expect(planSearch("みさき", null, false)).toBe("wait");
+  });
+
+  it("読み終える前でも、空なら絞り込みを解く", () => {
+    expect(planSearch("", null, true)).toBe("clear");
+  });
 });
 
 describe("readLngLat", () => {
@@ -153,5 +166,14 @@ describe("searchCountLabel", () => {
 
   it("絞り込んでいなければ空（何も出さない）", () => {
     expect(searchCountLabel(null, 5)).toBe("");
+  });
+
+  /** **読み込み中に「見つかりません」と言わない。**まだ探していないだけ */
+  it("一覧を読み終える前に打たれたら、読み込み中と言う", () => {
+    expect(searchCountLabel(0, null)).toBe("読み込み中…");
+  });
+
+  it("読み終える前でも、打っていなければ空", () => {
+    expect(searchCountLabel(null, null)).toBe("");
   });
 });
