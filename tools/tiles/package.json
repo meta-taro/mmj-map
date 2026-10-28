@@ -1,6 +1,6 @@
 {
   "name": "@mmj-map/tiles",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "license": "MIT",
   "description": "Cut a PMTiles archive for any bounding box on earth, from public data and public tools only. No key, no account.",
@@ -41,7 +41,7 @@
     "check-range": "tsx src/cli.ts check-range",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "prepublishOnly": "pnpm build",
+    "prepublishOnly": "node scripts/require-pnpm.mjs && pnpm build",
     "check-age": "tsx src/cli.ts check-age"
   },
   "devDependencies": {
