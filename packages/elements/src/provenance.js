@@ -53,15 +53,22 @@ export function asOfTime(metadata) {
  * 日まで出すと「今日の地図」に見える。**実際には切った日で凍っている**ので、
  * 月の粒度が正直（時差でずれる日付を、時差の話なしに出さない）。
  *
+ * **言語は `<mmj-map lang>` に合わせる。**ラベルを英語にした地図で、この一行だけ
+ * 日本語が残っていた（2026-11-02）。日本語以外は英語で出す——言語ごとに文言を
+ * 抱えると、`lang` に当たる言語の数だけ訳を持つことになる。指定が無ければ
+ * これまでどおり日本語（**今の利用者の表示を変えない**）。
+ *
  * @param {Record<string, unknown> | null | undefined} metadata
- * @returns {string | null} 例 `地図データ: 2026-09 時点`。読めなければ null
+ * @param {string | null} [lang] `readLanguage` の結果
+ * @returns {string | null} 例 `地図データ: 2026-09 時点` / `Map data: 2026-09`。読めなければ null
  */
-export function asOfLabel(metadata) {
+export function asOfLabel(metadata, lang = null) {
   const time = asOfTime(metadata);
   if (time === null) return null;
   const date = new Date(time);
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  return `地図データ: ${date.getUTCFullYear()}-${month} 時点`;
+  const month = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  if (lang !== null && !/^ja(?:-|$)/i.test(lang)) return `Map data: ${month}`;
+  return `地図データ: ${month} 時点`;
 }
 
 /**

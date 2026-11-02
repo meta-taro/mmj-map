@@ -57,6 +57,28 @@ describe("asOfLabel", () => {
   it("読めなければ null（**何も出さない**）", () => {
     expect(asOfLabel({})).toBeNull();
   });
+
+  /**
+   * `lang="en"` の地図に日本語の一行が混ざっていた（2026-11-02、英語の記事のカバーを撮って気づいた）。
+   * **ラベルは英語なのに、帰属表示の隣だけ日本語**になる。
+   */
+  it("日本語以外の言語では英語で出す", () => {
+    expect(asOfLabel(real, "en")).toBe("Map data: 2026-09");
+    expect(asOfLabel(real, "zh-Hant")).toBe("Map data: 2026-09");
+  });
+
+  it("日本語を指定すれば日本語のまま", () => {
+    expect(asOfLabel(real, "ja")).toBe("地図データ: 2026-09 時点");
+    expect(asOfLabel(real, "ja-JP")).toBe("地図データ: 2026-09 時点");
+  });
+
+  it("言語を指定しなければ、これまでどおり日本語（**今の利用者の表示を変えない**）", () => {
+    expect(asOfLabel(real, null)).toBe("地図データ: 2026-09 時点");
+  });
+
+  it("英語でも、読めなければ null", () => {
+    expect(asOfLabel({}, "en")).toBeNull();
+  });
 });
 
 describe("isStale", () => {

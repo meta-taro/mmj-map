@@ -248,7 +248,7 @@ export class MmjMap extends HTMLElement {
         archive.getMetadata(),
         new Promise((resolve) => setTimeout(() => resolve(null), ASOF_TIMEOUT_MS)),
       ]);
-      return asOfLabel(/** @type {any} */ (metadata));
+      return asOfLabel(/** @type {any} */ (metadata), readLanguage(this.getAttribute("lang")));
     } catch (error) {
       // 握り潰さない（§8）。**消えるのは時点の一行だけ**で、地図は出る
       console.error("[mmj-map] 地図の時点を読めませんでした（帰属表示に出ません）", error);
