@@ -54,3 +54,6 @@ tools/palette/styles/
 # deploy 時に node_modules から成果物へコピーする先（maplibre-gl / pmtiles）。
 # **手元で本番と同じ形を見るときにも作る**ので、追跡しない。
 apps/demo/vendor/
+
+# Chrome 拡張を組んだ先（`pnpm --filter @mmj-map/extension build`）。中身は src と node_modules の写し
+apps/extension/dist/

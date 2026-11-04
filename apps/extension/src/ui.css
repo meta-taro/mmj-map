@@ -1,0 +1,171 @@
+/*
+ * 拡張の枠（窓と見本の頁）。**地図のスタイルではない。**
+ *
+ * 色はデモの枠（`apps/demo/demo.css`）と同じく `styles/modern-dark.json` から借りている。
+ * **新しい色を作っていない。**
+ */
+:root {
+  color-scheme: dark;
+  --bg: #14161a;
+  --panel: #1b1f24;
+  --line: #2e343b;
+  --text: #d8dce1;
+  --muted: #aab2bc;
+  --code: #1e252a;
+  --accent: #8fa9b8;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.7 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+
+h1 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+
+code,
+textarea {
+  font: 12px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+button {
+  /* 押す目標は 36px 以上（ECC ui-flow.md） */
+  min-height: 36px;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.note {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0.5rem 0 0;
+}
+
+/* --- 窓 ---------------------------------------------------------------- */
+
+.popup {
+  width: 380px;
+  padding: 0.75rem 1rem 1rem;
+}
+
+.place {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 0.75rem;
+  margin: 0 0 0.5rem;
+}
+
+.place dt {
+  color: var(--muted);
+}
+
+.place dd {
+  margin: 0;
+}
+
+.popup textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--code);
+  color: var(--text);
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* --- 見本の頁 ------------------------------------------------------------ */
+
+.preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.preview-bar h1 {
+  margin: 0;
+}
+
+.preview-bar .actions {
+  margin-top: 0;
+}
+
+.preview-bar .note {
+  margin: 0;
+  flex-basis: 100%;
+}
+
+.preview-stage {
+  padding: 1.5rem 1rem;
+}
+
+/* 仮の頁。**利用者の頁の代わり**なので、拡張の枠とは逆の明るい地にする */
+.mock-page {
+  box-sizing: border-box;
+  max-width: 100%;
+  margin: 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  color: #222;
+}
+
+.mock-page header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e3e6ea;
+  font-weight: 700;
+}
+
+.mock-page section {
+  padding: 1rem;
+}
+
+.mock-page h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.25rem;
+}
+
+.mock-page p {
+  margin: 0 0 0.75rem;
+  color: #555;
+}
+
+.mock-page mmj-map {
+  display: block;
+  height: 420px;
+}

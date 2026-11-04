@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>MMJ</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body class="popup">
+
+<h1>この場所を MMJ の地図に</h1>
+<p id="status" role="status">開いているタブを読んでいます…</p>
+
+<section id="result" hidden>
+  <dl class="place">
+    <dt>中心</dt><dd id="center"></dd>
+    <dt>縮尺</dt><dd id="zoom"></dd>
+  </dl>
+  <textarea id="snippet" rows="9" readonly aria-label="貼る HTML"></textarea>
+  <div class="actions">
+    <button type="button" id="copy-html">HTML を写す</button>
+    <button type="button" id="copy-brief">AI に渡す形で写す</button>
+    <button type="button" id="preview">頁に置いた見本</button>
+  </div>
+  <p class="note">読むのはタブの URL の表示位置だけです。店名やピンは写しません。</p>
+</section>
+
+<script type="module" src="popup.js"></script>
+</body>
+</html>

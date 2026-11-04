@@ -17,6 +17,7 @@ import { defineConfig } from "vitest/config";
 
 /** テストを持つパッケージ。**増やしたらここにも足すこと**（足さないと黙って測られない） */
 const PACKAGES = [
+  "apps/extension",
   "infra/pmtiles-worker",
   "packages/elements",
   "packages/http-range",
@@ -56,6 +57,10 @@ export default defineConfig({
         // 判断が要る部分は純粋関数へ出してあり、そちらは 90% を超えている
         "packages/elements/src/mmj-*.js",
         "packages/elements/src/popup-dom.js",
+        // 拡張の窓と見本の頁の組み立て。**chrome.* と画面に触るだけ**で、
+        // 判断は view.js / snippet.js に出してテストしてある。読み込んだ拡張で撮って確かめる
+        "apps/extension/src/popup.js",
+        "apps/extension/src/preview.js",
         // 上流のタイルから実測値を取り直す道具。**走らせること自体が目的**で、
         // 固定値に対するテストを書くと「上流が変わったこと」を隠してしまう
         "tools/style-check/src/snapshot.ts",

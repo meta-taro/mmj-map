@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "MMJ — 開いている地図を、自分の頁の地図に",
+  "short_name": "MMJ",
+  "version": "0.1.0",
+  "description": "地図の頁で押すと、同じ場所を API キーなしで置ける HTML を出します。AI に渡す形でも写せます。読むのはタブの URL だけです。",
+  "permissions": ["activeTab"],
+  "action": {
+    "default_title": "この場所を MMJ の地図に",
+    "default_popup": "popup.html"
+  },
+  "minimum_chrome_version": "120"
+}
