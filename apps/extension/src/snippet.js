@@ -95,8 +95,9 @@ export function pinLink(value) {
 /**
  * ピン 1 本に置く属性の並び。**見本の頁と写すもので同じものを置く**ため、ここ 1 か所で決める。
  *
- * - 1 行目（`popup`）は名前。名前が無ければ住所を 1 行目にする
- * - 住所は 2 行目（`popup-body`）。**1 行に詰めると、携帯で地図の外へ伸びた**（2026-11-04）
+ * - 1 行目（`popup`）は名前。**この行は折り返さない**
+ * - 住所は名前が無くても、いつも 2 行目（`popup-body`・折り返す）。**1 行目に入れると、
+ *   長い住所で吹き出しが携帯の地図の外へ伸びた**（2026-11-04、2 回踏んだ）
  * - ホームページは通る URL のときだけ
  * - 何か出るものがあれば、吹き出しを最初から開いておく
  *   （会社の頁の地図は、開いた瞬間に「ここです」と読めるほうがよい）
@@ -110,8 +111,8 @@ export function markerAttributes(pin) {
   const link = pinLink(pin.url);
   /** @type {Array<[string, string]>} */
   const attributes = [["lnglat", `${pin.lng},${pin.lat}`]];
-  if (name !== "" || note !== "") attributes.push(["popup", name !== "" ? name : note]);
-  if (name !== "" && note !== "") attributes.push(["popup-body", note]);
+  if (name !== "") attributes.push(["popup", name]);
+  if (note !== "") attributes.push(["popup-body", note]);
   if (link) attributes.push(["popup-href", link], ["popup-href-label", LINK_LABEL]);
   if (attributes.length > 1) attributes.push(["popup-open", ""]);
   return attributes;

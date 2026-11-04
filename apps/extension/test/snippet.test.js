@@ -121,12 +121,16 @@ describe("ピン（置き手が自分で入れる名前・住所・位置）", (
     expect(html).toContain(`--bbox=${extractBbox({ ...pin, zoom: osaka.zoom }).join(",")}`);
   });
 
-  it("名前だけ・住所だけでも置ける（住所だけなら、住所を 1 行目にする）", () => {
+  /**
+   * **住所は名前が無くても、折り返す行（`popup-body`）に置く。**1 行目（`popup`）は折り返さないので、
+   * 名前を空にして長い住所を入れると、吹き出しが 1 行で伸びた（2026-11-04、人の画面で見つけた）。
+   */
+  it("名前だけ・住所だけでも置ける（住所はいつも折り返す行に置く）", () => {
     expect(buildMarker({ ...pin, note: "" })).toBe(
       '<mmj-marker lnglat="135.49568,34.67414" popup="株式会社サンプル" popup-open></mmj-marker>',
     );
     expect(buildMarker({ ...pin, name: "  " })).toBe(
-      '<mmj-marker lnglat="135.49568,34.67414" popup="大阪市西区1-2-3" popup-open></mmj-marker>',
+      '<mmj-marker lnglat="135.49568,34.67414" popup-body="大阪市西区1-2-3" popup-open></mmj-marker>',
     );
   });
 
