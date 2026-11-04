@@ -64,6 +64,13 @@ button[aria-pressed="true"] {
   margin: 0.5rem 0 0;
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 /* --- 窓 ---------------------------------------------------------------- */
 
 .popup {
@@ -97,77 +104,229 @@ button[aria-pressed="true"] {
   resize: vertical;
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+/* --- 見本の頁 ------------------------------------------------------------ */
+/*
+ * **左に設定、右に頁の見本。**設定を上に横並びで詰めていたころは、
+ * 「読みにくい」「どこに何があるか分からない」と言われた（2026-11-04）。
+ * 設定は 1 → 2 → 3 の順に縦へ並べ、**地図は 1 画面に収める**（上が切れて見えないように）。
+ */
+
+.preview {
+  /* 読む量が多い頁なので、窓より一回り大きくする */
+  font-size: 15px;
 }
 
-/* --- 見本の頁 ------------------------------------------------------------ */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100vh;
+}
 
-.preview-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--line);
+/* 狭い窓では設定が上、見本が下。**広い窓だけ横に並べる** */
+@media (min-width: 960px) {
+  .layout {
+    grid-template-columns: 22rem minmax(0, 1fr);
+  }
+
+  .panel {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+  }
+}
+
+.panel {
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
   background: var(--panel);
 }
 
-.preview-bar h1 {
+.panel h1 {
+  font-size: 1.2rem;
   margin: 0;
 }
 
-.preview-bar .actions {
-  margin-top: 0;
-}
-
-.preview-bar .note {
+.panel p {
   margin: 0;
-  flex-basis: 100%;
 }
 
-.pin-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 0.5rem 1rem;
-  flex-basis: 100%;
-}
-
-.pin-form label {
-  display: grid;
-  gap: 0.15rem;
+.hint {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
 
-.pin-form input {
+/* **この場所で見本がどこまで出るか。**枠の色で、出る／出ないを分ける */
+.coverage {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--code);
+}
+
+.coverage[data-detail="true"] {
+  border-color: var(--accent);
+}
+
+.coverage-title {
+  font-weight: 700;
+}
+
+/* 一覧は畳んでおく。**写すボタンを最初の画面に残すため**（777px の窓で沈んだ） */
+/* **開閉の三角を消さない**（`display:flex` にすると消え、押せる所に見えなくなった） */
+.coverage summary {
+  padding: 0.4rem 0;
+  cursor: pointer;
+}
+
+.coverage-text:empty {
+  display: none;
+}
+
+.step {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.step h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.step-no {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.fields {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.field input {
   box-sizing: border-box;
-  /* 押す目標と同じ高さ。指でもマウスでも狙える */
-  min-height: 36px;
-  width: min(20rem, 80vw);
-  padding: 0.25rem 0.5rem;
+  width: 100%;
+  /* 押す目標より少し高く。指でもマウスでも狙える */
+  min-height: 40px;
+  padding: 0.35rem 0.6rem;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--code);
   color: var(--text);
-  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font: 15px/1.4 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
 }
 
-.pin-form input:focus-visible {
+.field input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
-.pin-form .actions {
-  margin-top: 0;
+.field input[aria-invalid="true"] {
+  border-color: var(--text);
 }
 
-.preview-stage {
-  padding: 1.5rem 1rem;
+/* **新しい色を作らない。**記号と太字で知らせる */
+.error {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.error::before {
+  content: "⚠ ";
+}
+
+.stage-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 2rem;
+  margin-bottom: 0.9rem;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.choice-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.segmented {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.segmented button {
+  min-width: 4.5rem;
+}
+
+.copy-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+/*
+ * **写すボタンは、列の下端に留める。**最後に押すものなのに、777px の窓では
+ * 折り目の下に沈んでいた（2026-11-04）。どこまで送っても押せるようにする。
+ */
+.step-copy {
+  position: sticky;
+  bottom: 0;
+  gap: 0.4rem;
+  margin: 0 -1.25rem;
+  padding: 0.6rem 1.25rem 0.75rem;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+/* 帯が列の最後なので、列の下の余白は帯が持つ（余白があると帯の下から中身が覗く） */
+.panel:has(.step-copy) {
+  padding-bottom: 0;
+}
+
+.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+}
+
+.primary:hover {
+  border-color: var(--text);
+}
+
+.stage {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 1.25rem;
 }
 
 /* 仮の頁。**利用者の頁の代わり**なので、拡張の枠とは逆の明るい地にする */
@@ -183,13 +342,13 @@ button[aria-pressed="true"] {
 }
 
 .mock-page header {
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   border-bottom: 1px solid #e3e6ea;
   font-weight: 700;
 }
 
 .mock-page section {
-  padding: 1rem;
+  padding: 0.75rem 1rem 1rem;
 }
 
 .mock-page h2 {
@@ -202,7 +361,8 @@ button[aria-pressed="true"] {
   color: #555;
 }
 
+/* **1 画面に収める。**頁の上が切れて見えないように、窓の高さから地図の高さを決める */
 .mock-page mmj-map {
   display: block;
-  height: 420px;
+  height: clamp(320px, calc(100vh - 16rem), 560px);
 }

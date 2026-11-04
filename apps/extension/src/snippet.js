@@ -9,6 +9,7 @@ import {
   DEMO_DETAIL_BBOX,
   DEMO_OVERVIEW_MAX_ZOOM,
   MAPLIBRE_VERSION,
+  MAP_STYLES,
   PMTILES_VERSION,
   PUBLISHED_REGIONS,
 } from "./constants.js";
@@ -47,14 +48,14 @@ export function extractBbox({ lng, lat, zoom }) {
 }
 
 /**
- * 置き手が見本の頁で入れるピン。**名前・住所・位置はどれも置き手自身のデータ**で、
+ * 置き手が見本の頁で入れるピン。**名前・住所・ホームページ・位置はどれも置き手自身のデータ**で、
  * Google の地点のデータではない（D-034）。
  *
- * @typedef {{ lng: number, lat: number, name: string, note: string }} Pin
+ * @typedef {{ lng: number, lat: number, name: string, note: string, url?: string }} Pin
  */
 
-/** 吹き出しの中で名前と住所を分ける印。吹き出しは 1 行の文字なので、改行は使えない */
-const PIN_SEPARATOR = " · ";
+/** 吹き出しのリンクに出す文字 */
+const LINK_LABEL = "ホームページ";
 
 /**
  * **人が打った文字を属性値へ入れるときは、必ずここを通す。**
@@ -72,31 +73,75 @@ function escapeAttribute(text) {
 }
 
 /**
- * 吹き出しに出す文字。**見本の頁と貼るもので同じ文字を出す**ため、ここ 1 か所で組む。
+ * ホームページの URL として写してよいか。
  *
- * @param {Pin} pin
- * @returns {string} 名前も住所も空なら ""
+ * **通すのは http / https だけ。**`javascript:` は押した瞬間に、貼った先の頁で走る。
+ * 部品（`isSafeLink`）も弾くが、**弾かれるものを写すものに入れない。**
+ * 「example.com」のように `https://` が無いものも通さない。直して通すと、
+ * 打った人の思った所と違う所へ飛ぶことがある。**通さず、見本の頁で知らせる。**
+ *
+ * @param {string | undefined} value
+ * @returns {string | null} 通る URL。空なら ""、通らなければ null
  */
-export function pinText(pin) {
-  return [pin.name, pin.note]
-    .map((part) => part.trim())
-    .filter((part) => part !== "")
-    .join(PIN_SEPARATOR);
+export function pinLink(value) {
+  const trimmed = (value ?? "").trim();
+  if (trimmed === "") return "";
+  // 読み方はブラウザに任せる（タブを挟んだ `java\tscript:` も、ここで `javascript:` に戻る）
+  if (!URL.canParse(trimmed)) return null;
+  const { protocol } = new URL(trimmed);
+  return protocol === "https:" || protocol === "http:" ? trimmed : null;
 }
 
 /**
- * ピン 1 本の `<mmj-marker>`。文字があれば吹き出しを最初から開いておく
- * （会社の頁の地図は、開いた瞬間に「ここです」と読めるほうがよい）。
+ * ピン 1 本に置く属性の並び。**見本の頁と写すもので同じものを置く**ため、ここ 1 か所で決める。
+ *
+ * - 1 行目（`popup`）は名前。名前が無ければ住所を 1 行目にする
+ * - 住所は 2 行目（`popup-body`）。**1 行に詰めると、携帯で地図の外へ伸びた**（2026-11-04）
+ * - ホームページは通る URL のときだけ
+ * - 何か出るものがあれば、吹き出しを最初から開いておく
+ *   （会社の頁の地図は、開いた瞬間に「ここです」と読めるほうがよい）
+ *
+ * @param {Pin} pin
+ * @returns {Array<[string, string]>} 値が "" のものは、値を持たない属性
+ */
+export function markerAttributes(pin) {
+  const name = pin.name.trim();
+  const note = pin.note.trim();
+  const link = pinLink(pin.url);
+  /** @type {Array<[string, string]>} */
+  const attributes = [["lnglat", `${pin.lng},${pin.lat}`]];
+  if (name !== "" || note !== "") attributes.push(["popup", name !== "" ? name : note]);
+  if (name !== "" && note !== "") attributes.push(["popup-body", note]);
+  if (link) attributes.push(["popup-href", link], ["popup-href-label", LINK_LABEL]);
+  if (attributes.length > 1) attributes.push(["popup-open", ""]);
+  return attributes;
+}
+
+/**
+ * ピン 1 本の `<mmj-marker>`。**人が打った文字は、必ず逃がしてから入れる。**
  *
  * @param {Pin} pin
  * @returns {string}
  */
 export function buildMarker(pin) {
-  const text = pinText(pin);
-  const lnglat = `lnglat="${pin.lng},${pin.lat}"`;
-  if (text === "") return `<mmj-marker ${lnglat}></mmj-marker>`;
-  return `<mmj-marker ${lnglat} popup="${escapeAttribute(text)}" popup-open></mmj-marker>`;
+  const attributes = markerAttributes(pin)
+    .map(([name, value]) => (value === "" ? name : `${name}="${escapeAttribute(value)}"`))
+    .join(" ");
+  return `<mmj-marker ${attributes}></mmj-marker>`;
 }
+
+/**
+ * 地図の配色。**知らない名前は既定へ戻す**（属性値へそのまま入るため）。
+ *
+ * @param {string | undefined} style
+ */
+function styleOf(style) {
+  return MAP_STYLES.find(({ id }) => id === style)?.id ?? MAP_STYLES[0]?.id ?? "modern-light";
+}
+
+/**
+ * @typedef {{ pin?: Pin | null, style?: string }} SnippetOptions
+ */
 
 /**
  * 地図の中心。**ピンを置いたら、ピンを真ん中にする。**見ていた場所の中心のままだと、
@@ -114,10 +159,10 @@ function centerOf(place, pin) {
  * 貼るもの。**`llms.txt` の「写して動く最小の 1 枚」と同じ形**にしてある。
  *
  * @param {Place} place
- * @param {Pin | null} [pin] 置き手が見本の頁で置いたピン
+ * @param {SnippetOptions} [options] 置き手が見本の頁で置いたピンと、選んだ配色
  * @returns {string}
  */
-export function buildSnippet(place, pin = null) {
+export function buildSnippet(place, { pin = null, style } = {}) {
   const center = centerOf(place, pin);
   const bbox = extractBbox(center).join(",");
   const marker = pin === null ? "" : `  ${buildMarker(pin)}\n`;
@@ -129,7 +174,7 @@ export function buildSnippet(place, pin = null) {
 
 <mmj-map
   tiles="./tiles/map.pmtiles"
-  style-url="./styles/modern-dark.json"
+  style-url="./styles/${styleOf(style)}.json"
   center="${center.lng},${center.lat}"
   zoom="${place.zoom}">
 ${marker}</mmj-map>
@@ -146,11 +191,11 @@ ${marker}</mmj-map>
  * エージェントへ渡すもの。**これ 1 枚で続きを組める**ように、手順・守ること・参照先を入れる。
  *
  * @param {Place} place
- * @param {Pin | null} [pin] 置き手が見本の頁で置いたピン
+ * @param {SnippetOptions} [options] 置き手が見本の頁で置いたピンと、選んだ配色
  * @returns {string} Markdown
  */
-export function buildAgentBrief(place, pin = null) {
-  const center = centerOf(place, pin);
+export function buildAgentBrief(place, options = {}) {
+  const center = centerOf(place, options.pin ?? null);
   const bbox = extractBbox(center).join(",");
   return `# この場所に MMJ の地図を置く
 
@@ -167,13 +212,13 @@ PMTiles 1 ファイルとスタイル JSON を静的に置くだけで動きま�
 3. 下の HTML を貼り、\`tiles\` を 1 で出てきたファイル名に直す
 
 \`\`\`html
-${buildSnippet(place, pin)}
+${buildSnippet(place, options)}
 \`\`\`
 
 ## 守ること
 
 - \`© OpenStreetMap contributors\` の帰属表示を画面から外さない（ODbL）
-- Google マップから店名やピンを写さない。目印は自分のデータで \`<mmj-marker lnglat="経度,緯度" popup="名前">\` を足す
+- Google マップから店名やピンを写さない。目印は自分のデータで \`<mmj-marker lnglat="経度,緯度" popup="名前" popup-body="住所" popup-href="https://…">\` を足す
 
 ## 参照
 
@@ -186,26 +231,41 @@ ${buildSnippet(place, pin)}
  * 見本で使うタイルと、見本を出す縮尺。都市のタイルがあればそれ、無ければデモ。
  *
  * 見本のタイルが持つ範囲に合わせて縮尺を変えたときは、`zoomed: true` で知らせる。
- * **貼るものの縮尺は変えない。**
+ * **貼るものの縮尺は変えない。**街路まで出る場所かどうかは `detail` で返す
+ * （見本の頁に出す。「どこにタイルがあるか分からない」と言われた・2026-11-04）。
  *
  * - **都市のタイルは都市しか持たない。**画面がタイルより広いと、真ん中に都市があるだけの
  *   黒い四角になるので、画面が収まるまで寄せる
  * - **デモは大阪中心部の外を z9 の俯瞰までしか持たない。**その外では z9 まで引く
  *
  * @param {Place} place
- * @returns {{ file: string, label: string, zoom: number, zoomed: boolean, lang?: string }}
+ * @returns {{ file: string, label: string, zoom: number, zoomed: boolean, detail: boolean, lang?: string }}
  */
 export function pickPreviewTiles({ lng, lat, zoom }) {
   const region = PUBLISHED_REGIONS.find(({ bbox }) => contains(bbox, lng, lat));
   if (region !== undefined) {
     const { file, label, lang, bbox } = region;
     const fitted = Math.max(zoom, zoomToFit(bbox, lat));
-    const picked = { file, label, zoom: fitted, zoomed: fitted > zoom };
+    const picked = { file, label, zoom: fitted, zoomed: fitted > zoom, detail: true };
     return lang === undefined ? picked : { ...picked, lang };
   }
-  if (contains(DEMO_DETAIL_BBOX, lng, lat)) return { file: "demo", label: "大阪中心部", zoom, zoomed: false };
+  if (contains(DEMO_DETAIL_BBOX, lng, lat)) {
+    return { file: "demo", label: DEMO_DETAIL_LABEL, zoom, zoomed: false, detail: true };
+  }
   const capped = Math.min(zoom, DEMO_OVERVIEW_MAX_ZOOM);
-  return { file: "demo", label: "全国の俯瞰（z9 まで）", zoom: capped, zoomed: capped < zoom };
+  return { file: "demo", label: "全国の俯瞰（z9 まで）", zoom: capped, zoomed: capped < zoom, detail: false };
+}
+
+/** デモが街路まで持つ範囲の名前 */
+const DEMO_DETAIL_LABEL = "大阪中心部";
+
+/**
+ * 見本で街路まで出る場所の名前。**見本の頁に一覧で出す**（行けば街路まで見られる場所）。
+ *
+ * @returns {string[]}
+ */
+export function detailPlaces() {
+  return [DEMO_DETAIL_LABEL, ...PUBLISHED_REGIONS.map((region) => region.label)];
 }
 
 /**

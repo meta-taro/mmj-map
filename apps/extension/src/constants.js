@@ -11,6 +11,17 @@ export const PMTILES_VERSION = "4.5.0";
 export const DEMO_BASE = "https://meta-taro.github.io/mmj-map/";
 
 /**
+ * 見本の頁で選べる地図の配色。**リポの `styles/` にあるものだけ**（試験で突き合わせる）。
+ * **先頭が既定。**会社の頁は白地が多く、暗い地図に暗い吹き出しは読みにくかった（2026-11-04）。
+ *
+ * @type {ReadonlyArray<{ id: string, label: string }>}
+ */
+export const MAP_STYLES = [
+  { id: "modern-light", label: "明るい" },
+  { id: "modern-dark", label: "暗い" },
+];
+
+/**
  * デモ（`demo.pmtiles`）が街路まで持つ範囲。`tools/tiles/regions/demo-osaka.geojson` を囲む四角。
  * **この外は z9 の俯瞰までしか無い**ので、見本をそれより寄せると黒い四角になる
  * （2026-11-04、東京駅を z14 で開いて「入っていない範囲です」だけが出た）。

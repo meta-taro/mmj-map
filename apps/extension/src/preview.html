@@ -7,40 +7,79 @@
 <link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css">
 <link rel="stylesheet" href="ui.css">
 </head>
-<body>
+<body class="preview">
 
-<div class="preview-bar">
-  <h1>頁に置いた見本</h1>
-  <div class="actions" role="group" aria-label="頁の幅">
-    <button type="button" data-width="390" aria-pressed="false">携帯 390</button>
-    <button type="button" data-width="1100" aria-pressed="true">PC 1100</button>
-  </div>
-  <div class="actions">
-    <button type="button" id="copy-html">HTML を写す</button>
-    <button type="button" id="copy-brief">AI に渡す形で写す</button>
-  </div>
-  <p class="note" id="tiles-note"></p>
-  <form class="pin-form" id="pin-form" autocomplete="off">
-    <label>名前 <input id="pin-name" maxlength="60" placeholder="例: 株式会社〇〇"></label>
-    <label>住所・一言 <input id="pin-note" maxlength="120" placeholder="例: 大阪市北区〇〇 1-2-3"></label>
-    <div class="actions">
-      <button type="button" id="pin-center">地図の真ん中へ移す</button>
-      <button type="button" id="pin-toggle">ピンを外す</button>
-    </div>
-    <p class="note">地図を押すと、ピンがそこへ動きます。入れた名前・住所・位置は、写すものにそのまま入ります。</p>
-  </form>
-</div>
+<div class="layout">
+  <aside class="panel" aria-label="見本の設定">
+    <h1>頁に置いた見本</h1>
 
-<main class="preview-stage">
-  <div class="mock-page" id="mock-page">
-    <header>（あなたの頁）</header>
-    <section>
-      <h2>アクセス</h2>
-      <p>ここに案内の文が入ります。地図は下の 1 枚です。</p>
-      <div id="map-slot"></div>
+    <!-- **この場所で見本がどこまで出るか**を最初に言う（「どこにタイルがあるか分からない」と言われた） -->
+    <section class="coverage" id="coverage" aria-live="polite">
+      <p class="coverage-title" id="coverage-title">見本を用意しています…</p>
+      <p class="coverage-text" id="coverage-text"></p>
+      <details class="hint">
+        <summary>見本で街路まで見られる場所</summary>
+        <p id="coverage-places"></p>
+      </details>
     </section>
-  </div>
-</main>
+
+    <section class="step" aria-labelledby="step-1">
+      <h2 id="step-1"><span class="step-no" aria-hidden="true">1</span>地図に載せる</h2>
+      <form class="fields" id="pin-form" autocomplete="off">
+        <label class="field">会社名・店名
+          <input id="pin-name" maxlength="60" placeholder="例: 株式会社〇〇">
+        </label>
+        <label class="field">住所
+          <input id="pin-note" maxlength="120" placeholder="例: 大阪市北区〇〇 1-2-3">
+        </label>
+        <label class="field">ホームページ
+          <input id="pin-url" type="url" inputmode="url" maxlength="300" placeholder="https://"
+                 aria-describedby="pin-url-error">
+        </label>
+        <p class="error" id="pin-url-error" hidden>https:// から始まる URL を入れてください。今は吹き出しに入れていません。</p>
+      </form>
+      <p class="hint">ピンは、地図を押した所へ動きます。入れたものは、写すものにそのまま入ります。</p>
+      <div class="actions">
+        <button type="button" id="pin-center">地図の真ん中へ移す</button>
+        <button type="button" id="pin-toggle">ピンを外す</button>
+      </div>
+    </section>
+
+    <section class="step step-copy" aria-labelledby="step-2">
+      <h2 id="step-2"><span class="step-no" aria-hidden="true">2</span>写す</h2>
+      <div class="copy-row">
+        <button type="button" class="primary" id="copy-html">HTML を写す</button>
+        <button type="button" id="copy-brief">AI に渡す形で写す</button>
+      </div>
+      <p class="hint">HTML はそのまま貼れます。AI 向けは手順と守ることを添えた文面です。</p>
+    </section>
+  </aside>
+
+  <main class="stage">
+    <!-- **見え方は、見本の真上で切り替える**（見ながら押すもの。設定の列に置くと、押した結果が遠い） -->
+    <div class="stage-bar">
+      <div class="choice">
+        <span class="choice-label" id="width-label">画面の幅</span>
+        <div class="segmented" role="group" aria-labelledby="width-label">
+          <button type="button" data-width="390" aria-pressed="false">携帯</button>
+          <button type="button" data-width="1100" aria-pressed="true">PC</button>
+        </div>
+      </div>
+      <div class="choice">
+        <span class="choice-label" id="style-label">地図の色</span>
+        <div class="segmented" role="group" aria-labelledby="style-label" id="style-choices"></div>
+      </div>
+    </div>
+    <div class="mock-page" id="mock-page">
+      <header>（あなたの頁）</header>
+      <section>
+        <h2>アクセス</h2>
+        <p>ここに案内の文が入ります。地図は下の 1 枚です。</p>
+        <div id="map-slot"></div>
+      </section>
+    </div>
+  </main>
+</div>
 
 <script src="vendor/pmtiles/pmtiles.js"></script>
 <script type="module" src="preview.js"></script>

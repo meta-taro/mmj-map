@@ -1,8 +1,17 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { buildAgentBrief, buildMarker, buildSnippet, extractBbox, pickPreviewTiles } from "../src/snippet.js";
-import { DEMO_DETAIL_BBOX, MAPLIBRE_VERSION, PMTILES_VERSION, PUBLISHED_REGIONS } from "../src/constants.js";
+import {
+  buildAgentBrief,
+  buildMarker,
+  buildSnippet,
+  detailPlaces,
+  extractBbox,
+  markerAttributes,
+  pickPreviewTiles,
+  pinLink,
+} from "../src/snippet.js";
+import { DEMO_DETAIL_BBOX, MAPLIBRE_VERSION, MAP_STYLES, PMTILES_VERSION, PUBLISHED_REGIONS } from "../src/constants.js";
 
 const osaka = { lng: 135.5023, lat: 34.6937, zoom: 14 };
 
@@ -74,15 +83,29 @@ describe("buildSnippet", () => {
   it("ピンを置かなければ、目印は入れない", () => {
     expect(html).not.toContain("<mmj-marker");
   });
+
+  it("地図の配色を選べる（既定は明るい地図。会社の頁は白地が多い）", () => {
+    expect(html).toContain('style-url="./styles/modern-light.json"');
+    expect(buildSnippet(osaka, { style: "modern-dark" })).toContain('style-url="./styles/modern-dark.json"');
+  });
+
+  /** **知らない名前をそのまま書かない。**属性値へ入るので、壊れた値は既定へ戻す */
+  it("知らない配色の名前は、既定に戻す", () => {
+    expect(buildSnippet(osaka, { style: '"><script>' })).toContain('style-url="./styles/modern-light.json"');
+  });
 });
 
 describe("ピン（置き手が自分で入れる名前・住所・位置）", () => {
-  const pin = { lng: 135.49568, lat: 34.67414, name: "株式会社サンプル", note: "大阪市西区1-2-3" };
+  const pin = { lng: 135.49568, lat: 34.67414, name: "株式会社サンプル", note: "大阪市西区1-2-3", url: "" };
 
-  it("地図の中にピンを入れ、最初から吹き出しを開く", () => {
-    const html = buildSnippet(osaka, pin);
+  /**
+   * **名前・住所・ホームページを行に分ける。**1 行に詰めていたころは、
+   * 長い住所で吹き出しが携帯の地図から外へ伸びた（2026-11-04、人が見つけた）。
+   */
+  it("地図の中にピンを入れ、名前と住所を行に分けて、最初から吹き出しを開く", () => {
+    const html = buildSnippet(osaka, { pin });
     expect(html).toContain(
-      '<mmj-marker lnglat="135.49568,34.67414" popup="株式会社サンプル · 大阪市西区1-2-3" popup-open></mmj-marker>',
+      '<mmj-marker lnglat="135.49568,34.67414" popup="株式会社サンプル" popup-body="大阪市西区1-2-3" popup-open></mmj-marker>',
     );
     expect(html.indexOf("<mmj-marker")).toBeGreaterThan(html.indexOf("<mmj-map"));
     expect(html.indexOf("<mmj-marker")).toBeLessThan(html.indexOf("</mmj-map>"));
@@ -93,14 +116,34 @@ describe("ピン（置き手が自分で入れる名前・住所・位置）", (
    * 携帯幅でピンが端に寄って切れた（2026-11-04、見本の 390 幅で撮って気づいた）。
    */
   it("ピンを置いたら、地図の中心と切り出す範囲もピンに合わせる", () => {
-    const html = buildSnippet(osaka, pin);
+    const html = buildSnippet(osaka, { pin });
     expect(html).toContain('center="135.49568,34.67414"');
     expect(html).toContain(`--bbox=${extractBbox({ ...pin, zoom: osaka.zoom }).join(",")}`);
   });
 
-  it("名前だけ・住所だけでも置ける", () => {
-    expect(buildMarker({ ...pin, note: "" })).toContain('popup="株式会社サンプル"');
-    expect(buildMarker({ ...pin, name: "  " })).toContain('popup="大阪市西区1-2-3"');
+  it("名前だけ・住所だけでも置ける（住所だけなら、住所を 1 行目にする）", () => {
+    expect(buildMarker({ ...pin, note: "" })).toBe(
+      '<mmj-marker lnglat="135.49568,34.67414" popup="株式会社サンプル" popup-open></mmj-marker>',
+    );
+    expect(buildMarker({ ...pin, name: "  " })).toBe(
+      '<mmj-marker lnglat="135.49568,34.67414" popup="大阪市西区1-2-3" popup-open></mmj-marker>',
+    );
+  });
+
+  it("ホームページを入れたら、吹き出しにリンクを足す", () => {
+    expect(buildMarker({ ...pin, url: "https://example.com/" })).toBe(
+      '<mmj-marker lnglat="135.49568,34.67414" popup="株式会社サンプル" popup-body="大阪市西区1-2-3"' +
+        ' popup-href="https://example.com/" popup-href-label="ホームページ" popup-open></mmj-marker>',
+    );
+  });
+
+  /** 見本の頁も同じ並びで属性を置く。**写すものと見本で中身を変えない** */
+  it("見本の頁が置く属性と、写すものの属性は同じ", () => {
+    const withUrl = { ...pin, url: "https://example.com/" };
+    const html = buildMarker(withUrl);
+    for (const [name, value] of markerAttributes(withUrl)) {
+      expect(html).toContain(value === "" ? ` ${name}` : `${name}="`);
+    }
   });
 
   /** 文字が無ければ、押しても何も出ない目印だけを置く（空の吹き出しを出さない） */
@@ -112,11 +155,41 @@ describe("ピン（置き手が自分で入れる名前・住所・位置）", (
   it("属性を閉じる文字・タグの文字を逃がす", () => {
     const marker = buildMarker({ ...pin, name: '"><script>alert(1)</script>', note: "A&B 'x'" });
     expect(marker).not.toContain("<script>");
-    expect(marker).toContain("&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt; · A&amp;B &#39;x&#39;");
+    expect(marker).toContain('popup="&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;"');
+    expect(marker).toContain('popup-body="A&amp;B &#39;x&#39;"');
   });
 
   it("エージェントへ渡すものにも入る", () => {
-    expect(buildAgentBrief(osaka, pin)).toContain(buildMarker(pin));
+    expect(buildAgentBrief(osaka, { pin })).toContain(buildMarker(pin));
+  });
+});
+
+describe("pinLink", () => {
+  it("https と http の URL はそのまま通す（前後の空白は落とす）", () => {
+    expect(pinLink(" https://example.com/about ")).toBe("https://example.com/about");
+    expect(pinLink("http://example.com/")).toBe("http://example.com/");
+  });
+
+  it("空なら空（入れていない）", () => {
+    expect(pinLink("")).toBe("");
+    expect(pinLink("   ")).toBe("");
+  });
+
+  /** **押した瞬間に、貼った先の頁で走る。**部品も弾くが、写すものにも入れない */
+  it("javascript: や data: は通さない", () => {
+    expect(pinLink("javascript:alert(1)")).toBeNull();
+    expect(pinLink("java\tscript:alert(1)")).toBeNull();
+    expect(pinLink("data:text/html,x")).toBeNull();
+  });
+
+  /** 「example.com」とだけ打つ人は多い。**直して通すと、違う所へ飛ぶことがある**ので通さず知らせる */
+  it("https:// の無いものは通さない（null で知らせる）", () => {
+    expect(pinLink("example.com")).toBeNull();
+  });
+
+  it("通らない URL は、写すものに入れない", () => {
+    const pin = { lng: 135.5, lat: 34.7, name: "店", note: "", url: "javascript:alert(1)" };
+    expect(buildMarker(pin)).not.toContain("popup-href");
   });
 });
 
@@ -144,7 +217,13 @@ describe("pickPreviewTiles", () => {
   });
 
   it("大阪中心部はデモで、そのままの縮尺で出す", () => {
-    expect(pickPreviewTiles(osaka)).toEqual({ file: "demo", label: "大阪中心部", zoom: 14, zoomed: false });
+    expect(pickPreviewTiles(osaka)).toEqual({ file: "demo", label: "大阪中心部", zoom: 14, zoomed: false, detail: true });
+  });
+
+  /** **どこなら街路まで出るのかを、見本の頁に出す**（「どこにタイルがあるか分からない」と言われた） */
+  it("街路まで出る場所かどうかを返す", () => {
+    expect(pickPreviewTiles({ lng: -73.9857, lat: 40.7484, zoom: 15 }).detail).toBe(true);
+    expect(pickPreviewTiles({ lng: 139.767, lat: 35.681, zoom: 14 }).detail).toBe(false);
   });
 
   /**
@@ -178,7 +257,20 @@ describe("pickPreviewTiles", () => {
   });
 });
 
+describe("detailPlaces", () => {
+  it("見本で街路まで出る場所を、大阪中心部と都市の名前で並べる", () => {
+    expect(detailPlaces()).toEqual(["大阪中心部", ...PUBLISHED_REGIONS.map((region) => region.label)]);
+  });
+});
+
 describe("constants", () => {
+  /** **公開先に無いスタイルを指さない。**見本が真っ白になる */
+  it("選べる配色は、どれもリポのスタイルにある", () => {
+    for (const { id } of MAP_STYLES) {
+      expect(() => readFileSync(new URL(`../../../styles/${id}.json`, import.meta.url))).not.toThrow();
+    }
+  });
+
   const root = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8"));
 
   /** **版は 1 か所で決める。**ずれると、見本で動いたものが貼った先で動かない */
