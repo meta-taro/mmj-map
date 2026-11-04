@@ -21,6 +21,9 @@ pnpm --filter @mmj-map/extension build
 Chrome で `chrome://extensions` を開き、「デベロッパー モード」を入れて
 「パッケージ化されていない拡張機能を読み込む」で `apps/extension/dist` を選びます。
 
+ストアへ出すときは `pnpm --filter @mmj-map/extension pack:store` で zip を作ります。
+入力欄へ貼る文面（説明・権限の理由・データの扱い）は [`STORE.md`](./STORE.md) にあります。
+
 ## 中身
 
 | ファイル | 役目 |
@@ -31,5 +34,7 @@ Chrome で `chrome://extensions` を開き、「デベロッパー モード」�
 | `src/popup.*` | 拡張の窓 |
 | `src/preview.*` | 見本の頁 |
 | `scripts/build.mjs` | `dist/` へ写す（部品・MapLibre・pmtiles を同梱する） |
+| `scripts/zip.mjs` / `pack.mjs` | `dist/` をストアへ出す zip に固める（依存なし・試験あり） |
+| `src/icons/` | アイコン。**デモの仮の favicon（`apps/demo/favicon.svg`）を描き出したもの**で、ブランドではない |
 
 **縮尺は Google より 1 小さくなります**。Google は 256px、MapLibre は 512px の区画で数えるためです。

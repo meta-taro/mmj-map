@@ -5,9 +5,18 @@
   "version": "0.1.0",
   "description": "地図の頁で押すと、同じ場所を API キーなしで置ける HTML を出します。AI に渡す形でも写せます。読むのはタブの URL だけです。",
   "permissions": ["activeTab"],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "action": {
     "default_title": "この場所を MMJ の地図に",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png"
+    }
   },
   "minimum_chrome_version": "120"
 }

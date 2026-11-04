@@ -57,3 +57,5 @@ apps/demo/vendor/
 
 # Chrome 拡張を組んだ先（`pnpm --filter @mmj-map/extension build`）。中身は src と node_modules の写し
 apps/extension/dist/
+# ストアへ出す zip（`pnpm --filter @mmj-map/extension pack:store`）。dist を固めたもの
+apps/extension/mmj-extension-*.zip

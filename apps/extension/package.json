@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "pack:store": "node scripts/build.mjs && node scripts/pack.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
