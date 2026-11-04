@@ -5,6 +5,7 @@ import {
   applyTilesUrl,
   parsePitch,
   buildMapOptions,
+  buildMarkerPopupOptions,
   buildPopupOptions,
   wantsFullscreen,
   buildControlStyle,
@@ -112,6 +113,22 @@ describe("buildPopupOptions", () => {
 
   it("独自のクラスを付ける（**MapLibre 全体の見た目を書き換えない**）", () => {
     expect(buildPopupOptions().className).toBe("mmj-popup");
+  });
+});
+
+describe("buildMarkerPopupOptions", () => {
+  /**
+   * **既定のピンの吹き出しは、持ち上げる量を MapLibre に任せる。**24px 固定では、
+   * 吹き出しの先がピンの頭に 10px めり込んでいた（実測・2026-11-04、拡張の見本で指摘を受けた）。
+   * `offset` を渡さなければ、`Marker#setPopup` がピンの高さから向きごとの量を入れる。
+   */
+  it("offset を持たない", () => {
+    expect(buildMarkerPopupOptions("mmj-popup-abc")).not.toHaveProperty("offset");
+  });
+
+  it("ほかは吹き出しの既定と同じ", () => {
+    const { offset: _offset, ...rest } = buildPopupOptions("mmj-popup-abc");
+    expect(buildMarkerPopupOptions("mmj-popup-abc")).toEqual(rest);
   });
 });
 
@@ -389,6 +406,17 @@ describe("buildControlStyle", () => {
     const css = buildControlStyle(light, "mmj-ctrl-abc");
     expect(css).toContain("#EDF0F3");
     expect(css).toContain("#2B3138");
+  });
+
+  /**
+   * **目印の押せる幅は、左右の余白だけで広げる。**目印は `left:0` から置かれるので、
+   * 負の margin は左だけが効き、**ピンが吹き出しから 5px 左へずれた**
+   * （実測・2026-11-04。`translate(-50%)` が余白込みの幅で中心を取るので、余白だけで中心は動かない）。
+   */
+  it("目印に負の margin を付けない", () => {
+    const rule = buildControlStyle(light, "mmj-ctrl-abc").match(/\.maplibregl-marker\{[^}]*\}/)?.[0];
+    expect(rule).toContain("padding:0 5px");
+    expect(rule).not.toMatch(/margin/);
   });
 
   it("独自クラスの中だけを変える（**MapLibre 全体の見た目を書き換えない**）", () => {

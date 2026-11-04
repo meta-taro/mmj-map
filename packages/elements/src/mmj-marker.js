@@ -9,7 +9,7 @@
  * 親の地図がまだ出来ていなければ、`mmj-ready` を待ってから付ける。
  * **待たずに付けると、読み込み順で付いたり付かなかったりする**（再現しない不具合になる）。
  */
-import { buildPopupOptions, parseLngLat } from "./attrs.js";
+import { buildMarkerPopupOptions, parseLngLat } from "./attrs.js";
 import { initialCardState, needsChrome } from "./card.js";
 import { mountCard } from "./card-dom.js";
 import { buildPopupContent } from "./popup.js";
@@ -75,7 +75,7 @@ export class MmjMarker extends HTMLElement {
     if (content.length > 0) {
       const colors = popupColorsFrom(parent);
       const className = ensurePopupContrast(colors);
-      const popup = new maplibregl.Popup(buildPopupOptions(className));
+      const popup = new maplibregl.Popup(buildMarkerPopupOptions(className));
 
       // **短い吹き出しは今までどおり。**「大阪城」の 3 文字にボタンを並べると
       // 箱がボタンで埋まる。中身が増えたときだけ容れ物にする。

@@ -242,6 +242,20 @@ export function buildPopupOptions(className = DEFAULT_POPUP_CLASS, maxWidth) {
   };
 }
 
+/**
+ * MapLibre の既定のピン（`<mmj-marker>`）に付ける吹き出しの設定。
+ *
+ * **持ち上げる量（`offset`）を渡さない。**渡さなければ `Marker#setPopup` が
+ * ピンの高さから向きごとの量を入れる。24px 固定では、吹き出しの先が
+ * ピンの頭に 10px めり込んでいた（実測・2026-11-04）。
+ *
+ * @param {string} [className]
+ */
+export function buildMarkerPopupOptions(className = DEFAULT_POPUP_CLASS) {
+  const { offset: _offset, ...options } = buildPopupOptions(className);
+  return options;
+}
+
 /** 配色を渡さないときのクラス名。**既定の見た目を変えないため** */
 const DEFAULT_POPUP_CLASS = "mmj-popup";
 
@@ -317,9 +331,10 @@ export function buildControlStyle(colors = POPUP_COLORS, className = DEFAULT_CON
     `.${className} .maplibregl-ctrl-group button{` +
     "width:36px;height:36px;display:flex;align-items:center;justify-content:center;}" +
     // 目印も 27px 幅しかない。**絵は変えず、押せる幅だけ広げる**——
-    // 横の余白を足して同じだけ外へ戻すので、**見た目の位置は動かない**
-    // （MapLibre は目印を translate(-50%) で置くため、左右対称なら中心は変わらない）
-    `.${className} .maplibregl-marker{padding:0 5px;margin:0 -5px;}` +
+    // MapLibre は目印を translate(-50%) で置くので、**左右対称の余白だけなら中心は動かない**。
+    // **負の margin で戻さない。**目印は left:0 から置かれ、左の -5px だけが効いて
+    // ピンが吹き出しから 5px 左へずれた（実測・2026-11-04）
+    `.${className} .maplibregl-marker{padding:0 5px;}` +
     `.${className} .maplibregl-ctrl-group button{background:transparent;}` +
     // ボタン同士の仕切りも既定は薄い黒。暗い面では見えないので縁と同じ色にする
     `.${className} .maplibregl-ctrl-group button+button{border-top-color:${colors.border};}` +
