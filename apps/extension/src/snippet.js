@@ -47,13 +47,80 @@ export function extractBbox({ lng, lat, zoom }) {
 }
 
 /**
+ * 置き手が見本の頁で入れるピン。**名前・住所・位置はどれも置き手自身のデータ**で、
+ * Google の地点のデータではない（D-034）。
+ *
+ * @typedef {{ lng: number, lat: number, name: string, note: string }} Pin
+ */
+
+/** 吹き出しの中で名前と住所を分ける印。吹き出しは 1 行の文字なので、改行は使えない */
+const PIN_SEPARATOR = " · ";
+
+/**
+ * **人が打った文字を属性値へ入れるときは、必ずここを通す。**
+ * `"` 1 つで属性が閉じ、続きが HTML として貼られる。
+ *
+ * @param {string} text
+ */
+function escapeAttribute(text) {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+/**
+ * 吹き出しに出す文字。**見本の頁と貼るもので同じ文字を出す**ため、ここ 1 か所で組む。
+ *
+ * @param {Pin} pin
+ * @returns {string} 名前も住所も空なら ""
+ */
+export function pinText(pin) {
+  return [pin.name, pin.note]
+    .map((part) => part.trim())
+    .filter((part) => part !== "")
+    .join(PIN_SEPARATOR);
+}
+
+/**
+ * ピン 1 本の `<mmj-marker>`。文字があれば吹き出しを最初から開いておく
+ * （会社の頁の地図は、開いた瞬間に「ここです」と読めるほうがよい）。
+ *
+ * @param {Pin} pin
+ * @returns {string}
+ */
+export function buildMarker(pin) {
+  const text = pinText(pin);
+  const lnglat = `lnglat="${pin.lng},${pin.lat}"`;
+  if (text === "") return `<mmj-marker ${lnglat}></mmj-marker>`;
+  return `<mmj-marker ${lnglat} popup="${escapeAttribute(text)}" popup-open></mmj-marker>`;
+}
+
+/**
+ * 地図の中心。**ピンを置いたら、ピンを真ん中にする。**見ていた場所の中心のままだと、
+ * 携帯幅でピンが端で切れる。縮尺は見ていたもののまま。
+ *
+ * @param {Place} place
+ * @param {Pin | null} pin
+ * @returns {Place}
+ */
+function centerOf(place, pin) {
+  return pin === null ? place : { lng: pin.lng, lat: pin.lat, zoom: place.zoom };
+}
+
+/**
  * 貼るもの。**`llms.txt` の「写して動く最小の 1 枚」と同じ形**にしてある。
  *
  * @param {Place} place
+ * @param {Pin | null} [pin] 置き手が見本の頁で置いたピン
  * @returns {string}
  */
-export function buildSnippet(place) {
-  const bbox = extractBbox(place).join(",");
+export function buildSnippet(place, pin = null) {
+  const center = centerOf(place, pin);
+  const bbox = extractBbox(center).join(",");
+  const marker = pin === null ? "" : `  ${buildMarker(pin)}\n`;
   return `<!-- タイルを切り出す: npx @mmj-map/tiles extract map --bbox=${bbox}
      出てきた ./tiles/map.<日付>.pmtiles に合わせて tiles を直す。
      スタイルと部品の置き方: https://github.com/meta-taro/mmj-map/blob/develop/docs/install/ja.md -->
@@ -63,9 +130,9 @@ export function buildSnippet(place) {
 <mmj-map
   tiles="./tiles/map.pmtiles"
   style-url="./styles/modern-dark.json"
-  center="${place.lng},${place.lat}"
+  center="${center.lng},${center.lat}"
   zoom="${place.zoom}">
-</mmj-map>
+${marker}</mmj-map>
 
 <script type="module">
   import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.mjs";
@@ -79,16 +146,18 @@ export function buildSnippet(place) {
  * エージェントへ渡すもの。**これ 1 枚で続きを組める**ように、手順・守ること・参照先を入れる。
  *
  * @param {Place} place
+ * @param {Pin | null} [pin] 置き手が見本の頁で置いたピン
  * @returns {string} Markdown
  */
-export function buildAgentBrief(place) {
-  const bbox = extractBbox(place).join(",");
+export function buildAgentBrief(place, pin = null) {
+  const center = centerOf(place, pin);
+  const bbox = extractBbox(center).join(",");
   return `# この場所に MMJ の地図を置く
 
 MMJ（mmj-map）は、API キーもタイルサーバーも要らない地図の部品です。
 PMTiles 1 ファイルとスタイル JSON を静的に置くだけで動きます。
 
-- 中心: 経度 ${place.lng}、緯度 ${place.lat}
+- 中心: 経度 ${center.lng}、緯度 ${center.lat}
 - 縮尺: ${place.zoom}（MapLibre の縮尺。Google マップの表示より 1 小さい数で同じ範囲になる）
 
 ## 手順
@@ -98,13 +167,13 @@ PMTiles 1 ファイルとスタイル JSON を静的に置くだけで動きま�
 3. 下の HTML を貼り、\`tiles\` を 1 で出てきたファイル名に直す
 
 \`\`\`html
-${buildSnippet(place)}
+${buildSnippet(place, pin)}
 \`\`\`
 
 ## 守ること
 
 - \`© OpenStreetMap contributors\` の帰属表示を画面から外さない（ODbL）
-- Google マップから店名やピンを写さない。目印は自分のデータで \`<mmj-marker lnglat="経度,緯度">\` を足す
+- Google マップから店名やピンを写さない。目印は自分のデータで \`<mmj-marker lnglat="経度,緯度" popup="名前">\` を足す
 
 ## 参照
 

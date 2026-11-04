@@ -129,6 +129,43 @@ button[aria-pressed="true"] {
   flex-basis: 100%;
 }
 
+.pin-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+  flex-basis: 100%;
+}
+
+.pin-form label {
+  display: grid;
+  gap: 0.15rem;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.pin-form input {
+  box-sizing: border-box;
+  /* 押す目標と同じ高さ。指でもマウスでも狙える */
+  min-height: 36px;
+  width: min(20rem, 80vw);
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--code);
+  color: var(--text);
+  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+
+.pin-form input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.pin-form .actions {
+  margin-top: 0;
+}
+
 .preview-stage {
   padding: 1.5rem 1rem;
 }

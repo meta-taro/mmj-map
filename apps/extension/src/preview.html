@@ -15,8 +15,20 @@
     <button type="button" data-width="390" aria-pressed="false">携帯 390</button>
     <button type="button" data-width="1100" aria-pressed="true">PC 1100</button>
   </div>
-  <button type="button" id="copy-html">HTML を写す</button>
+  <div class="actions">
+    <button type="button" id="copy-html">HTML を写す</button>
+    <button type="button" id="copy-brief">AI に渡す形で写す</button>
+  </div>
   <p class="note" id="tiles-note"></p>
+  <form class="pin-form" id="pin-form" autocomplete="off">
+    <label>名前 <input id="pin-name" maxlength="60" placeholder="例: 株式会社〇〇"></label>
+    <label>住所・一言 <input id="pin-note" maxlength="120" placeholder="例: 大阪市北区〇〇 1-2-3"></label>
+    <div class="actions">
+      <button type="button" id="pin-center">地図の真ん中へ移す</button>
+      <button type="button" id="pin-toggle">ピンを外す</button>
+    </div>
+    <p class="note">地図を押すと、ピンがそこへ動きます。入れた名前・住所・位置は、写すものにそのまま入ります。</p>
+  </form>
 </div>
 
 <main class="preview-stage">

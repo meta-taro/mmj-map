@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { buildAgentBrief, buildSnippet, extractBbox, pickPreviewTiles } from "../src/snippet.js";
+import { buildAgentBrief, buildMarker, buildSnippet, extractBbox, pickPreviewTiles } from "../src/snippet.js";
 import { DEMO_DETAIL_BBOX, MAPLIBRE_VERSION, PMTILES_VERSION, PUBLISHED_REGIONS } from "../src/constants.js";
 
 const osaka = { lng: 135.5023, lat: 34.6937, zoom: 14 };
@@ -70,9 +70,53 @@ describe("buildSnippet", () => {
     expect(html).toContain(`pmtiles@${PMTILES_VERSION}/dist/pmtiles.js`);
   });
 
-  /** **Google の地点のデータを持ち出さない**（D-034）。目印は置き手が自分で足す */
-  it("目印は入れない", () => {
+  /** **Google の地点のデータを持ち出さない**（D-034）。目印は置き手が自分で置く */
+  it("ピンを置かなければ、目印は入れない", () => {
     expect(html).not.toContain("<mmj-marker");
+  });
+});
+
+describe("ピン（置き手が自分で入れる名前・住所・位置）", () => {
+  const pin = { lng: 135.49568, lat: 34.67414, name: "株式会社サンプル", note: "大阪市西区1-2-3" };
+
+  it("地図の中にピンを入れ、最初から吹き出しを開く", () => {
+    const html = buildSnippet(osaka, pin);
+    expect(html).toContain(
+      '<mmj-marker lnglat="135.49568,34.67414" popup="株式会社サンプル · 大阪市西区1-2-3" popup-open></mmj-marker>',
+    );
+    expect(html.indexOf("<mmj-marker")).toBeGreaterThan(html.indexOf("<mmj-map"));
+    expect(html.indexOf("<mmj-marker")).toBeLessThan(html.indexOf("</mmj-map>"));
+  });
+
+  /**
+   * **会社の頁の地図は、ピンが真ん中に来るほうがよい。**見ていた場所の中心のままだと、
+   * 携帯幅でピンが端に寄って切れた（2026-11-04、見本の 390 幅で撮って気づいた）。
+   */
+  it("ピンを置いたら、地図の中心と切り出す範囲もピンに合わせる", () => {
+    const html = buildSnippet(osaka, pin);
+    expect(html).toContain('center="135.49568,34.67414"');
+    expect(html).toContain(`--bbox=${extractBbox({ ...pin, zoom: osaka.zoom }).join(",")}`);
+  });
+
+  it("名前だけ・住所だけでも置ける", () => {
+    expect(buildMarker({ ...pin, note: "" })).toContain('popup="株式会社サンプル"');
+    expect(buildMarker({ ...pin, name: "  " })).toContain('popup="大阪市西区1-2-3"');
+  });
+
+  /** 文字が無ければ、押しても何も出ない目印だけを置く（空の吹き出しを出さない） */
+  it("文字が無ければ、吹き出しを付けない", () => {
+    expect(buildMarker({ ...pin, name: "", note: "" })).toBe('<mmj-marker lnglat="135.49568,34.67414"></mmj-marker>');
+  });
+
+  /** **人が打った文字を、そのまま HTML へ入れない。**`"` 1 つで属性が閉じ、続きが HTML になる */
+  it("属性を閉じる文字・タグの文字を逃がす", () => {
+    const marker = buildMarker({ ...pin, name: '"><script>alert(1)</script>', note: "A&B 'x'" });
+    expect(marker).not.toContain("<script>");
+    expect(marker).toContain("&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt; · A&amp;B &#39;x&#39;");
+  });
+
+  it("エージェントへ渡すものにも入る", () => {
+    expect(buildAgentBrief(osaka, pin)).toContain(buildMarker(pin));
   });
 });
 
