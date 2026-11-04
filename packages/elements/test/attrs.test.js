@@ -162,6 +162,16 @@ describe("buildPopupStyle", () => {
     }
   });
 
+  /**
+   * **住所やリンクが下に続くなら、1 行目は見出し。**会社名・店名が住所と同じ大きさで、
+   * どれが名前か分かりにくいと言われた（2026-11-04）。1 行だけの吹き出し（「大阪城」）は変えない。
+   */
+  it("下に住所やリンクが続くときだけ、1 行目を見出しとして大きく太くする", () => {
+    const rule = css.match(/\.mmj-popup-text:has\(~ \.mmj-popup-copy, ~ \.mmj-popup-link\)\{[^}]*\}/)?.[0];
+    expect(rule).toContain("font-weight:700");
+    expect(rule).toContain("font-size:1.15em");
+  });
+
   it("**三角（tip）も塗り替える。**箱だけ暗くすると、白い三角が残る", () => {
     expect(css).toContain("maplibregl-popup-tip");
     // 8 方向すべて。1 つでも漏らすと、その向きに開いたときだけ白い三角が出る

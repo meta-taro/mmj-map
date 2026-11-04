@@ -299,6 +299,9 @@ export class MmjMap extends HTMLElement {
     container.style.cssText = "position:absolute;inset:0;";
     if (getComputedStyle(this).position === "static") this.style.position = "relative";
     this.style.display = "block";
+    // **外す子に「地図が引き取った」と印を付ける。**子（目印など）は外されても、地図ができたら付く。
+    // 印の無い子が外れていたら、それは置き手が外したもの（`mmj-marker.js` が付けない）
+    for (const child of this.children) /** @type {any} */ (child).mmjAdopted = true;
     this.replaceChildren(container);
 
     // `3d` を付けると建物を押し出す。**タイルは同じもの**で、足すデータも取得も無い

@@ -40,7 +40,17 @@ export class MmjMarker extends HTMLElement {
 
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
-    parent.addEventListener("mmj-ready", (/** @type {any} */ event) => this.#attach(event.detail.map), { once: true });
+    // **待っている間に置き手が外したら、付けない。**外したあとも待ちが残っていて、地図ができた瞬間に
+    // 外したはずの目印の吹き出しまで開いた（地図ができる前に名前を 3 回打つと、吹き出しが 3 つ重なった・2026-11-04）。
+    // ただし**親が描くときに外した子は付ける**（`mmj-map.js` が `mmjAdopted` の印を付ける）。
+    // 「頁に付いているか」だけで決めると、HTML に書いた目印が 1 つも付かなくなった
+    parent.addEventListener(
+      "mmj-ready",
+      (/** @type {any} */ event) => {
+        if (this.isConnected || /** @type {any} */ (this).mmjAdopted === true) this.#attach(event.detail.map);
+      },
+      { once: true },
+    );
   }
 
   /**

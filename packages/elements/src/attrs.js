@@ -396,6 +396,9 @@ export function buildPopupStyle(colors = POPUP_COLORS, className = DEFAULT_POPUP
     // 「大阪梅田」の 4 文字が 2 行に割れると、箱が縦長になって読みにくい。
     // **箱ごとではなく文字の行だけに掛ける**（写真の下の説明が 1 行に伸びて溢れるため）
     `.${className} .mmj-popup-text{white-space:nowrap;}` +
+    // **住所やリンクが下に続くなら、1 行目は見出し**（会社名・店名）。同じ大きさだと、
+    // どれが名前か分かりにくかった（2026-11-04）。1 行だけの吹き出しは今までどおり
+    `.${className} .mmj-popup-text:has(~ .mmj-popup-copy, ~ .mmj-popup-link){font-weight:700;font-size:1.15em;}` +
     // **写真が 2 枚以上なら横に流す。**縦に積むと、星も長文もリンクも画面の外へ出る
     // （実測・2026-09-28。写真 2 枚で吹き出しが 422px になり、地図からはみ出した）。
     // **1 枚ぶんずつ止まる**ので、めくったことが分かる
