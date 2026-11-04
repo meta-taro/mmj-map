@@ -249,6 +249,8 @@ export function buildPopupOptions(className = DEFAULT_POPUP_CLASS, maxWidth) {
  * ピンの高さから向きごとの量を入れる。24px 固定では、吹き出しの先が
  * ピンの頭に 10px めり込んでいた（実測・2026-11-04）。
  *
+ * 焦点の扱いは `mmj-marker.js` が持つ（**最初から開くときだけ**、焦点を移さない）。
+ *
  * @param {string} [className]
  */
 export function buildMarkerPopupOptions(className = DEFAULT_POPUP_CLASS) {
@@ -474,9 +476,10 @@ export function buildPopupStyle(colors = POPUP_COLORS, className = DEFAULT_POPUP
     `.${className} .mmj-popup-slide-prev{left:2px;}` +
     `.${className} .mmj-popup-slide-next{right:2px;}` +
     "}" +
-    // リンクは**押せると分かる形**にする（下線を消さない）
+    // リンクは**押せると分かる形**にする（下線を消さない）。
+    // **押す目標は 36px。**文字の高さのままだと 20px で、指で外す（`pnpm smoke` が検出・2026-11-04）
     `.${className} .mmj-popup-link{` +
-    `display:inline-block;margin-top:.45em;color:${colors.text};` +
+    `display:inline-flex;align-items:center;min-height:36px;color:${colors.text};` +
     "text-decoration:underline;text-underline-offset:2px;margin-right:.6em;}" +
     // 置く側が渡したアイコン。**大きさはこちらが決める**
     // （ばらばらの寸法で来るので、揃えないと並びが読みにくい）

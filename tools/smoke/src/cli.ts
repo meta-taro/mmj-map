@@ -191,6 +191,8 @@ await send("Network.setBypassServiceWorker", { bypass: true }, session);
 
 const found: Finding[] = [];
 let seen = 0;
+/** 測れた吹き出しの数。**0 なら見ていない**（地図が出ていない）ことを報告に出す */
+let pinsMeasured = 0;
 
 for (const size of widths) {
   const phone = size.width < 500;
@@ -243,12 +245,14 @@ for (const size of widths) {
       ...probe,
       consoleErrors: errors,
     };
+    pinsMeasured += probe.pins.length;
     const exempt = EXEMPT.get(name);
     found.push(...runChecks(page).filter((finding) => !exempt?.has(finding.rule)));
   }
 }
 
 console.log(report(seen, found));
+console.log(`吹き出しを測った数: ${pinsMeasured}（0 なら地図が出ておらず、ピンのずれは見ていません）`);
 
 ws.close();
 chrome.kill();

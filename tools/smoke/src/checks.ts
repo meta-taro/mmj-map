@@ -14,6 +14,9 @@
  * | ナビの的が 31px しか無かった | 止まる（`tap`） |
  * | 地図へ飛ぶ手段がキーボードに無かった | 止まる（`skip`） |
  * | LP の地図が折り目の下に沈んでいた | 止まる（`map-fold`） |
+ * | ピンが吹き出しの先から 5px 左にずれ、先がピンの頭に 10px めり込んでいた（2026-11-04） | 止まる（`pin`） |
+ * | 名前と住所を 1 行に詰めた吹き出しが、携帯で地図の外へ伸びていた（2026-11-04） | 止まる（`pin`） |
+ * | 開いた吹き出しがリンクへ焦点を奪い、入力欄の字が吸われた（2026-11-04） | 止まる（`focus`） |
  *
  * **絵の良し悪しは見ない。**「人が見なくても分かること」だけを機械にやらせる。
  * 配色や余白の可否は人の領域（`DESIGN.md`）。
@@ -67,7 +70,38 @@ export interface PageReport {
   /** 見出しの深さを、出てきた順に（`h1` なら 1） */
   readonly headings: readonly number[];
   readonly consoleErrors: readonly string[];
+  /**
+   * 頁を開いたあと、焦点が地図の吹き出しの中にあるか。
+   * **頁を開いただけで焦点が飛ぶと、頁が送られ、打った字が吸われる**
+   */
+  readonly focusInPopup: boolean;
+  /** 開いている吹き出し。**地図が出なかった頁では空**（タイルの無い CI など） */
+  readonly pins: readonly PinReport[];
 }
+
+/**
+ * 最初から開いている吹き出し 1 つ（`<mmj-marker popup-open>`）。
+ *
+ * **単体試験では測れない。**CSS と MapLibre の置き方が重なって初めて決まる位置なので、
+ * 関数の戻り値がすべて正しくても、画面ではずれる（実際にそうだった）。
+ */
+export interface PinReport {
+  readonly label: string;
+  /**
+   * 吹き出しの付き方（MapLibre の `maplibregl-popup-anchor-*`）。
+   * **地図の端では角へ付け替える**ので、真上（`bottom`）のときだけ揃いを見る
+   */
+  readonly anchor: string;
+  /** 吹き出しの先の中心 − ピンの絵の中心（px）。**0 が正しい** */
+  readonly offsetX: number;
+  /** ピンの頭の上端 − 吹き出しの先の下端（px）。**負ならめり込んでいる** */
+  readonly gap: number;
+  /** 吹き出しの箱が地図の枠の外へ出ている量（px）。**0 が正しい** */
+  readonly overflow: number;
+}
+
+/** ピンと吹き出しの中心のずれとして許す量（px）。**小数の丸めのぶんだけ** */
+export const PIN_TOLERANCE = 1;
 
 export interface Finding {
   readonly rule: string;
@@ -112,7 +146,31 @@ export function runChecks(page: PageReport): Finding[] {
   else if (!page.skipTarget) found.push({ rule: "skip", detail: `${at}: 飛ぶ先の要素が無い` });
 
   found.push(...checkHeadings(page.headings, at));
+  found.push(...checkPins(page.pins, at));
+  if (page.focusInPopup) {
+    found.push({ rule: "focus", detail: `${at}: 頁を開いただけで、焦点が地図の吹き出しへ移っている` });
+  }
 
+  return found;
+}
+
+/** 吹き出しが、ピンの真上に、地図の中に出ているか */
+function checkPins(pins: readonly PinReport[], at: string): Finding[] {
+  const found: Finding[] = [];
+  for (const pin of pins) {
+    const where = `${at}: 「${pin.label}」の吹き出し`;
+    // 角に付いた吹き出しは、先がピンの斜め上に来るのが正しい。**真上のときだけ比べる**
+    const above = pin.anchor === "bottom";
+    if (above && Math.abs(pin.offsetX) > PIN_TOLERANCE) {
+      found.push({ rule: "pin", detail: `${where}が、ピンから横へ ${pin.offsetX.toFixed(1)}px ずれている` });
+    }
+    if (above && pin.gap < 0) {
+      found.push({ rule: "pin", detail: `${where}が、ピンの頭に ${(-pin.gap).toFixed(1)}px めり込んでいる` });
+    }
+    if (pin.overflow > PIN_TOLERANCE) {
+      found.push({ rule: "pin", detail: `${where}が、地図の外へ ${Math.round(pin.overflow)}px はみ出している` });
+    }
+  }
   return found;
 }
 

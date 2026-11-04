@@ -175,6 +175,18 @@ export function needsChrome(parts) {
 }
 
 /**
+ * `<mmj-marker>` の吹き出しに見出しバーを付けるか。**写真が載ったときだけ。**
+ *
+ * 会社の地図のピンは「名前・住所・リンク」の 3 行で、開いたまま置かれる。
+ * 行数で決めると見出しバーが付き、**狭い画面では最大化から始まって地図が隠れる**。
+ *
+ * @param {readonly any[]} parts `popup.js` が組んだ中身
+ */
+export function markerNeedsChrome(parts) {
+  return needsChrome(parts) && parts.some((part) => part?.kind === "image");
+}
+
+/**
  * 開いたときの最初の状態。
  *
  * **狭い画面では最大化から始める。**幅 360px の吹き出しに写真は入らない。

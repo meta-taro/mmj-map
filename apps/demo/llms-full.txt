@@ -362,8 +362,18 @@ document.getElementById('map').toggleAttribute('3d');
 | `popup` | 押したときに出す文字 |
 | `image` | 吹き出しに載せる写真の URL（**http / https と相対パスだけ**） |
 | `image-alt` | 写真の代替テキスト。省くと `popup` の文字を使う |
-| `popup-open` | 最初から開いておく |
+| `popup-body` | 吹き出しの 2 行目（住所など）。**折り返す**ので長くても地図の外へ伸びない |
+| `popup-href` | 吹き出しに置くリンク（ホームページなど）。**http / https / mailto / tel だけ** |
+| `popup-href-label` | リンクの文字。省くと「詳しく見る」 |
+| `popup-open` | 最初から開いておく（**このときは焦点を移さない**。頁が地図まで送られないように） |
 | `color` | 目印の色 |
+
+名前・住所・ホームページを行に分けて出す（会社の頁のアクセス地図）:
+
+```html
+<mmj-marker lnglat="135.4874,34.6708" popup="株式会社サンプル" popup-body="大阪市西区1-2-3"
+            popup-href="https://example.com/" popup-href-label="ホームページ" popup-open></mmj-marker>
+```
 
 ### `<mmj-cluster>`
 

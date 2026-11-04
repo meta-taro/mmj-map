@@ -4,13 +4,15 @@
  * ```html
  * <mmj-marker lnglat="135.4959,34.7024" color="#7fb2ff" popup="梅田" popup-open></mmj-marker>
  * <mmj-marker lnglat="135.5023,34.6937" popup="北浜" image="./shop.jpg"></mmj-marker>
+ * <mmj-marker lnglat="135.4874,34.6708" popup="株式会社サンプル" popup-body="大阪市西区1-2-3"
+ *   popup-href="https://example.com/" popup-href-label="ホームページ" popup-open></mmj-marker>
  * ```
  *
  * 親の地図がまだ出来ていなければ、`mmj-ready` を待ってから付ける。
  * **待たずに付けると、読み込み順で付いたり付かなかったりする**（再現しない不具合になる）。
  */
 import { buildMarkerPopupOptions, parseLngLat } from "./attrs.js";
-import { initialCardState, needsChrome } from "./card.js";
+import { initialCardState, markerNeedsChrome } from "./card.js";
 import { mountCard } from "./card-dom.js";
 import { buildPopupContent } from "./popup.js";
 import { ensureCardContrast, ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
@@ -39,6 +41,19 @@ export class MmjMarker extends HTMLElement {
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
     parent.addEventListener("mmj-ready", (/** @type {any} */ event) => this.#attach(event.detail.map), { once: true });
+  }
+
+  /**
+   * 最初から開いておく。**このときだけ、中のリンクへ焦点を移さない。**
+   * 移すと、頁を開いた瞬間に焦点が地図へ飛んで頁が送られ、横の入力欄で打った字も吸われた
+   * （「ABC商店」が「A商店」になった・2026-11-04）。**押して開くときは移す**（キーボードで中へ行けるように）
+   */
+  #openAtLoad() {
+    const popup = this.marker?.getPopup();
+    if (!popup) return;
+    popup.options.focusAfterOpen = false;
+    this.marker.togglePopup();
+    popup.options.focusAfterOpen = true;
   }
 
   disconnectedCallback() {
@@ -71,6 +86,9 @@ export class MmjMarker extends HTMLElement {
       text: this.getAttribute("popup"),
       image: this.getAttribute("image"),
       imageAlt: this.getAttribute("image-alt"),
+      body: this.getAttribute("popup-body"),
+      href: this.getAttribute("popup-href"),
+      hrefLabel: this.getAttribute("popup-href-label"),
     });
     if (content.length > 0) {
       const colors = popupColorsFrom(parent);
@@ -79,7 +97,8 @@ export class MmjMarker extends HTMLElement {
 
       // **短い吹き出しは今までどおり。**「大阪城」の 3 文字にボタンを並べると
       // 箱がボタンで埋まる。中身が増えたときだけ容れ物にする。
-      if (needsChrome(content)) {
+      // 名前・住所・リンクだけなら容れ物にしない（`markerNeedsChrome` に理由）
+      if (markerNeedsChrome(content)) {
         ensureCardContrast(colors, className);
         this.card = mountCard({
           body: renderPopup(content),
@@ -99,7 +118,7 @@ export class MmjMarker extends HTMLElement {
 
     this.marker.addTo(map);
     // 最初から開いておきたい場合（案内したい 1 点がある地図）。**付けなければ閉じたまま**
-    if (content.length > 0 && this.hasAttribute("popup-open")) this.marker.togglePopup();
+    if (content.length > 0 && this.hasAttribute("popup-open")) this.#openAtLoad();
     this.style.display = "none"; // 目印は地図の上に出る。要素そのものは場所を取らない
   }
 }

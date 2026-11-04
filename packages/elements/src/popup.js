@@ -67,11 +67,17 @@ function schemeOf(trimmed) {
  */
 
 /**
- * @param {{ text?: string | null, image?: string | null, imageAlt?: string | null }} input
- * @returns {PopupPart[]} **中身が無ければ空**（空の箱を開かないため）
+ * 目印の吹き出し。写真・名前のあとに、**住所の行（`body`）とリンク（`href`）**を置ける。
+ * 会社の地図で「名前・住所・ホームページ」を 1 行に詰めると、携帯ではみ出すため。
+ *
+ * @param {{
+ *   text?: string | null, image?: string | null, imageAlt?: string | null,
+ *   body?: string | null, href?: string | null, hrefLabel?: string | null,
+ * }} input
+ * @returns {any[]} **中身が無ければ空**（空の箱を開かないため）
  */
 export function buildPopupContent(input) {
-  /** @type {PopupPart[]} */
+  /** @type {any[]} */
   const parts = [];
 
   const image = typeof input.image === "string" ? input.image.trim() : "";
@@ -85,6 +91,18 @@ export function buildPopupContent(input) {
   }
 
   if (text !== "") parts.push({ kind: "text", text });
+
+  // 住所の行は**文字のまま**（rich にしない）。折り返すので長い住所でもはみ出さない
+  const body = typeof input.body === "string" ? input.body.trim() : "";
+  if (body !== "") parts.push({ kind: "body", text: body, rich: false });
+
+  // **確かめは `isSafeLink` だけに任せる**（カードと同じ判定。写すと片方だけ直す事故が起きる）
+  if (isSafeLink(input.href)) {
+    const label = typeof input.hrefLabel === "string" && input.hrefLabel.trim() !== ""
+      ? input.hrefLabel.trim()
+      : DEFAULT_LINK_LABEL;
+    parts.push({ kind: "link", href: String(input.href).trim(), label });
+  }
 
   return parts;
 }

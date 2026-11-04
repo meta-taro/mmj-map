@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { LP_MAP_RATIO, MAP_TOP_RATIO, TAP_MIN, type PageReport, report, runChecks } from "../src/checks.js";
 
+/** 揃っている吹き出し（直したあとの実測: 横 0px・隙間 3.5px） */
+const alignedPin = { label: "大阪城", anchor: "bottom", offsetX: 0, gap: 3.5, overflow: 0 };
+
 /** 合格する頁。**各試験はここから 1 つだけ壊す**（何が効いたのか分かるように） */
 const ok: PageReport = {
   url: "shops.html",
@@ -15,9 +18,48 @@ const ok: PageReport = {
   skipTarget: true,
   headings: [1, 2, 2, 3],
   consoleErrors: [],
+  pins: [alignedPin],
+  focusInPopup: false,
 };
 
 const rules = (page: PageReport) => runChecks(page).map((finding) => finding.rule);
+
+describe("吹き出しとピン", () => {
+  /** **実際に起きたものを、そのまま試験にしている**（2026-11-04、拡張の見本で人が見つけた） */
+  it("吹き出しの先がピンから 5px ずれていたら止める", () => {
+    expect(rules({ ...ok, pins: [{ ...alignedPin, offsetX: 5 }] })).toContain("pin");
+  });
+
+  it("吹き出しの先がピンの頭に 10px めり込んでいたら止める", () => {
+    expect(rules({ ...ok, pins: [{ ...alignedPin, gap: -10 }] })).toContain("pin");
+  });
+
+  it("吹き出しが地図の外へはみ出していたら止める", () => {
+    expect(rules({ ...ok, pins: [{ ...alignedPin, overflow: 120 }] })).toContain("pin");
+  });
+
+  /** **地図の端では、MapLibre が吹き出しを角へ付け替える。**先が斜め上に来るのが正しい姿 */
+  it("角に付いた吹き出しは、ずれとして数えない（はみ出しは見る）", () => {
+    const corner = { ...alignedPin, anchor: "bottom-right", offsetX: -19, gap: -20.5 };
+    expect(rules({ ...ok, pins: [corner] })).not.toContain("pin");
+    expect(rules({ ...ok, pins: [{ ...corner, overflow: 30 }] })).toContain("pin");
+  });
+
+  /** 実際に起きたもの: 入力欄で「ABC商店」と打つと「A商店」になった（2026-11-04） */
+  it("頁を開いただけで焦点が吹き出しへ移っていたら止める", () => {
+    expect(rules({ ...ok, focusInPopup: true })).toContain("focus");
+  });
+
+  it("小数の丸め（1px まで）は止めない", () => {
+    expect(rules({ ...ok, pins: [{ ...alignedPin, offsetX: -0.5, overflow: 0.8 }] })).not.toContain("pin");
+  });
+
+  it("何が起きたかを、数字で言う", () => {
+    const [finding] = runChecks({ ...ok, pins: [{ ...alignedPin, offsetX: 5 }] });
+    expect(finding?.detail).toContain("大阪城");
+    expect(finding?.detail).toContain("5.0px");
+  });
+});
 
 describe("runChecks", () => {
   it("整っている頁では、何も言わない", () => {

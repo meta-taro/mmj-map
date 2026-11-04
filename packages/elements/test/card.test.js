@@ -7,6 +7,7 @@ import {
   keyAction,
   NARROW_WIDTH,
   mapCardFields,
+  markerNeedsChrome,
   needsChrome,
   nextCardState,
   readShopParam,
@@ -104,6 +105,25 @@ describe("controlsFor", () => {
     for (const name of /** @type {const} */ (["maximize", "restore", "close"])) {
       expect(CONTROL_LABELS[name].length).toBeGreaterThan(1);
     }
+  });
+});
+
+describe("markerNeedsChrome", () => {
+  /**
+   * **会社の地図のピンは、名前・住所・リンクの 3 行で開いたままにされる。**
+   * そこに見出しバーを付けると、狭い画面では最大化から始まり、**地図が隠れる**。
+   * 容れ物にするのは、写真が載ったときだけ。
+   */
+  it("名前・住所・リンクだけなら、今までどおりの吹き出し", () => {
+    expect(markerNeedsChrome([{ kind: "text" }, { kind: "body" }, { kind: "link" }])).toBe(false);
+  });
+
+  it("写真が付いたら容れ物にする（今までどおり）", () => {
+    expect(markerNeedsChrome([{ kind: "image" }, { kind: "text" }])).toBe(true);
+  });
+
+  it("写真だけ 1 枚なら付けない（needsChrome と同じ）", () => {
+    expect(markerNeedsChrome([{ kind: "image" }])).toBe(false);
   });
 });
 

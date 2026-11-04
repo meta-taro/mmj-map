@@ -5,7 +5,7 @@
  * ここだけは頁の中で動く JavaScript をそのまま持つ。
  * **その代わり、返ってきたものは必ずこちらで検算する**（`readProbe`）。
  */
-import type { Stage, TapTarget } from "./checks.js";
+import type { PinReport, Stage, TapTarget } from "./checks.js";
 
 export interface Probe {
   readonly scrollWidth: number;
@@ -15,6 +15,8 @@ export interface Probe {
   readonly skipLink: boolean;
   readonly skipTarget: boolean;
   readonly headings: readonly number[];
+  readonly pins: readonly PinReport[];
+  readonly focusInPopup: boolean;
 }
 
 /**
@@ -69,7 +71,41 @@ export const PROBE = `(() => {
   const skip = document.querySelector('.skip-link, .lp-skip');
   const to = skip === null ? null : (skip.getAttribute('href') ?? '').slice(1);
 
+  // **開いている吹き出しを、いちばん近いピンと組にして測る。**
+  // <mmj-marker> 要素からはたどれない（<mmj-map> は描くときに子を DOM から外す）。
+  // ピンの絵（svg）が 60px より遠い吹き出しは、ピンの無いもの（店のカードなど）として見ない。
+  // 地図が出ていない頁では 0 件になる。数えた数は cli.ts が出す
+  const PAIR_MAX = 60;
+  const shapes = [...document.querySelectorAll('.maplibregl-marker svg')].filter(shown).map(box);
+  const pins = [...document.querySelectorAll('.maplibregl-popup')].flatMap((root) => {
+    const tip = root.querySelector('.maplibregl-popup-tip');
+    const content = root.querySelector('.maplibregl-popup-content');
+    const frame = root.closest('.maplibregl-map');
+    if (!tip || !content || !frame) return [];
+    const t = box(tip), c = box(content), f = box(frame);
+    const tipX = (t.left + t.right) / 2;
+    const near = shapes
+      .map((s) => ({ s, d: Math.hypot((s.left + s.right) / 2 - tipX, s.top - t.bottom) }))
+      .sort((a, b) => a.d - b.d)[0];
+    if (!near || near.d > PAIR_MAX) return [];
+    const s = near.s;
+    const text = root.querySelector('.mmj-popup-text');
+    const anchor = ([...root.classList].find((name) => name.startsWith('maplibregl-popup-anchor-')) || '')
+      .replace('maplibregl-popup-anchor-', '');
+    return [{
+      label: ((text && text.textContent) || '').trim().slice(0, 24),
+      anchor,
+      offsetX: tipX - (s.left + s.right) / 2,
+      gap: s.top - t.bottom,
+      overflow: Math.max(0, f.left - c.left, c.right - f.right, f.top - c.top),
+    }];
+  });
+
+  const focused = document.activeElement;
+
   return JSON.stringify({
+    pins,
+    focusInPopup: focused !== null && focused.closest('.maplibregl-popup') !== null,
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
     stage,
@@ -113,7 +149,31 @@ export function readProbe(raw: unknown): Probe | null {
     headings: Array.isArray(value["headings"])
       ? value["headings"].filter((level): level is number => typeof level === "number")
       : [],
+    pins: readPins(value["pins"]),
+    focusInPopup: value["focusInPopup"] === true,
   };
+}
+
+/** **数字でない吹き出しは数えない**（合格にもしない。数えた数は cli.ts が出す） */
+function readPins(value: unknown): PinReport[] {
+  if (!Array.isArray(value)) return [];
+  const pins: PinReport[] = [];
+  for (const item of value) {
+    if (typeof item !== "object" || item === null) continue;
+    const pin = item as Record<string, unknown>;
+    const offsetX = numberOf(pin["offsetX"]);
+    const gap = numberOf(pin["gap"]);
+    const overflow = numberOf(pin["overflow"]);
+    if (offsetX === null || gap === null || overflow === null) continue;
+    pins.push({
+      label: typeof pin["label"] === "string" ? pin["label"] : "(名前なし)",
+      anchor: typeof pin["anchor"] === "string" ? pin["anchor"] : "",
+      offsetX,
+      gap,
+      overflow,
+    });
+  }
+  return pins;
 }
 
 function numberOf(value: unknown): number | null {

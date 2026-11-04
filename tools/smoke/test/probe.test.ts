@@ -10,6 +10,8 @@ const measured = {
   skipLink: true,
   skipTarget: true,
   headings: [1, 2],
+  pins: [{ label: "大阪城", anchor: "bottom", offsetX: 0, gap: 3.5, overflow: 0 }],
+  focusInPopup: false,
 };
 
 describe("readProbe", () => {
@@ -60,6 +62,11 @@ describe("readProbe", () => {
     expect(readProbe(JSON.stringify({ ...measured, skipLink: "yes" }))?.skipLink).toBe(false);
   });
 
+  it("寸法が数字でない吹き出しは数えない（**合格にもしない**）", () => {
+    const got = readProbe(JSON.stringify({ ...measured, pins: [{ label: "壊れ", offsetX: "5" }, measured.pins[0]] }));
+    expect(got?.pins).toEqual(measured.pins);
+  });
+
   it("見出しは数字だけ拾う", () => {
     expect(readProbe(JSON.stringify({ ...measured, headings: [1, "2", 3] }))?.headings).toEqual([1, 3]);
   });
@@ -68,7 +75,7 @@ describe("readProbe", () => {
 describe("PROBE", () => {
   /** **頁の中で動く式は型で守れない。**せめて、測る対象が全部入っているかは見る */
   it("測る対象が全部入っている", () => {
-    for (const key of ["scrollWidth", "clientWidth", "stage", "taps", "skipLink", "skipTarget", "headings"]) {
+    for (const key of ["scrollWidth", "clientWidth", "stage", "taps", "skipLink", "skipTarget", "headings", "pins", "focusInPopup"]) {
       expect(PROBE).toContain(key);
     }
   });

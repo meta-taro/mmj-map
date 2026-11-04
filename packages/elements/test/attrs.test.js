@@ -126,6 +126,15 @@ describe("buildMarkerPopupOptions", () => {
     expect(buildMarkerPopupOptions("mmj-popup-abc")).not.toHaveProperty("offset");
   });
 
+  /**
+   * **押して開いたときは、焦点を中へ移す**（MapLibre の既定のまま）。キーボードで開いた人が
+   * 中のリンクへ行けるように。最初から開く（`popup-open`）ときだけ `mmj-marker.js` が止める
+   * （頁を開いただけで焦点が飛ぶのは `pnpm smoke` の `focus` が見張る）
+   */
+  it("押して開いたときの焦点は、MapLibre の既定のまま", () => {
+    expect(buildMarkerPopupOptions("mmj-popup-abc")).not.toHaveProperty("focusAfterOpen");
+  });
+
   it("ほかは吹き出しの既定と同じ", () => {
     const { offset: _offset, ...rest } = buildPopupOptions("mmj-popup-abc");
     expect(buildMarkerPopupOptions("mmj-popup-abc")).toEqual(rest);
@@ -413,6 +422,12 @@ describe("buildControlStyle", () => {
    * 負の margin は左だけが効き、**ピンが吹き出しから 5px 左へずれた**
    * （実測・2026-11-04。`translate(-50%)` が余白込みの幅で中心を取るので、余白だけで中心は動かない）。
    */
+  /** 吹き出しのリンク（ホームページ・詳しく見る）。**文字の高さのままだと 20px** だった */
+  it("吹き出しのリンクは、押す目標の 36px を持つ", () => {
+    const rule = buildPopupStyle(light, "mmj-popup-abc").match(/\.mmj-popup-link\{[^}]*\}/)?.[0];
+    expect(rule).toContain("min-height:36px");
+  });
+
   it("目印に負の margin を付けない", () => {
     const rule = buildControlStyle(light, "mmj-ctrl-abc").match(/\.maplibregl-marker\{[^}]*\}/)?.[0];
     expect(rule).toContain("padding:0 5px");

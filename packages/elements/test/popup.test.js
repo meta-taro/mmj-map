@@ -39,6 +39,33 @@ describe("buildPopupContent", () => {
     expect(buildPopupContent({ image: "a.jpg" })).toHaveLength(1);
   });
 
+  /** 会社の地図のピン。**名前・住所・ホームページを行に分けて出す**（1 行に詰めると携帯ではみ出す） */
+  it("名前・住所・リンクの順に並べる", () => {
+    expect(
+      buildPopupContent({ text: "株式会社サンプル", body: "大阪市西区1-2-3", href: "https://example.com/", hrefLabel: "ホームページ" }),
+    ).toEqual([
+      { kind: "text", text: "株式会社サンプル" },
+      { kind: "body", text: "大阪市西区1-2-3", rich: false },
+      { kind: "link", href: "https://example.com/", label: "ホームページ" },
+    ]);
+  });
+
+  it("リンクの文字を省くと、既定の文字を出す", () => {
+    expect(buildPopupContent({ text: "店", href: "https://example.com/" })[1]).toEqual({
+      kind: "link",
+      href: "https://example.com/",
+      label: "詳しく見る",
+    });
+  });
+
+  it("**`javascript:` のリンクは出さない**（押した瞬間に、置いた頁で走る）", () => {
+    expect(buildPopupContent({ text: "店", href: "javascript:alert(1)" })).toEqual([{ kind: "text", text: "店" }]);
+  });
+
+  it("空白だけの住所は出さない（空の行を作らない）", () => {
+    expect(buildPopupContent({ text: "店", body: "   " })).toEqual([{ kind: "text", text: "店" }]);
+  });
+
   it("中身が無ければ空を返す（**空の箱を開かない**）", () => {
     expect(buildPopupContent({})).toEqual([]);
     expect(buildPopupContent({ text: "" })).toEqual([]);
