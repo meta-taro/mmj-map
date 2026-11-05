@@ -11,7 +11,15 @@ import {
   pickPreviewTiles,
   pinLink,
 } from "../src/snippet.js";
-import { DEMO_DETAIL_BBOX, MAPLIBRE_VERSION, MAP_STYLES, PMTILES_VERSION, PUBLISHED_REGIONS } from "../src/constants.js";
+import {
+  DEMO_DETAIL_BBOX,
+  MAPLIBRE_FILES,
+  MAPLIBRE_VERSION,
+  MAP_STYLES,
+  PMTILES_VERSION,
+  PUBLISHED_REGIONS,
+} from "../src/constants.js";
+import { findRemoteCode } from "./remote-code.js";
 
 const osaka = { lng: 135.5023, lat: 34.6937, zoom: 14 };
 
@@ -72,11 +80,27 @@ describe("buildSnippet", () => {
     expect(html).toContain(`npx @mmj-map/tiles extract map --bbox=${extractBbox(osaka).join(",")}`);
   });
 
-  /** **写して動く最小の 1 枚**（llms.txt）と同じ読み込み方にする */
   it("MapLibre は ESM で読み、window に置く", () => {
-    expect(html).toContain(`maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.mjs`);
+    expect(html).toContain('import * as maplibregl from "./vendor/maplibre-gl/maplibre-gl.mjs"');
     expect(html).toContain("window.maplibregl = maplibregl");
-    expect(html).toContain(`pmtiles@${PMTILES_VERSION}/dist/pmtiles.js`);
+    expect(html).toContain('<script src="./vendor/pmtiles/pmtiles.js"></script>');
+    expect(html).toContain('<link rel="stylesheet" href="./vendor/maplibre-gl/maplibre-gl.css">');
+  });
+
+  /**
+   * **CDN から読む形を書かない。**拡張が実行しない文面でも、ストアの審査は中の文字列で落とす
+   * （2026-11-05、Blue Argon で拒否された）。MapLibre と pmtiles は頁の隣へ置いてもらう
+   */
+  it("外からコードを読む書き方を入れない", () => {
+    expect(findRemoteCode(html)).toEqual([]);
+    expect(findRemoteCode(buildAgentBrief(osaka))).toEqual([]);
+  });
+
+  /** 置き方を書かないと、`./vendor/` が 404 になって地図が出ない */
+  it("MapLibre と pmtiles を頁の隣へ置く手順を、貼るものの中に書いておく", () => {
+    expect(html).toContain(`npm i maplibre-gl@${MAPLIBRE_VERSION} pmtiles@${PMTILES_VERSION}`);
+    for (const name of MAPLIBRE_FILES) expect(html).toContain(name);
+    expect(html).toContain("node_modules/pmtiles/dist/pmtiles.js");
   });
 
   /** **Google の地点のデータを持ち出さない**（D-034）。目印は置き手が自分で置く */

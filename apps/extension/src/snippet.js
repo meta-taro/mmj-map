@@ -8,6 +8,7 @@ import {
   DEMO_BASE,
   DEMO_DETAIL_BBOX,
   DEMO_OVERVIEW_MAX_ZOOM,
+  MAPLIBRE_FILES,
   MAPLIBRE_VERSION,
   MAP_STYLES,
   PMTILES_VERSION,
@@ -157,7 +158,10 @@ function centerOf(place, pin) {
 }
 
 /**
- * 貼るもの。**`llms.txt` の「写して動く最小の 1 枚」と同じ形**にしてある。
+ * 貼るもの。`llms.txt` の「写して動く最小の 1 枚」と同じ組み立てで、
+ * **MapLibre と pmtiles だけは CDN ではなく頁の隣（`./vendor/`）から読む**。
+ * MV3 の審査は、拡張が実行しない文面でも、中にある CDN の `<script src>` で落とす
+ * （2026-11-05、Blue Argon で拒否された）。置き方は先頭の注記に書く。
  *
  * @param {Place} place
  * @param {SnippetOptions} [options] 置き手が見本の頁で置いたピンと、選んだ配色
@@ -167,10 +171,15 @@ export function buildSnippet(place, { pin = null, style } = {}) {
   const center = centerOf(place, pin);
   const bbox = extractBbox(center).join(",");
   const marker = pin === null ? "" : `  ${buildMarker(pin)}\n`;
-  return `<!-- タイルを切り出す: npx @mmj-map/tiles extract map --bbox=${bbox}
-     出てきた ./tiles/map.<日付>.pmtiles に合わせて tiles を直す。
-     スタイルと部品の置き方: https://github.com/meta-taro/mmj-map/blob/develop/docs/install/ja.md -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.css">
+  const maplibreFiles = MAPLIBRE_FILES.map((name) => `node_modules/maplibre-gl/dist/${name}`).join(" ");
+  return `<!-- 頁の隣に置くもの
+     1. タイル: npx @mmj-map/tiles extract map --bbox=${bbox}
+        出てきた ./tiles/map.<日付>.pmtiles に合わせて tiles を直す。
+     2. MapLibre と pmtiles: npm i maplibre-gl@${MAPLIBRE_VERSION} pmtiles@${PMTILES_VERSION} のあと
+        ${maplibreFiles} を ./vendor/maplibre-gl/ へ、
+        node_modules/pmtiles/dist/pmtiles.js を ./vendor/pmtiles/ へ写す。
+     3. スタイルと部品: https://github.com/meta-taro/mmj-map/blob/develop/docs/install/ja.md -->
+<link rel="stylesheet" href="./vendor/maplibre-gl/maplibre-gl.css">
 <style>mmj-map { display: block; height: 70vh; }</style>
 
 <mmj-map
@@ -181,10 +190,10 @@ export function buildSnippet(place, { pin = null, style } = {}) {
 ${marker}</mmj-map>
 
 <script type="module">
-  import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.mjs";
+  import * as maplibregl from "./vendor/maplibre-gl/maplibre-gl.mjs";
   window.maplibregl = maplibregl;
 </script>
-<script src="https://cdn.jsdelivr.net/npm/pmtiles@${PMTILES_VERSION}/dist/pmtiles.js"></script>
+<script src="./vendor/pmtiles/pmtiles.js"></script>
 <script type="module" src="./elements/index.js"></script>`;
 }
 

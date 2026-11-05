@@ -3,9 +3,16 @@
  * （`test/snippet.test.js` の `constants`）。
  */
 
-/** 貼るものが CDN から読む版。ルートの `package.json` の devDependencies と同じにする */
+/** 貼るものが頁の隣へ置いてもらう版。ルートの `package.json` の devDependencies と同じにする */
 export const MAPLIBRE_VERSION = "6.14.0";
 export const PMTILES_VERSION = "4.5.0";
+
+/**
+ * MapLibre 6 の ESM が動くのに要るファイル。拡張の `dist/vendor/maplibre-gl/` へ同梱するものと、
+ * 貼るものが置き手に頁の隣へ写してもらうものは**同じ一覧**にする（`scripts/build.mjs` も読む）。
+ * **CDN から読む形は書かない。**MV3 の審査は、拡張が実行しない文面でも中の文字列で落とす（2026-11-05）
+ */
+export const MAPLIBRE_FILES = ["maplibre-gl.mjs", "maplibre-gl-shared.mjs", "maplibre-gl-worker.mjs", "maplibre-gl.css"];
 
 /** デモの公開先。見本はここのタイルとスタイルを読む */
 export const DEMO_BASE = "https://meta-taro.github.io/mmj-map/";

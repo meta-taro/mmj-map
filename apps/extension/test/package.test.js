@@ -1,7 +1,14 @@
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { inflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { buildZip } from "../scripts/zip.mjs";
+import { findRemoteCode } from "./remote-code.js";
+
+/** 中を読むファイル。画像は読まない */
+const TEXT_FILES = /\.(?:m?js|html|css|json)$/;
 
 const manifest = JSON.parse(readFileSync(new URL("../src/manifest.json", import.meta.url), "utf8"));
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
@@ -58,6 +65,23 @@ describe("ストアへ出す形", () => {
       const bytes = readFileSync(new URL(`../src/${path}`, import.meta.url));
       expect(pngSize(bytes), path).toEqual({ width: Number(size), height: Number(size) });
     }
+  });
+
+  /**
+   * **審査が見るのは zip の中身。**だから実際に `dist/` を組み、出すファイルを全部読む
+   * （2026-11-05、貼る HTML の文面にあった CDN の `<script src>` で Blue Argon の拒否を受けた）。
+   * 同梱した MapLibre・pmtiles・部品も含めて見る
+   */
+  it("出すファイルのどれにも、外からコードを読む書き方が無い", () => {
+    execFileSync(process.execPath, [fileURLToPath(new URL("../scripts/build.mjs", import.meta.url))]);
+    const dist = fileURLToPath(new URL("../dist", import.meta.url));
+    const texts = readdirSync(dist, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile() && TEXT_FILES.test(entry.name))
+      .map((entry) => join(entry.parentPath, entry.name));
+    // **0 件で合格にしない。**組めずに空の dist を見ていても緑になる
+    expect(texts.length).toBeGreaterThan(10);
+    const hits = texts.flatMap((path) => findRemoteCode(readFileSync(path, "utf8")).map((hit) => `${path}: ${hit}`));
+    expect(hits).toEqual([]);
   });
 });
 

@@ -11,13 +11,13 @@
 import { cpSync, existsSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { MAPLIBRE_FILES } from "../src/constants.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const app = resolve(here, "..");
 const repo = resolve(app, "../..");
 const dist = resolve(app, "dist");
 
-const MAPLIBRE_FILES = ["maplibre-gl.mjs", "maplibre-gl-shared.mjs", "maplibre-gl-worker.mjs", "maplibre-gl.css"];
 
 /** @type {Array<[string, string]>} [元, 先] */
 const copies = [
