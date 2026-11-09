@@ -2,6 +2,8 @@
 
 Google マップで開いている場所を、**API キーなしで自分の頁に置ける HTML** にします（D-034）。
 
+入れる: [Chrome ウェブストア](https://chromewebstore.google.com/detail/omcbdcaobfbdnanmmlilondkmgpcfaph)（0.1.1、2026-11-09 に一般公開）
+
 - **HTML を写す** — そのまま貼れる 1 枚。先頭に、頁の隣へ置くもの（タイルの切り出し・MapLibre と pmtiles の写し方・
   スタイルと部品）を書いてあります。**MapLibre と pmtiles は CDN ではなく `./vendor/` から読みます**
   （ストアの審査は、拡張が実行しない文面でも、中の CDN の `<script src>` で落とすため。2026-11-05）

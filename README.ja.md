@@ -93,6 +93,22 @@ npx @mmj-map/tiles extract osaka --bbox=135.4,34.6,135.6,34.8
 | 切り出し | [`@mmj-map/tiles`](https://www.npmjs.com/package/@mmj-map/tiles) |
 | 導入手順 | [日本語](docs/install/ja.md) · [English](docs/install/en.md) · [繁體中文](docs/install/zh-TW.md) · [简体中文](docs/install/zh-CN.md) · [Tiếng Việt](docs/install/vi.md) |
 | 属性の全文（1 回の取得で全部） | <https://meta-taro.github.io/mmj-map/llms-full.txt> |
+| Chrome 拡張 | [Chrome ウェブストア](https://chromewebstore.google.com/detail/omcbdcaobfbdnanmmlilondkmgpcfaph) |
+
+### Google マップから始める（Chrome 拡張）
+
+**Google マップで開いている場所を、そのまま貼れる HTML にします。**
+拡張のボタンを押すと、同じ中心と縮尺の `<mmj-map>` と、頁の隣に置くもの
+（タイルの切り出しコマンド・スタイル・部品）を書いた 1 枚が出ます。
+会社名・住所・ホームページを入れると吹き出し付きのピンが立ち、
+携帯と PC の幅、明るい地図と暗い地図で、置いたときの見え方を先に確かめられます。
+「AI に渡す形で写す」を押すと、手順と守ることを添えた文面が出るので、サイトを作っている AI にそのまま渡せます。
+
+読むのは**押したときのタブの URL（中心と縮尺）だけ**です。店名や地点は読まず、
+入れた名前や住所はどこにも送りません。権限は `activeTab` だけです。
+
+→ [Chrome ウェブストアで入れる](https://chromewebstore.google.com/detail/omcbdcaobfbdnanmmlilondkmgpcfaph)
+（中身は [`apps/extension/`](apps/extension/)）
 
 > **状態: 使えます。ただし初期です。**
 > **配信されたタイルはありません**（自分で切り出します。それが狙いです）。

@@ -99,6 +99,24 @@ nothing to compile.
 | Tile extractor | [`@mmj-map/tiles`](https://www.npmjs.com/package/@mmj-map/tiles) |
 | Full install guide | [English](docs/install/en.md) · [日本語](docs/install/ja.md) · [繁體中文](docs/install/zh-TW.md) · [简体中文](docs/install/zh-CN.md) · [Tiếng Việt](docs/install/vi.md) |
 | Every attribute, in one fetch | <https://meta-taro.github.io/mmj-map/llms-full.txt> |
+| Chrome extension | [Chrome Web Store](https://chromewebstore.google.com/detail/omcbdcaobfbdnanmmlilondkmgpcfaph) |
+
+### Start from Google Maps (Chrome extension)
+
+**It turns the place you have open in Google Maps into HTML you can paste.**
+Press the extension's button and you get a `<mmj-map>` with the same centre and zoom, plus
+a note on what to put next to the page (the tile-cutting command, a style, the components).
+Add a name, address and website and a pin with a popup appears; you can check how it will
+look at phone and desktop widths, on light and dark maps, before you paste it.
+The second button (「AI に渡す形で写す」, copy for AI) gives the same thing as instructions with the rules attached, ready to hand
+to an AI that is building your site.
+
+It reads **only the tab's URL (centre and zoom) when you press it**. It does not read place
+names or pins, and nothing you type is sent anywhere. The only permission is `activeTab`.
+The extension's UI is in Japanese for now.
+
+→ [Install from the Chrome Web Store](https://chromewebstore.google.com/detail/omcbdcaobfbdnanmmlilondkmgpcfaph)
+(source in [`apps/extension/`](apps/extension/))
 
 > **Status: usable, early.** There are **no hosted tiles — you cut your own, which is the
 > point**. There are no Japanese glyphs, so CJK labels fall back to the viewer's font and
