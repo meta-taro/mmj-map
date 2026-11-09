@@ -723,12 +723,23 @@
 
 /* --- 足元 ----------------------------------------------------------------- */
 
+/* **足元は `<main>` の外にある**（d4674b7 で外へ出した）。本文の器の幅と余白を
+ * ここでも持たないと、左端に貼り付き、線が窓いっぱいに伸びる。
+ * 上の間は `.lp-main` の下の余白がすでに取っているので、足さない。 */
 .lp-footer {
-  margin-top: clamp(3.5rem, 10vw, 6rem);
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--line);
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 2.5rem) 3rem;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+/* 線は器の余白の内側だけに引く（本文の端と揃える） */
+.lp-footer::before {
+  content: "";
+  display: block;
+  margin-bottom: 1.5rem;
+  border-top: 1px solid var(--line);
 }
 
 .lp-footer p {
