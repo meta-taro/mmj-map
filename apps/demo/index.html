@@ -65,6 +65,29 @@
   ]
 }
 </script>
+<!-- 「よくある質問」の節と同じ文。**画面に出ていない答えをここにだけ書かない** -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "API キーや料金は要りますか。",
+      "acceptedAnswer": { "@type": "Answer", "text": "要りません。地図サーバーも従量課金もありません。コードと配色は MIT です。置き場（GitHub Pages など）の条件だけは、置く側で確かめてください。" } },
+    { "@type": "Question", "name": "日本以外でも使えますか。",
+      "acceptedAnswer": { "@type": "Answer", "text": "使えます。切り出せる範囲は地球全体です。配色が一番作り込んであるのが日本で、ほかの 7 地域も同じコードで出ています。" } },
+    { "@type": "Question", "name": "通信が無くても出ますか。",
+      "acceptedAnswer": { "@type": "Answer", "text": "会場ほどの範囲なら出ます。一度開けば、地図と描く道具が端末に残ります。日本全土のような広さでは、同じことはできません。" } },
+    { "@type": "Question", "name": "Google マップから乗り換えると安くなりますか。",
+      "acceptedAnswer": { "@type": "Answer", "text": "安くするための道具ではありません。座標の取得元が「その提供者の地図の上に表示すること」を条件にしている場合、ベース地図だけを差し替えることはできません。" } },
+    { "@type": "Question", "name": "React や Vue でも使えますか。",
+      "acceptedAnswer": { "@type": "Answer", "text": "部品は HTML の要素なので、そのまま置けます。専用の包みはまだ書いていません。" } },
+    { "@type": "Question", "name": "日本語のラベルはどう出ますか。",
+      "acceptedAnswer": { "@type": "Answer", "text": "見ている人の端末のフォントで描きます。そのため、字の形は端末ごとに変わります。" } },
+    { "@type": "Question", "name": "表示で守ることはありますか。",
+      "acceptedAnswer": { "@type": "Answer", "text": "© OpenStreetMap contributors を画面から消さないでください。地図のデータは ODbL です。" } }
+  ]
+}
+</script>
 </head>
 <body class="lp">
 
@@ -130,6 +153,17 @@
     <div><dt>会場ひとそろい</dt><dd><b>3.6</b> MB</dd></div>
     <div><dt>手書きスタイル</dt><dd><b>6</b> 枚</dd></div>
   </dl>
+
+  <!-- **最初に言い切る。**検索や AI の回答に引かれるのは、ここの 1 段落になることが多い -->
+  <section class="lp-section" id="what">
+    <h2>MMJ とは</h2>
+    <p class="lp-section-lead">
+      <strong>MMJ は、API キーも地図サーバーも使わずに、自分のサイトに地図を置くためのオープンソースの部品です。</strong>
+      必要な範囲だけを切り出した地図のファイル（PMTiles）と手書きの配色を、静的な置き場に並べ、
+      HTML に <code>&lt;mmj-map&gt;</code> を書くだけで地図が出ます。
+      地図のデータは OpenStreetMap、描くのは MapLibre で、コードと配色は MIT ライセンスです。
+    </p>
+  </section>
 
   <section class="lp-section" id="can">
     <h2>できること</h2>
@@ -248,6 +282,65 @@
       読むのはタブの URL だけです。
       <a href="https://chromewebstore.google.com/detail/omcbdcaobfbdnanmmlilondkmgpcfaph">Chrome ウェブストアで入れる</a>
     </p>
+
+    <!-- **入れる先は 2 つだけ。**版の一覧は npm と CHANGELOG が持っているので、ここには書かない -->
+    <p class="lp-actions">
+      <a class="lp-btn lp-btn-primary" href="https://www.npmjs.com/package/@mmj-map/elements">npm で部品を入れる</a>
+      <a class="lp-btn" href="https://chromewebstore.google.com/detail/omcbdcaobfbdnanmmlilondkmgpcfaph">Chrome 拡張を入れる</a>
+    </p>
+    <p class="lp-note">
+      これまでの版と変わったことは
+      <a href="https://www.npmjs.com/package/@mmj-map/elements?activeTab=versions">npm の版の一覧</a>と
+      <a href="https://github.com/meta-taro/mmj-map/blob/develop/packages/elements/CHANGELOG.md">変更の記録</a>にあります。
+    </p>
+  </section>
+
+  <section class="lp-section" id="roadmap">
+    <h2>ロードマップ</h2>
+    <p class="lp-section-lead">どこまでできていて、次に何をするか。<strong>続けるのをやめる条件</strong>も先に書いておきます。</p>
+
+    <!-- 表（.lp-table）にしない。あれは数字の列を折り返さない作りで、文章を入れると携帯ではみ出す -->
+    <ul class="lp-list">
+      <li><strong>済み</strong> —— 地図の部品（目印・自前の点・まとめ・経路・円・重ね・塗り分けほか）、
+        切り出しの道具、配色 6 枚、8 地域の見本、Chrome 拡張</li>
+      <li><strong>いま</strong> —— 使っている人の要望から直す。自分たちで案を足していくのはやめ、測って出た事実だけで動きます</li>
+      <li><strong>次</strong> —— 日本の次の地域のスタイル（台湾・上海・ベトナム・シンガポール）</li>
+      <li><strong>その後</strong> —— React・Vue 向けの薄い包み。<strong>予定で、まだ書いていません</strong></li>
+      <li><strong>決めていない</strong> —— すぐ試せるタイルの配信先を用意するか。
+        日本語の字形を自前で配るか（いまは閲覧側のフォントで描いています）</li>
+    </ul>
+
+    <p>次のどれかが起きたら、<strong>続ける前に企画を見直します。</strong></p>
+    <ul class="lp-list">
+      <li>Protomaps の日次プラネットビルドが止まる、または利用条件が変わる</li>
+      <li>手書きの配色が、汎用のスタイルと見分けがつかない水準に留まる</li>
+      <li>部品が、MapLibre を直接呼ぶのと変わらない厚さにしかならない</li>
+    </ul>
+    <p class="lp-note">作らないものは<a href="#not">下の節</a>にまとめてあります。</p>
+  </section>
+
+  <section class="lp-section" id="faq">
+    <h2>よくある質問</h2>
+    <ul class="lp-list">
+      <li><strong>API キーや料金は要りますか。</strong>
+        要りません。地図サーバーも従量課金もありません。コードと配色は MIT です。
+        置き場（GitHub Pages など）の条件だけは、置く側で確かめてください</li>
+      <li><strong>日本以外でも使えますか。</strong>
+        使えます。切り出せる範囲は地球全体です。配色が一番作り込んであるのが日本で、
+        <a href="./regions.html">ほかの 7 地域</a>も同じコードで出ています</li>
+      <li><strong>通信が無くても出ますか。</strong>
+        会場ほどの範囲なら出ます。一度開けば、地図と描く道具が端末に残ります。
+        日本全土のような広さでは、同じことはできません</li>
+      <li><strong>Google マップから乗り換えると安くなりますか。</strong>
+        <strong>安くするための道具ではありません。</strong>座標の取得元が「その提供者の地図の上に表示すること」を
+        条件にしている場合、ベース地図だけを差し替えることはできません</li>
+      <li><strong>React や Vue でも使えますか。</strong>
+        部品は HTML の要素なので、そのまま置けます。専用の包みは<strong>まだ書いていません</strong></li>
+      <li><strong>日本語のラベルはどう出ますか。</strong>
+        見ている人の端末のフォントで描きます。そのため、<strong>字の形は端末ごとに変わります</strong></li>
+      <li><strong>表示で守ることはありますか。</strong>
+        <code>© OpenStreetMap contributors</code> を画面から消さないでください。地図のデータは ODbL です</li>
+    </ul>
   </section>
 
 
