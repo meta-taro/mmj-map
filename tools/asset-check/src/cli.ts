@@ -17,6 +17,7 @@ import { dirname, resolve, relative, sep } from "node:path";
 
 import { brokenBold } from "./bold.js";
 import { extractReferences, findBasePathHazards, findMarkdownInData, resolveReference, type Mount } from "./refs.js";
+import { structuredDataProblems } from "./structured.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -94,10 +95,17 @@ if (files.length === 0) {
 
 let checked = 0;
 let failed = 0;
+let structured = 0;
 
 for (const file of files) {
   const html = readFileSync(resolve(repoRoot, file), "utf8");
   const fromDir = posix(relative(repoRoot, dirname(resolve(repoRoot, file))));
+
+  // 構造化データ。**読めない・画面と食い違う FAQ は、緑のまま検索と AI に出ていく**
+  for (const problem of structuredDataProblems(html)) {
+    console.error(`NG ${file} ${problem}`);
+    structured++;
+  }
 
   const references = extractReferences(html);
 
@@ -194,10 +202,16 @@ if (marked > 0) {
   console.error("強調したいときは HTML で書き、card-rich で項目を名指ししてください。");
   process.exit(1);
 }
+if (structured > 0) {
+  console.error("");
+  console.error(`構造化データの問題が ${structured} 件あります。`);
+  console.error("よくある質問を直したら、画面の文と <script type=\"application/ld+json\"> の両方を同じに直してください。");
+  process.exit(1);
+}
 if (failed > 0) {
   console.error("");
   console.error(`参照されているのに存在しないアセットが ${failed} 件あります（baseline §23）。`);
   console.error("参照を足したら、同じ作業で実体まで置いてください。");
   process.exit(1);
 }
-console.log("OK すべての参照が実在します");
+console.log("OK すべての参照が実在します（構造化データも、画面と一致しています）");
