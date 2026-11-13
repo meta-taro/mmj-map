@@ -5,6 +5,21 @@
 
 ---
 
+## 0.9.0（2026-11-13）
+
+### 経路の線だけで、曲がり角の案内・目印・名札・徒歩の分数まで出ます
+
+- `<mmj-route>` に `steps`・`landmarks`・`ends`・`summary`・`walk-speed` が増えました。付けなければ今までどおりです
+- `steps`：線の折れ角から「左へ（その先 120m）」を置きます。30 度より浅い折れは案内しません。書いた案内（`instruction`）の近くには重ねません
+- `landmarks`：角から 30m 以内の店（**ベース地図にもう入っているもの**）を選んで「ローソンの角を左へ」にします
+- `ends`：出発と到着に名札を出します。名前は線の `from` / `to` です
+- `summary`：「徒歩 5 分・400m」を地図の隅に出します。**1 分 80m・端数は切り上げ**です（`walk-speed` で変えられます）
+- `mmj-route-ready` の `detail` に `landmarks`・`meters`・`minutes` が増えました。`steps` は案内の件数のままです（名札は数えません）
+- `fit` と `ends` を一緒に付けると、名札が隠れないよう上を広めに空けて寄せます
+- 判断の関数は `@mmj-map/elements/walk` から直接使えます（`walkSummary`・`turnSteps`・`routeEnds`・`pickLandmark` ほか）
+
+**経路の計算はしません**。線は外で作って渡します（手順は `docs/recipes/walking-route.md`）。
+
 ## 0.8.0（2026-11-06）
 
 ### 点をまち針の斜め刺しで、まとまりを種別の割合の輪で描けます
