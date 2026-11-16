@@ -1,0 +1,72 @@
+# npm へ出たら、デモを出し直す。
+#
+# LP の頭の帯（「このデモは開発中の版です。npm で配っているのは X です」）は、
+# `deploy.yml` が**出したその時の** npm と見比べて焼き込む。
+# npm へ出たのが deploy の後だと、帯は古いまま残る。
+#
+# 2026-11-16、0.9.0 を手で npm へ出したあと「npm で配っているのは 0.8.0」が
+# 3 日残り、利用者が見つけた。**手で npm へ出したときは GitHub に何の合図も来ない**ので、
+# 「公開の後に続けて走らせる」形では拾えない。
+#
+# だから**公開中の LP と、いまの npm を見比べる**。合っていなければ deploy を走らせる。
+# 見比べるだけなら数秒で済む。重い deploy（タイルの取得など）は、ずれているときだけ。
+#
+# 判定は `.github/scripts/lp-banner-stale.sh`（全部の場合を、わざと作って確かめてある）。
+name: Redeploy the demo when npm moves
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  # タグからの自動公開が済んだら、次の 30 分を待たずに 1 度見る
+  # （npm の反映に数分かかるので、ここで見えなければ次の定時が拾う）
+  workflow_run:
+    workflows: ["Release @mmj-map/elements"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write      # deploy.yml を走らせるため
+
+concurrency:
+  group: lp-banner-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: 公開中の LP と npm を見比べる
+        id: check
+        run: |
+          PKG="$(node -p "require('./packages/elements/package.json').version")"
+          if ! NPM="$(npm view @mmj-map/elements version 2>/dev/null)" || [ -z "$NPM" ]; then
+            # **レジストリが落ちている日に赤くしない。**次の定時でまた見る
+            echo "::warning::npm に聞けませんでした。次の定時でもう一度見ます"
+            echo "verdict=unknown" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # 掴み置きの頁を測らないよう、毎回ちがう問いにする
+          curl -sSf "https://meta-taro.github.io/mmj-map/?watch=$(date +%s)" -o lp.html
+          VERDICT="$(bash .github/scripts/lp-banner-stale.sh lp.html "$NPM" "$PKG")"
+          echo "リポ: $PKG / npm: $NPM / 帯: $VERDICT"
+          echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
+
+      - name: 帯が古ければ、デモを出し直す
+        if: steps.check.outputs.verdict == 'stale'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # **出している最中に重ねない。**終われば次の定時でもう一度見る
+          busy="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml \
+            --json status --jq '[.[] | select(.status != "completed")] | length')"
+          if [ "$busy" != "0" ]; then
+            echo "deploy が走っています（$busy 本）。重ねずに次の定時を待ちます"
+            exit 0
+          fi
+          gh workflow run deploy.yml --repo "$GITHUB_REPOSITORY" --ref develop
+          echo "deploy を走らせました"
