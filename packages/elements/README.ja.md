@@ -387,6 +387,29 @@ AI に経路と案内文を作らせて、この形で渡す使い方を想定�
 浸水深・地盤・震度のように、**面と数値が対になっているもの**を段階で塗ります。
 色の段は書く側が決めます（**外界が決めている配色を、こちらで作り替えないため**）。
 
+## まち針だけを借りる（maplibre-gl を直に使っている頁）
+
+要素を置かずに、`<mmj-cluster pin="machibari">` と同じまち針を使えます。
+
+```js
+import { needleImage, needleLayout } from "@mmj-map/elements/machibari";
+
+for (const picked of [false, true]) {
+  const pin = needleImage({ color: "#e4572e", picked });
+  if (pin) map.addImage(picked ? "pin-picked" : "pin", pin.image, { pixelRatio: pin.pixelRatio });
+}
+
+map.addLayer({
+  id: "shops",
+  type: "symbol",
+  source: "shops",
+  layout: { "icon-image": "pin", ...needleLayout() },
+});
+```
+
+**`needleLayout()` を必ず混ぜてください**。針先を座標へ合わせるのはこれです。混ぜないと絵の真ん中が座標に乗り、針先は別の場所を指します。
+選んだ点は `"icon-image": "pin-picked"` と `...needleLayout(true)` の層を別に置きます（真上に立ち、針先に白い点が出ます）。
+
 ## この部品が引き受けていること
 
 1. `pmtiles` プロトコルの登録（1 回だけ）

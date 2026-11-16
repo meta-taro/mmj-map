@@ -8,10 +8,10 @@
 import {
   ballOffset,
   needleImageExpression,
-  needleOffset,
   ringClusterProperties,
   ringImageExpression,
 } from "./machibari.js";
+import { needleLayout as needlePlacement } from "./machibari-image.js";
 
 /**
  * 既定値。**色は提案であって、承認された色ではない**（baseline §11）。
@@ -194,12 +194,8 @@ function buildMachibariSpec(input, base) {
   /** @param {boolean} picked */
   const needleLayout = (picked) => ({
     "icon-image": needleImageExpression({ sourceId, picked, colorKey, colors, fallbackColor: pointColor }),
-    // **針先が座標を指す。**左上を基準に置き、針先のぶんだけ戻す
-    "icon-anchor": "top-left",
-    "icon-offset": needleOffset(picked),
-    // **重なっても消さない。**まち針は重なっても先が見えるのが取り柄
-    "icon-allow-overlap": true,
-    "icon-ignore-placement": true,
+    // **針先が座標を指す。**素の maplibre-gl へ貸し出す配置と同じものを使う
+    ...needlePlacement(picked),
   });
 
   return {

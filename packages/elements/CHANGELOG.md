@@ -5,6 +5,18 @@
 
 ---
 
+## 0.10.0（2026-11-16）
+
+### まち針のピンを、maplibre-gl を直に使う頁でも使えます
+
+- `@mmj-map/elements/machibari` が増えました。`<mmj-cluster pin="machibari">` と**同じ形**のまち針を、要素を置かずに使えます
+- `needleImage({ color, casing?, picked?, pixelRatio? })`：`map.addImage` にそのまま渡せる画像を返します。画面の倍率は自動で掛けます
+- `needleLayout(picked?)`：symbol 層の `layout` に混ぜる配置です。**針先がその点の座標を指します**（混ぜないと、絵の真ん中が座標に乗り、針先は別の場所を指します）
+- 選んだ点は `picked: true` の画像と `needleLayout(true)` で、真上に立って針先に白い点が出ます
+- 形の値（`MACHIBARI`）と寸法（`needleGeometry`）も同じ入口から読めます
+
+`<mmj-cluster>` の見た目と動きは変わりません（同じ描き方を共有するよう中を整えただけです）。
+
 ## 0.9.0（2026-11-13）
 
 ### 経路の線だけで、曲がり角の案内・目印・名札・徒歩の分数まで出ます

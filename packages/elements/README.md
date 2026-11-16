@@ -88,6 +88,28 @@ npx @mmj-map/tiles extract osaka --bbox=135.4,34.6,135.6,34.8
 
 Every element is plain ESM. There is nothing to compile; copy `src/` if you prefer.
 
+## The pin, without the elements
+
+Already drawing your own map with maplibre-gl? Borrow the slanted pin used by `<mmj-cluster pin="machibari">` without placing any element:
+
+```js
+import { needleImage, needleLayout } from "@mmj-map/elements/machibari";
+
+for (const picked of [false, true]) {
+  const pin = needleImage({ color: "#e4572e", picked });
+  if (pin) map.addImage(picked ? "pin-picked" : "pin", pin.image, { pixelRatio: pin.pixelRatio });
+}
+
+map.addLayer({
+  id: "shops",
+  type: "symbol",
+  source: "shops",
+  layout: { "icon-image": "pin", ...needleLayout() },
+});
+```
+
+`needleLayout()` is what puts the **tip of the needle** on the coordinate. Without it, the centre of the picture lands there and the pin points somewhere else.
+
 ## Cards, without writing a UI
 
 `<mmj-poi>` can build a card from your GeoJSON properties: photos, rating, tabs, opening

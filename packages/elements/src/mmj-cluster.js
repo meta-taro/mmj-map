@@ -20,6 +20,7 @@
 import { DEFAULTS, buildClusterSpec, parseCount, parsePinStyle, pickFilters } from "./cluster.js";
 import { addImageResolver } from "./image-resolver.js";
 import { ballOffset, drawNeedle, drawRing, needleGeometry, needleImageParts, ringImageParts, ringSize } from "./machibari.js";
+import { paintImage } from "./machibari-image.js";
 import { parsePinColors } from "./pin.js";
 
 /** 同じページに複数置ける。source 名が衝突すると後勝ちで消えるため、番号で分ける */
@@ -161,27 +162,24 @@ export class MmjCluster extends HTMLElement {
     const width = needle !== null ? box.width : side;
     const height = needle !== null ? box.height : side;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(width * ratio);
-    canvas.height = Math.round(height * ratio);
-    const context = canvas.getContext("2d");
-    if (context === null) return false;
-    context.scale(ratio, ratio);
-
-    if (needle !== null) drawNeedle(context, { color: needle.color, casing: spec.casing, picked: needle.picked });
-    else if (ring !== null) {
-      drawRing(context, {
-        total: ring.total,
-        counts: ring.counts,
-        colors: spec.colors.map((c) => c.color),
-        fallbackColor: spec.fallbackColor,
-        // 輪の中は地図の地色。**件数の字（地図の上の字の色）が読める側**
-        fill: spec.casing,
-      });
-    }
+    const draw = (/** @type {any} */ context) => {
+      if (needle !== null) drawNeedle(context, { color: needle.color, casing: spec.casing, picked: needle.picked });
+      else if (ring !== null) {
+        drawRing(context, {
+          total: ring.total,
+          counts: ring.counts,
+          colors: spec.colors.map((c) => c.color),
+          fallbackColor: spec.fallbackColor,
+          // 輪の中は地図の地色。**件数の字（地図の上の字の色）が読める側**
+          fill: spec.casing,
+        });
+      }
+    };
+    const image = paintImage(width, height, ratio, draw);
+    if (image === null) return false;
 
     // **倍率を伝える。**伝えないと、高精細の画面で 2 倍の大きさで出る
-    map.addImage(id, context.getImageData(0, 0, canvas.width, canvas.height), { pixelRatio: ratio });
+    map.addImage(id, image, { pixelRatio: ratio });
     this.imageIds.push(id);
     while (this.imageIds.length > IMAGE_CAP) {
       const old = this.imageIds.shift();
