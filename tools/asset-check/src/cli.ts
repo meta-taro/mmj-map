@@ -177,7 +177,11 @@ if (existsSync(dataDir)) {
 // 画面を見るまで分からず、しかも見ても「そういう書き方」に見えてしまう。
 //
 // `DESIGN.md` は AI が触らない取り決めなので、見つけても人へ渡す（ここでは咎めない）。
-const NOT_OURS = new Set(["DESIGN.md"]);
+//
+// `product-baseline.md` は共通の正本から配られ、**同期のたびに丸ごと上書きされる**。
+// ここで直しても次の同期で戻るので、直す先は正本の側。2026-11-16、同期で入った 2 箇所が
+// elements 0.10.0 のタグの公開を止めた（このリポの変更とは関係なく落ちた）。
+const NOT_OURS = new Set(["DESIGN.md", ".claude/rules/product-baseline.md"]);
 let bold = 0;
 for (const file of execFileSync("git", ["ls-files", "*.md"], { cwd: repoRoot, encoding: "utf8" })
   .trim()
