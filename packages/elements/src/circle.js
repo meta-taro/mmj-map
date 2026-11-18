@@ -29,7 +29,21 @@ export const CIRCLE_DEFAULTS = {
   /** 面の濃さ。**下の地図が読めないと、どこの話か分からない** */
   fillOpacity: 0.12,
   lineWidth: 1.5,
+  /** ぼかすときに重ねる輪の数。**少ないと段が見え、多いと面の数だけ重くなる** */
+  blurRings: 8,
+  /**
+   * ぼかした円の中心の濃さ。**縁の線が無いぶん、素の円より濃くする。**
+   * 0.12 では暗い地図に溶けて範囲が見えなかった（2026-11-18 に画面で確かめた）
+   */
+  blurOpacity: 0.35,
+  /** 名札。**`poi.js` と同じ字と縁取り**（新しい色を足していない） */
+  font: "Noto Sans Regular",
+  textColor: "#D8DCE1",
+  haloColor: "#111418",
 };
+
+const POLYGONS = ["==", ["geometry-type"], "Polygon"];
+const POINTS = ["==", ["geometry-type"], "Point"];
 
 /** @param {number} deg */
 const toRad = (deg) => (deg * Math.PI) / 180;
@@ -102,6 +116,17 @@ export function formatRadius(meters) {
  * **縁だけにしない。**面が無いと「内側なのか外側なのか」が一目で読めない。
  * **面だけにもしない。**薄い面は、縮小すると境界が消える。
  *
+ * ## だいたいの場所（`blur` と `label`）
+ *
+ * 店の場所が「駅から 500 m のあたり」のような**範囲**でしか示されないとき、
+ * 点や縁のはっきりした円で出すと、**実際より正確そうに見えて誤読を生む**。
+ *
+ * - `blur`（m）を渡すと、半径を挟んで `blur` の幅に輪を重ね、外へ行くほど薄くする。
+ *   **縁の線は引かない**（はっきりした線は「ちょうどここ」と読まれる）。
+ *   **ぼかしも地表の m。**画面のピクセルでぼかすと、倍率で指す範囲が変わる
+ * - `label` を渡すと、中心に名札を置く。範囲どうしが重なったら、名札は
+ *   位置をずらし、それでも置けなければ出さない（**重ねて読めなくしない**）
+ *
  * @param {{
  *   id: string,
  *   center: [number, number],
@@ -109,36 +134,116 @@ export function formatRadius(meters) {
  *   color?: string,
  *   steps?: number,
  *   fillOpacity?: number,
+ *   blur?: number,
+ *   label?: string,
  * }} input
  */
 export function buildCircleSpec(input) {
   if (!input.id) throw new Error("id が要ります（source 名が衝突すると後勝ちで消えます）");
 
   const color = input.color ?? "#8fa9b8";
+  const steps = input.steps ?? CIRCLE_DEFAULTS.steps;
+  const blur = typeof input.blur === "number" && Number.isFinite(input.blur) && input.blur > 0 ? input.blur : 0;
   const fillOpacity =
     typeof input.fillOpacity === "number" && Number.isFinite(input.fillOpacity)
       ? Math.min(1, Math.max(0, input.fillOpacity))
-      : CIRCLE_DEFAULTS.fillOpacity;
+      : blur > 0
+        ? CIRCLE_DEFAULTS.blurOpacity
+        : CIRCLE_DEFAULTS.fillOpacity;
+  const label = typeof input.label === "string" ? input.label.trim() : "";
 
+  // ぼかしも名札も無ければ、**これまでと同じ形**（1 つの面）を返す
+  if (blur === 0 && label === "") {
+    return {
+      sourceId: input.id,
+      source: { type: "geojson", data: circleFeature(input.center, input.radius, steps) },
+      layers: [fillLayer(input.id, color, fillOpacity), lineLayer(input.id, color)],
+    };
+  }
+
+  const shapes =
+    blur > 0
+      ? blurredRings(input.center, input.radius, blur, fillOpacity, steps)
+      : [circleFeature(input.center, input.radius, steps)];
+  const features = label === "" ? shapes : [...shapes, labelPoint(input.center, label)];
+  /** @type {any[]} */
+  const layers =
+    blur > 0
+      ? [{ ...fillLayer(input.id, color, ["get", "alpha"]), filter: POLYGONS }]
+      : [
+          { ...fillLayer(input.id, color, fillOpacity), filter: POLYGONS },
+          { ...lineLayer(input.id, color), filter: POLYGONS },
+        ];
+  if (label !== "") layers.push(labelLayer(input.id));
+
+  return { sourceId: input.id, source: { type: "geojson", data: { type: "FeatureCollection", features } }, layers };
+}
+
+/**
+ * 半径を挟んで `blur` の幅に、同じ中心の輪を並べる。
+ *
+ * **重なった所ほど濃くなる。**全部が重なる中心で、ちょうど `opacity` になるように
+ * 1 枚の濃さを決める（`1 - (1 - a)^n = opacity`）。半径の所ではおよそ半分の濃さになる。
+ *
+ * @param {[number, number]} center
+ * @param {number} radius
+ * @param {number} blur
+ * @param {number} opacity
+ * @param {number} steps
+ */
+function blurredRings(center, radius, blur, opacity, steps) {
+  const count = CIRCLE_DEFAULTS.blurRings;
+  const alpha = 1 - (1 - opacity) ** (1 / count);
+  // **内側の輪を 0 以下にしない。**ぼかしが円より広くても、中心は塗る
+  const inner = Math.max(radius - blur / 2, radius / count);
+  const outer = radius + blur / 2;
+  return Array.from({ length: count }, (_, index) => {
+    const meters = inner + ((outer - inner) * index) / (count - 1);
+    const ring = circleFeature(center, meters, steps);
+    return { ...ring, properties: { alpha } };
+  });
+}
+
+/** @param {[number, number]} center @param {string} label */
+function labelPoint(center, label) {
+  return { type: "Feature", properties: { label }, geometry: { type: "Point", coordinates: center } };
+}
+
+/** @param {string} id @param {string} color @param {unknown} opacity */
+function fillLayer(id, color, opacity) {
+  return { id: `${id}-fill`, type: "fill", source: id, paint: { "fill-color": color, "fill-opacity": opacity } };
+}
+
+/** @param {string} id @param {string} color */
+function lineLayer(id, color) {
   return {
-    sourceId: input.id,
-    source: {
-      type: "geojson",
-      data: circleFeature(input.center, input.radius, input.steps ?? CIRCLE_DEFAULTS.steps),
+    id: `${id}-line`,
+    type: "line",
+    source: id,
+    paint: { "line-color": color, "line-width": CIRCLE_DEFAULTS.lineWidth },
+  };
+}
+
+/** @param {string} id */
+function labelLayer(id) {
+  return {
+    id: `${id}-label`,
+    type: "symbol",
+    source: id,
+    filter: POINTS,
+    layout: {
+      "text-field": ["get", "label"],
+      "text-font": [CIRCLE_DEFAULTS.font],
+      "text-size": 13,
+      // **重なったら位置をずらす。**それでも置けなければ出さない（重ねて読めなくしない）
+      "text-allow-overlap": false,
+      "text-variable-anchor": ["center", "top", "bottom", "left", "right"],
+      "text-radial-offset": 0.8,
     },
-    layers: [
-      {
-        id: `${input.id}-fill`,
-        type: "fill",
-        source: input.id,
-        paint: { "fill-color": color, "fill-opacity": fillOpacity },
-      },
-      {
-        id: `${input.id}-line`,
-        type: "line",
-        source: input.id,
-        paint: { "line-color": color, "line-width": CIRCLE_DEFAULTS.lineWidth },
-      },
-    ],
+    paint: {
+      "text-color": CIRCLE_DEFAULTS.textColor,
+      "text-halo-color": CIRCLE_DEFAULTS.haloColor,
+      "text-halo-width": 1.5,
+    },
   };
 }

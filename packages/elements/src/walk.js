@@ -135,7 +135,7 @@ function lines(data) {
  * 2 点の距離（m）。大圏距離（haversine）。
  * @param {LngLat} a @param {LngLat} b
  */
-function distance(a, b) {
+export function distance(a, b) {
   const dLat = (b[1] - a[1]) * RAD;
   const dLng = (b[0] - a[0]) * RAD;
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * RAD) * Math.cos(b[1] * RAD) * Math.sin(dLng / 2) ** 2;

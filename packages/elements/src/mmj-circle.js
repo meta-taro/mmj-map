@@ -54,7 +54,7 @@ export class MmjCircle extends HTMLElement {
     if (map === undefined || map === null || this.sourceId === null) return;
     // **付けた順の逆で外す。**layer を残したまま source を消すと地図が落ちる
     try {
-      for (const suffix of ["-line", "-fill"]) {
+      for (const suffix of ["-label", "-line", "-fill"]) {
         const id = `${this.sourceId}${suffix}`;
         if (map.getLayer(id)) map.removeLayer(id);
       }
@@ -93,6 +93,9 @@ export class MmjCircle extends HTMLElement {
         color: this.getAttribute("color") ?? /** @type {any} */ (this.owner)?.accent ?? undefined,
         fillOpacity: readNumber(this.getAttribute("fill-opacity")),
         steps: readNumber(this.getAttribute("steps")),
+        // **だいたいの場所。**縁をぼかす幅（地表の m）と、中心に置く名札
+        blur: readNumber(this.getAttribute("blur")),
+        label: this.getAttribute("label") ?? undefined,
       });
     } catch (error) {
       // 握り潰さない（§8）。**地図は殺さない**

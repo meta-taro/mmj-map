@@ -119,3 +119,90 @@ describe("buildCircleSpec", () => {
     expect(() => buildCircleSpec({ ...base, id: "" })).toThrow(/id/);
   });
 });
+
+/**
+ * **だいたいの場所（名前の付いた範囲）。**点で出すと、実際より正確そうに見えて誤読を生む。
+ * 縁をぼかし、名札を付ける。ぼかしは**地表の m** で決める（画面のピクセルでぼかすと、
+ * 倍率で指す範囲が変わる）。
+ */
+/** ぼかした円の輪（名札の点を除く） @param {any} spec */
+const rings = (spec) => spec.source.data.features.filter((/** @type {any} */ f) => f.geometry.type === "Polygon");
+
+describe("buildCircleSpec — blur and label", () => {
+  const center = /** @type {[number, number]} */ ([139.7006, 35.6896]);
+  const base = { id: "area", center, radius: 600 };
+
+  /** @param {any} feature */
+  const radiusOf = (feature) => haversine(center, feature.geometry.coordinates[0][0]);
+
+  it("spreads the edge over the blur width, in ground metres around the radius", () => {
+    const spec = buildCircleSpec({ ...base, blur: 400 });
+    const radii = rings(spec).map(radiusOf);
+    expect(radii.length).toBe(CIRCLE_DEFAULTS.blurRings);
+    expect(Math.min(...radii)).toBeCloseTo(400, -1);
+    expect(Math.max(...radii)).toBeCloseTo(800, -1);
+  });
+
+  it("stacks to the asked opacity at the centre, fading outward", () => {
+    const spec = buildCircleSpec({ ...base, blur: 400, fillOpacity: 0.3 });
+    const alphas = rings(spec).map((/** @type {any} */ f) => f.properties.alpha);
+    const stacked = 1 - alphas.reduce((/** @type {number} */ left, /** @type {number} */ a) => left * (1 - a), 1);
+    expect(stacked).toBeCloseTo(0.3, 5);
+    expect(spec.layers.at(0)?.paint["fill-opacity"]).toEqual(["get", "alpha"]);
+  });
+
+  it("draws no hard edge line when blurred (a sharp line would say 'exactly here')", () => {
+    const spec = buildCircleSpec({ ...base, blur: 400 });
+    expect(spec.layers.map((layer) => layer.type)).not.toContain("line");
+  });
+
+  it("keeps the inner ring above zero even when the blur is wider than the circle", () => {
+    const radii = rings(buildCircleSpec({ ...base, blur: 5000 })).map(radiusOf);
+    expect(Math.min(...radii)).toBeGreaterThan(0);
+  });
+
+  it("ignores a blur it cannot read, and draws the plain circle", () => {
+    for (const blur of [0, -10, Number.NaN]) {
+      expect(buildCircleSpec({ ...base, blur }).layers.map((layer) => layer.type)).toEqual(["fill", "line"]);
+    }
+  });
+
+  it("puts the name at the centre as a label", () => {
+    const spec = buildCircleSpec({ ...base, blur: 400, label: "新宿駅のあたり" });
+    const point = spec.source.data.features.find((/** @type {any} */ f) => f.geometry.type === "Point");
+    expect(point?.geometry.coordinates).toEqual(center);
+    expect(point?.properties.label).toBe("新宿駅のあたり");
+    const symbol = spec.layers.find((layer) => layer.type === "symbol");
+    expect(symbol?.layout["text-field"]).toEqual(["get", "label"]);
+    expect(symbol?.filter).toEqual(["==", ["geometry-type"], "Point"]);
+  });
+
+  it("keeps the fill off the label point, so the point is not painted as a shape", () => {
+    const spec = buildCircleSpec({ ...base, label: "東口" });
+    for (const layer of spec.layers.filter((l) => l.type !== "symbol")) {
+      expect(layer.filter).toEqual(["==", ["geometry-type"], "Polygon"]);
+    }
+  });
+
+  it("lets overlapping areas move their labels instead of stacking them", () => {
+    const symbol = buildCircleSpec({ ...base, label: "東口" }).layers.find((layer) => layer.type === "symbol");
+    expect(symbol?.layout["text-allow-overlap"]).toBe(false);
+    expect(symbol?.layout["text-variable-anchor"]?.length).toBeGreaterThan(1);
+  });
+
+  it("adds no label layer for an empty name", () => {
+    expect(buildCircleSpec({ ...base, label: "  " }).layers.map((layer) => layer.type)).toEqual(["fill", "line"]);
+  });
+});
+
+describe("buildCircleSpec — blurred default strength", () => {
+  // **ぼかした円は縁の線が無い。**素の円と同じ薄さ（0.12）だと、暗い地図の上で範囲が見えない
+  //（2026-11-18、梅田の範囲が地図に溶けて読めなかった）。0.35 で「だいたいここ」と読めた
+  it("is stronger than the plain circle, since there is no edge line to find it by", () => {
+    const spec = buildCircleSpec({ id: "x", center: [135.5, 34.7], radius: 500, blur: 300 });
+    const alphas = spec.source.data.features.map((/** @type {any} */ f) => f.properties.alpha);
+    const stacked = 1 - alphas.reduce((/** @type {number} */ left, /** @type {number} */ a) => left * (1 - a), 1);
+    expect(stacked).toBeCloseTo(CIRCLE_DEFAULTS.blurOpacity, 5);
+    expect(CIRCLE_DEFAULTS.blurOpacity).toBeGreaterThan(CIRCLE_DEFAULTS.fillOpacity);
+  });
+});
