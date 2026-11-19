@@ -183,6 +183,17 @@ HTML だけで地図を置くための部品です。**鍵も、閲覧ごとの�
 | `popup-href-label` | リンクの文字。省くと「詳しく見る」 |
 | `popup-open` | 最初から開いておく |
 | `color` | 目印の色 |
+| `draggable` | 付けると、ピンを指・マウス・矢印キーで動かして位置を直せる。直した位置は `mmj-marker-move` で届く |
+| `drag-radius` | 動かせる範囲（m）。外へは出ない。範囲は地図に薄く描く |
+
+```html
+<mmj-marker id="shop" lnglat="135.4959,34.7024" popup="サンプル商店" draggable drag-radius="40"></mmj-marker>
+<script type="module">
+  const map = document.querySelector("mmj-map");
+  map.addEventListener("mmj-marker-move", (event) => saveDraft(event.detail.lng, event.detail.lat));
+  resetButton.addEventListener("click", () => map.getPart("shop").reset());
+</script>
+```
 
 ### `<mmj-cluster>`
 

@@ -8,14 +8,22 @@
  *   popup-href="https://example.com/" popup-href-label="ホームページ" popup-open></mmj-marker>
  * ```
  *
+ * **位置を直す**（`draggable`）: ピンを指・マウス・矢印キーで動かし、直した緯度経度を
+ * `mmj-marker-move` で受け取る。`drag-radius`（m）で動かせる範囲を絞り、地図に薄く描く。
+ * `reset()` で元の位置へ戻す。
+ *
  * 親の地図がまだ出来ていなければ、`mmj-ready` を待ってから付ける。
  * **待たずに付けると、読み込み順で付いたり付かなかったりする**（再現しない不具合になる）。
  */
 import { buildMarkerPopupOptions, parseLngLat } from "./attrs.js";
 import { initialCardState, markerNeedsChrome } from "./card.js";
 import { mountCard } from "./card-dom.js";
+import { buildCircleSpec } from "./circle.js";
+import { arrowStep, clampWithin, moveDetail, parseRadius } from "./drag.js";
 import { buildPopupContent } from "./popup.js";
 import { ensureCardContrast, ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
+
+let serial = 0;
 
 export class MmjMarker extends HTMLElement {
   /** @type {any} */
@@ -32,6 +40,15 @@ export class MmjMarker extends HTMLElement {
    * @type {any}
    */
   owner = null;
+
+  /** 動かす前の位置（`draggable` のとき。`reset()` で戻る先） @type {[number, number] | null} */
+  origin = null;
+
+  /** 動かせる範囲（m）。`null` なら絞らない @type {number | null} */
+  radius = null;
+
+  /** 範囲を描いた source / layer @type {{ map: any, sourceId: string, layerIds: string[] } | null} */
+  range = null;
 
   connectedCallback() {
     const parent = this.closest("mmj-map");
@@ -67,6 +84,7 @@ export class MmjMarker extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.#removeRange();
     this.card?.destroy();
     this.card = null;
     this.marker?.remove();
@@ -88,6 +106,9 @@ export class MmjMarker extends HTMLElement {
     // それも無ければ MapLibre の既定色。**ここで色を作らない**
     const color = this.getAttribute("color") ?? /** @type {any} */ (parent)?.accent;
     if (color) options.color = color;
+    const draggable = this.hasAttribute("draggable");
+    // **指とマウスは MapLibre の Marker が持っている**（自前で当たり判定を書かない）
+    if (draggable) options.draggable = true;
 
     this.marker = new maplibregl.Marker(options).setLngLat(lngLat);
 
@@ -129,6 +150,116 @@ export class MmjMarker extends HTMLElement {
     this.marker.addTo(map);
     // 最初から開いておきたい場合（案内したい 1 点がある地図）。**付けなければ閉じたまま**
     if (content.length > 0 && this.hasAttribute("popup-open")) this.#openAtLoad();
+    if (draggable) this.#enableDrag(map, lngLat, color ?? undefined);
     this.style.display = "none"; // 目印は地図の上に出る。要素そのものは場所を取らない
+  }
+
+  /**
+   * ピンを動かせるようにする。**指・マウス・キーボードの 3 つとも。**
+   *
+   * - 指とマウス: MapLibre の Marker の `draggable`。動かしている間も範囲の外へ出さない
+   * - キーボード: ピンに焦点を置けるようにし、矢印キーで動かす（Shift で大きく）
+   *
+   * @param {any} map
+   * @param {[number, number]} lngLat
+   * @param {string | undefined} color
+   */
+  #enableDrag(map, lngLat, color) {
+    this.origin = lngLat;
+    this.radius = parseRadius(this.getAttribute("drag-radius"));
+    const marker = this.marker;
+
+    marker.on("drag", () => {
+      const now = marker.getLngLat();
+      const kept = clampWithin(lngLat, [now.lng, now.lat], this.radius);
+      if (kept[0] !== now.lng || kept[1] !== now.lat) marker.setLngLat(kept);
+    });
+    marker.on("dragend", () => this.#announceMove(false));
+
+    const element = marker.getElement();
+    element.tabIndex = 0;
+    const name = this.getAttribute("popup") ?? "ピン";
+    element.setAttribute(
+      "aria-label",
+      `${name}。矢印キーで位置を直せます（Shift で大きく）${this.radius === null ? "" : `。元の位置から ${this.radius} m まで`}`,
+    );
+    element.addEventListener("keydown", (/** @type {KeyboardEvent} */ event) => {
+      const step = arrowStep(event.key, event.shiftKey);
+      if (step === null) return;
+      // **地図を動かさない。**矢印キーは地図の送りにも使われている
+      event.preventDefault();
+      event.stopPropagation();
+      const at = map.project(marker.getLngLat());
+      const next = map.unproject([at.x + step[0], at.y + step[1]]);
+      marker.setLngLat(clampWithin(lngLat, [next.lng, next.lat], this.radius));
+    });
+    // **離したときに 1 回だけ知らせる**（押しっぱなしで何十回も保存させない）
+    element.addEventListener("keyup", (/** @type {KeyboardEvent} */ event) => {
+      if (arrowStep(event.key, false) !== null) this.#announceMove(false);
+    });
+
+    if (this.radius !== null) this.#drawRange(map, lngLat, this.radius, color);
+  }
+
+  /**
+   * 動かせる範囲を薄く描く。**どこまで動かせるかが見えないと、縁で止まったのが不具合に見える。**
+   * @param {any} map
+   * @param {[number, number]} center
+   * @param {number} radius
+   * @param {string | undefined} color
+   */
+  #drawRange(map, center, radius, color) {
+    const add = () => {
+      if (this.marker === null) return;
+      const spec = buildCircleSpec({ id: `mmj-marker-range-${++serial}`, center, radius, color, fillOpacity: 0.08 });
+      try {
+        map.addSource(spec.sourceId, spec.source);
+        for (const layer of spec.layers) map.addLayer(layer);
+        this.range = { map, sourceId: spec.sourceId, layerIds: spec.layers.map((layer) => layer.id) };
+      } catch (error) {
+        // 握り潰さない（§8）。**ピンは動かせる**——範囲の絵だけが出ない
+        console.error("[mmj-marker] 動かせる範囲を描けませんでした", error);
+      }
+    };
+    if (map.isStyleLoaded()) add();
+    else map.once("load", add);
+  }
+
+  #removeRange() {
+    const range = this.range;
+    this.range = null;
+    if (range === null) return;
+    try {
+      for (const id of range.layerIds.toReversed()) if (range.map.getLayer(id)) range.map.removeLayer(id);
+      if (range.map.getSource(range.sourceId)) range.map.removeSource(range.sourceId);
+    } catch (error) {
+      console.error("[mmj-marker] 範囲を外せませんでした", error);
+    }
+  }
+
+  /**
+   * **元の位置へ戻す口。**戻したことも `mmj-marker-move` で知らせる（`detail.reset` が `true`）。
+   * @returns {boolean} 戻せたら `true`（動かせるピンでなければ `false`）
+   */
+  reset() {
+    if (this.marker === null || this.origin === null) return false;
+    this.marker.setLngLat(this.origin);
+    this.#announceMove(true);
+    return true;
+  }
+
+  /**
+   * 直した位置を知らせる。**2 か所へ出す**——親の `<mmj-map>` は描画時に子を DOM から外すので、
+   * この要素から出した出来事は `document` まで上がらない（`mmj-poi.js` と同じ穴）。
+   * @param {boolean} reset
+   */
+  #announceMove(reset) {
+    if (this.marker === null || this.origin === null) return;
+    const now = this.marker.getLngLat();
+    const detail = { ...moveDetail(this.origin, [now.lng, now.lat]), origin: this.origin, reset, id: this.id || null };
+    this.dispatchEvent(new CustomEvent("mmj-marker-move", { bubbles: true, detail }));
+    if (this.owner && this.owner !== this && !this.owner.contains(this)) {
+      this.owner.dispatchEvent(new CustomEvent("mmj-marker-move", { bubbles: true, detail }));
+    }
   }
 }

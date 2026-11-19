@@ -177,6 +177,17 @@ export class MmjMap extends HTMLElement {
   }
 
   /**
+   * 引き取った子を `id` で引く。**引き取った子は DOM に居ない**ので、`document.getElementById` では
+   * 見つからない（`<mmj-marker draggable id="shop">` の `reset()` を呼ぶときなど）。
+   * @param {string} id
+   * @returns {Element | null}
+   */
+  getPart(id) {
+    const parts = this.adopted.length > 0 ? this.adopted : [...this.children];
+    return parts.find((part) => part.id === id) ?? null;
+  }
+
+  /**
    * **一覧から選ぶ口。**中の `<mmj-poi>`・`<mmj-cluster>` に id を渡し、
    * 持っている部品がその点まで寄って選ぶ。
    *

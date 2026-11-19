@@ -367,6 +367,8 @@ document.getElementById('map').toggleAttribute('3d');
 | `popup-href-label` | リンクの文字。省くと「詳しく見る」 |
 | `popup-open` | 最初から開いておく（**このときは焦点を移さない**。頁が地図まで送られないように） |
 | `color` | 目印の色 |
+| `draggable` | 付けると、ピンを指・マウス・矢印キーで動かして位置を直せる（下記） |
+| `drag-radius` | 動かせる範囲（m）。元の位置からこの距離より外へは出ない。範囲は地図に薄く描く |
 
 名前・住所・ホームページを行に分けて出す（会社の頁のアクセス地図）:
 
@@ -374,6 +376,35 @@ document.getElementById('map').toggleAttribute('3d');
 <mmj-marker lnglat="135.4874,34.6708" popup="株式会社サンプル" popup-body="大阪市西区1-2-3"
             popup-href="https://example.com/" popup-href-label="ホームページ" popup-open></mmj-marker>
 ```
+
+#### ピンを動かして位置を直す（`draggable`・`drag-radius`）
+
+住所から付けた座標が建物の真ん中や道の上に落ちたとき、人がピンを動かして入口に合わせ、
+直した緯度経度を受け取ります（店が自分の店の位置を直す管理画面など）。**保存は使う側です。**
+
+```html
+<mmj-map tiles="..." style-url="..." center="135.4959,34.7024" zoom="17">
+  <mmj-marker id="shop" lnglat="135.4959,34.7024" popup="サンプル商店" draggable drag-radius="40"></mmj-marker>
+</mmj-map>
+<script type="module">
+  const map = document.querySelector("mmj-map");
+  map.addEventListener("mmj-marker-move", (event) => {
+    const { lng, lat, moved } = event.detail; // moved は元の位置からの距離（m）
+    saveDraft(lng, lat);
+  });
+  resetButton.addEventListener("click", () => map.getPart("shop").reset());
+</script>
+```
+
+- **指とマウス**は MapLibre の Marker の `draggable` です。動かしている間も、範囲の外へは出ません
+- **キーボード**: `Tab` でピンに焦点を置き、矢印キーで動かします（1 回 4px。`Shift` を押すと 24px）。
+  矢印キーで地図は動きません
+- 範囲の外で離すと、**行こうとした向きの、縁の所**に止まります
+- `mmj-marker-move` は**動かし終えたとき**（指やマウスを離したとき・矢印キーを離したとき）に 1 回届きます。
+  `detail`: `lng`・`lat`・`lngLat`（小数 7 桁）・`moved`（m）・`origin`・`reset`・`id`
+- `reset()` で元の位置へ戻します（戻したことも `reset: true` で届きます）
+- 中の部品は地図を作るときに DOM から外れるので、`document.getElementById` では見つかりません。
+  **`<mmj-map>` の `getPart(id)` で引きます**
 
 ### `<mmj-cluster>`
 
