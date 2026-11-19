@@ -14,6 +14,10 @@
  *      （ポップアップの形は使う側が決める。ここで決めると厚くなる・PRD §3）
  *   4. 外れるときに、足したものを片付ける
  *
+ * **一覧と繋ぐ**（`id-key` があるとき）: 地図を動かし終えるたびに、見えている範囲の
+ * 点の id を `mmj-visible` で渡す。外から `select(id)` を呼ぶと、その点まで寄って選ぶ。
+ * 一覧の見た目は作らない（導入先の UI のもの）。
+ *
  * `pin="machibari"` のときは、まとまりを**種別の割合の輪**、ばらの点を
  * **まち針の斜め刺し**で描く。絵は描こうとしたぶんだけ作る（`machibari.js`）。
  */
@@ -22,6 +26,7 @@ import { addImageResolver } from "./image-resolver.js";
 import { ballOffset, drawNeedle, drawRing, needleGeometry, needleImageParts, ringImageParts, ringSize } from "./machibari.js";
 import { paintImage } from "./machibari-image.js";
 import { parsePinColors } from "./pin.js";
+import { findPoint, focusZoom, sameIds, visibleIds } from "./sync.js";
 
 /** 同じページに複数置ける。source 名が衝突すると後勝ちで消えるため、番号で分ける */
 let serial = 0;
@@ -51,6 +56,15 @@ export class MmjCluster extends HTMLElement {
    */
   owner = null;
 
+  /** 読み込んだ点（`id-key` があるときだけ。一覧と繋ぐのに使う） @type {any[]} */
+  features = [];
+
+  /** 最後に知らせた、見えている点の id（同じなら知らせ直さない） @type {string[] | null} */
+  lastVisible = null;
+
+  /** @type {(() => void) | null} */
+  moveCleanup = null;
+
   connectedCallback() {
     const parent = this.closest("mmj-map");
     if (!parent) return void console.error("[mmj-cluster] <mmj-map> の中に置いてください");
@@ -64,6 +78,8 @@ export class MmjCluster extends HTMLElement {
   disconnectedCallback() {
     this.imageCleanup?.();
     this.imageCleanup = null;
+    this.moveCleanup?.();
+    this.moveCleanup = null;
     if (this.map && this.spec) {
       for (const layer of this.spec.layers) if (this.map.getLayer(layer.id)) this.map.removeLayer(layer.id);
       if (this.map.getSource(this.spec.sourceId)) this.map.removeSource(this.spec.sourceId);
@@ -72,20 +88,44 @@ export class MmjCluster extends HTMLElement {
     this.imageIds = [];
     this.map = null;
     this.spec = null;
+    this.features = [];
+    this.lastVisible = null;
   }
 
   /** @param {any} map */
   #attach(map) {
     this.map = map;
     // **スタイルが読み終わる前に addSource すると落ちる。**mmj-ready は Map を作った直後に出る
-    if (map.isStyleLoaded()) this.#add(map);
-    else map.once("load", () => this.#add(map));
+    if (map.isStyleLoaded()) void this.#add(map);
+    else map.once("load", () => void this.#add(map));
   }
 
-  /** @param {any} map */
-  #add(map) {
+  /**
+   * **一覧と繋ぐときは、点をこちらで読む。**見えている範囲の点を数えるのに、
+   * 点そのものが要る（MapLibre は描いたものしか返さない・`sync.js` の頭）。
+   * 読んだものを MapLibre へそのまま渡すので、**同じ URL を 2 度取りに行かない**。
+   * @param {any} map
+   */
+  async #add(map) {
     const src = this.getAttribute("src");
     if (!src) return void console.error("[mmj-cluster] src に点の GeoJSON の URL が要ります");
+
+    /** @type {string | object} */
+    let data = src;
+    if (this.#idKey() !== null) {
+      try {
+        const response = await fetch(src);
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        data = await response.json();
+      } catch (error) {
+        // **推測した点を描かない。**読めなければ何も描かず、理由を残す
+        return void console.error(`[mmj-cluster] 点を読めませんでした: ${src}`, error);
+      }
+      // 読んでいる間に置き手が外したなら付けない。**地図が引き取った子（`mmjAdopted`）は外れていても付ける**
+      if (!this.isConnected && /** @type {any} */ (this).mmjAdopted !== true) return;
+      if (this.map !== map) return;
+      this.features = Array.isArray(/** @type {any} */ (data)?.features) ? /** @type {any} */ (data).features : [];
+    }
 
     const theme = this.owner?.theme;
     const accent = this.owner?.accent;
@@ -93,7 +133,7 @@ export class MmjCluster extends HTMLElement {
     try {
       this.spec = buildClusterSpec({
         id: this.getAttribute("layer-id") || `mmj-cluster-${++serial}`,
-        src,
+        src: data,
         radius: parseCount(this.getAttribute("radius"), DEFAULTS.radius),
         maxZoom: parseCount(this.getAttribute("max-zoom"), DEFAULTS.maxZoom),
         // 指定が無ければ、サイトのテーマカラー（`<mmj-map accent>`）を既定にする。
@@ -107,6 +147,7 @@ export class MmjCluster extends HTMLElement {
         // **種別の色は導入側が渡す**（§11・MMJ は色を作らない）
         colors: parsePinColors(this.getAttribute("pin-colors")),
         idKey: this.getAttribute("id-key"),
+        weightKey: this.getAttribute("weight-key"),
         // 輪の中は地図の地色で塗るので、件数は**地図の上の字の色**
         labelColor: this.getAttribute("count-color") ?? theme?.text ?? undefined,
       });
@@ -139,6 +180,73 @@ export class MmjCluster extends HTMLElement {
     }
 
     this.style.display = "none"; // 点は地図の上に出る。要素そのものは場所を取らない
+
+    if (this.hasAttribute("weight-key") && this.spec.weightKey === null) {
+      // 握り潰さない（§8）。**まち針の輪は、種別の割合を点の数で描く**ので件数を混ぜない
+      console.error("[mmj-cluster] weight-key は丸の形のときだけ効きます（pin=\"machibari\" では点の数で数えます）");
+    }
+    this.#watchVisible(map);
+  }
+
+  /** @returns {string | null} */
+  #idKey() {
+    const value = this.getAttribute("id-key");
+    return value !== null && value.trim() !== "" ? value.trim() : null;
+  }
+
+  /**
+   * 動かし終えるたびに、見えている点を知らせる。**最初に 1 回**（一覧を最初から絞れるように）。
+   * @param {any} map
+   */
+  #watchVisible(map) {
+    const idKey = this.#idKey();
+    if (idKey === null) return;
+    const send = () => {
+      const bounds = map.getBounds();
+      const ids = visibleIds(
+        this.features,
+        { west: bounds.getWest(), south: bounds.getSouth(), east: bounds.getEast(), north: bounds.getNorth() },
+        idKey,
+      );
+      if (sameIds(this.lastVisible, ids)) return;
+      this.lastVisible = ids;
+      this.#announce("mmj-visible", { ids, total: this.features.length, source: this.spec?.sourceId ?? null });
+    };
+    map.on("moveend", send);
+    this.moveCleanup = () => map.off("moveend", send);
+    send();
+  }
+
+  /**
+   * **一覧から選ぶ口。**その点まで寄り、選んだ状態にする。
+   *
+   * まとまりが解ける所まで寄る（丸の中に隠れたままでは、どれを選んだか分からない）。
+   * 今より引かない。**見つからなければ何もしない**（推測した点へ飛ばない）。
+   *
+   * @param {string | number} id `id-key` の値
+   * @returns {boolean} 寄れたら `true`
+   */
+  select(id) {
+    const map = this.map;
+    const spec = this.spec;
+    const feature = findPoint(this.features, this.#idKey(), id);
+    if (map === null || spec === null || feature === null) return false;
+    this.#pick(map, String(id));
+    map.easeTo({ center: feature.geometry.coordinates, zoom: focusZoom(map.getZoom(), spec.maxZoom + 1), duration: 400 });
+    return true;
+  }
+
+  /**
+   * 出来事を出す。**2 か所へ出す**——親の `<mmj-map>` は描画時に子を DOM から外すので、
+   * この要素から出した出来事は `document` まで上がらない（`mmj-poi.js` と同じ穴）。
+   * @param {string} name
+   * @param {any} detail
+   */
+  #announce(name, detail) {
+    this.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
+    if (this.owner && this.owner !== this && !this.owner.contains(this)) {
+      this.owner.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
+    }
   }
 
   /**
@@ -238,11 +346,6 @@ export class MmjCluster extends HTMLElement {
       const raw = feature.properties?.[idKey];
       if (raw !== undefined && raw !== null) this.#pick(map, String(raw));
     }
-    this.dispatchEvent(
-      new CustomEvent("mmj-cluster-point", {
-        bubbles: true,
-        detail: { properties: feature.properties, lngLat: feature.geometry.coordinates },
-      }),
-    );
+    this.#announce("mmj-cluster-point", { properties: feature.properties, lngLat: feature.geometry.coordinates });
   }
 }

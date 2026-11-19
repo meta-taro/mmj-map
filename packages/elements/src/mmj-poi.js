@@ -11,6 +11,10 @@
  * まとめたいときは `<mmj-cluster>`。こちらは 1 点ずつ名前を出す用途。
  *
  * 押したら `mmj-poi-click` が飛ぶ。**何を出すかは使う側が決める**（PRD §3・厚くしない）。
+ *
+ * **導入先の一覧と繋ぐ**（`card-id` があるとき）: 地図を動かし終えるたびに、見えている
+ * 範囲の点の id を `mmj-visible` で渡す。外から `select(id)` を呼ぶと、その点まで寄って
+ * カードを開く。一覧を MMJ に作らせるなら `list`（こちらは最初から繋がっている）。
  */
 import { buildPopupOptions } from "./attrs.js";
 import {
@@ -55,6 +59,7 @@ import {
 } from "./popup-dom.js";
 import { parseCount } from "./cluster.js";
 import { addImageResolver } from "./image-resolver.js";
+import { focusZoom, sameIds, visibleIds } from "./sync.js";
 
 /**
  * カードの幅。**狭い画面でははみ出さないように、画面の幅でも抑える。**
@@ -178,6 +183,12 @@ export class MmjPoi extends HTMLElement {
    */
   owner = null;
 
+  /** 最後に知らせた、見えている点の id（同じなら知らせ直さない） @type {string[] | null} */
+  lastVisible = null;
+
+  /** @type {(() => void) | null} */
+  moveCleanup = null;
+
   connectedCallback() {
     // **読み込む前に付けられた値を拾い直す。**要素そのものに付いた値が、
     // 上の get/set を隠している（カスタム要素の「格上げ前の値」）
@@ -197,6 +208,9 @@ export class MmjPoi extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.moveCleanup?.();
+    this.moveCleanup = null;
+    this.lastVisible = null;
     this.list?.destroy();
     this.list = null;
     this.searchBox?.destroy();
@@ -385,6 +399,7 @@ export class MmjPoi extends HTMLElement {
     }
     this.#mountList();
     this.#restore();
+    this.#watchVisible();
     // **復元の後に渡す。**読み込み中に押された Enter は、URL の店より新しい意思
     if (box === null || this.searchBox !== box) return;
     box.setIndex(
@@ -490,6 +505,56 @@ export class MmjPoi extends HTMLElement {
     // **送られた URL では、その点まで地図を寄せる。**
     // 画面の外に開いても、受け取った人には何も見えない
     this.#openAt(at, true);
+  }
+
+  /**
+   * 動かし終えるたびに、見えている点を知らせる。**最初に 1 回**（一覧を最初から絞れるように）。
+   *
+   * **点が描かれない倍率（`min-zoom` より引いたとき）でも、範囲の中の点は渡す。**
+   * 一覧を絞るかどうかは置く側が決める（`zoom` を添える）。
+   */
+  #watchVisible() {
+    const map = this.map;
+    const idKey = this.getAttribute("card-id");
+    if (!map || !idKey) return;
+    const send = () => {
+      const bounds = map.getBounds();
+      const ids = visibleIds(
+        this.features,
+        { west: bounds.getWest(), south: bounds.getSouth(), east: bounds.getEast(), north: bounds.getNorth() },
+        idKey,
+      );
+      if (sameIds(this.lastVisible, ids)) return;
+      this.lastVisible = ids;
+      this.#announce("mmj-visible", {
+        ids,
+        total: this.features.length,
+        source: this.spec?.sourceId ?? null,
+        drawn: map.getZoom() >= this.#minZoom(),
+      });
+    };
+    map.on("moveend", send);
+    this.moveCleanup = () => map.off("moveend", send);
+    send();
+  }
+
+  /**
+   * **一覧から選ぶ口。**その点まで寄り、カードを開く（`list` で選んだときと同じ）。
+   * **見つからなければ何もしない**（推測した点へ飛ばない）。
+   *
+   * @param {string | number} id `card-id` の値
+   * @returns {boolean} 開けたら `true`
+   */
+  select(id) {
+    const at = indexOfShop(this.features, this.getAttribute("card-id"), id === null || id === undefined ? "" : String(id));
+    if (at < 0 || !this.map) return false;
+    this.#openAt(at, true);
+    return true;
+  }
+
+  /** 点が描かれ始める倍率 */
+  #minZoom() {
+    return parseCount(this.getAttribute("min-zoom"), POI_DEFAULTS.minZoom);
   }
 
   /**
@@ -671,7 +736,8 @@ export class MmjPoi extends HTMLElement {
     });
 
     if (move) {
-      map.easeTo({ center: where, duration: 400 });
+      // **点が描かれる倍率まで寄る。**引いたままだと、カードだけ開いて点が無い
+      map.easeTo({ center: where, zoom: focusZoom(map.getZoom(), this.#minZoom()), duration: 400 });
       map.once("moveend", () => this.#fit());
     } else {
       // 1 枚描いてから測る。**出した直後は、まだ位置が決まっていない**

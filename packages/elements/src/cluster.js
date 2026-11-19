@@ -76,9 +76,15 @@ export function pickFilters(idKey, id) {
 }
 
 /**
+ * `weightKey` を渡すと、**まとまりの数を点の数ではなく件数の合計**にする
+ * （店の座標が無く、駅ごとに「店 ◯ 件」を出す使い方）。**丸の形のときだけ**——
+ * まち針の輪は種別の割合を点の数で描くので、件数を混ぜると割合と数が食い違う。
+ *
+ * `src` は URL でも、読み込んだ GeoJSON でもよい（一覧と繋ぐときは、要素の側で読む）。
+ *
  * @param {{
  *   id: string,
- *   src: string,
+ *   src: string | object,
  *   radius?: number,
  *   maxZoom?: number,
  *   color?: string,
@@ -88,12 +94,13 @@ export function pickFilters(idKey, id) {
  *   colorKey?: string | null,
  *   colors?: readonly { name: string, color: string }[],
  *   idKey?: string | null,
+ *   weightKey?: string | null,
  *   labelColor?: string,
  * }} input
  * @returns {{ sourceId: string, source: any, layers: any[], pin: "circle" | "machibari",
  *   ids: { clusters: string, hit: string | null, points: string, picked: string | null },
  *   colors: { name: string, color: string }[], fallbackColor: string, casing: string,
- *   idKey: string | null }}
+ *   idKey: string | null, weightKey: string | null, maxZoom: number }}
  */
 export function buildClusterSpec(input) {
   if (!input.id) throw new Error("id が要ります（source 名が衝突すると後勝ちで消えます）");
@@ -103,69 +110,153 @@ export function buildClusterSpec(input) {
   const textColor = input.textColor ?? DEFAULTS.textColor;
   const pointColor = input.pointColor ?? DEFAULTS.pointColor;
   const sourceId = input.id;
+  const maxZoom = input.maxZoom ?? DEFAULTS.maxZoom;
   const source = {
     type: "geojson",
     data: input.src,
     cluster: true,
     clusterRadius: input.radius ?? DEFAULTS.radius,
-    clusterMaxZoom: input.maxZoom ?? DEFAULTS.maxZoom,
+    clusterMaxZoom: maxZoom,
   };
 
-  if (input.pin === "machibari") return buildMachibariSpec(input, { sourceId, source, pointColor, textColor });
+  if (input.pin === "machibari") return buildMachibariSpec(input, { sourceId, source, pointColor, textColor, maxZoom });
+
+  const idKey = nonEmpty(input.idKey);
+  const weightKey = nonEmpty(input.weightKey);
+  const ids = {
+    clusters: `${sourceId}-clusters`,
+    hit: null,
+    points: `${sourceId}-points`,
+    picked: idKey === null ? null : `${sourceId}-picked`,
+  };
+  const single = ["!", ["has", "point_count"]];
+  const filters = idKey === null ? { points: single, picked: null } : pickFilters(idKey, null);
+  const count = countOf(weightKey);
+  // **件数は大きさで表す。**色を段階で変えると配色を決めたことになる（§11）
+  const sized = ["step", count.value, 14, 50, 18, 200, 24];
+  /** 件数を持つ点は、ばらでもまとまりと同じ丸にする（「この駅に 12 件」が読めるように） */
+  const pointRadius = weightKey === null ? 6 : sized;
 
   return {
     sourceId,
     pin: "circle",
-    ids: { clusters: `${sourceId}-clusters`, hit: null, points: `${sourceId}-points`, picked: null },
+    ids,
     colors: [],
     fallbackColor: pointColor,
     casing: textColor,
-    idKey: null,
-    source,
+    idKey,
+    weightKey,
+    maxZoom,
+    source: weightKey === null ? source : { ...source, clusterProperties: weightProperties(weightKey) },
     layers: [
       {
-        id: `${sourceId}-clusters`,
+        id: ids.clusters,
         type: "circle",
         source: sourceId,
         filter: ["has", "point_count"],
         paint: {
           "circle-color": color,
-          // **件数は大きさで表す。**色を段階で変えると配色を決めたことになる（§11）
-          "circle-radius": ["step", ["get", "point_count"], 14, 50, 18, 200, 24],
+          "circle-radius": sized,
           "circle-stroke-width": 1.5,
           "circle-stroke-color": textColor,
         },
       },
+      countLayer(`${sourceId}-count`, sourceId, ["has", "point_count"], count.label, textColor),
       {
-        id: `${sourceId}-count`,
-        type: "symbol",
-        source: sourceId,
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": ["get", "point_count_abbreviated"],
-          "text-font": [DEFAULTS.font],
-          "text-size": 12,
-          // 数が出ない丸は、ただの模様になる。**衝突しても必ず出す**
-          "text-allow-overlap": true,
-          "text-ignore-placement": true,
-        },
-        paint: { "text-color": textColor },
-      },
-      {
-        id: `${sourceId}-points`,
+        id: ids.points,
         type: "circle",
         source: sourceId,
         // まとまりに入らなかった点だけ。**排他にしないと二重に出る**
-        filter: ["!", ["has", "point_count"]],
+        filter: filters.points,
         paint: {
           "circle-color": pointColor,
-          "circle-radius": 6,
+          "circle-radius": pointRadius,
           "circle-stroke-width": 1.5,
           "circle-stroke-color": textColor,
         },
       },
+      // **選んだ点は縁を太く、一回り大きく、縁は地図の上の字の色**（暗い地図でも縁が見える）。
+      // 色は足さない（§11・`labelColor` はスタイルの字の色）
+      ...(ids.picked === null
+        ? []
+        : [
+            {
+              id: ids.picked,
+              type: "circle",
+              source: sourceId,
+              filter: filters.picked,
+              paint: {
+                "circle-color": pointColor,
+                "circle-radius": weightKey === null ? 9 : ["+", sized, 3],
+                "circle-stroke-width": 3,
+                "circle-stroke-color": input.labelColor ?? DEFAULTS.labelColor,
+              },
+            },
+          ]),
+      // **ばらの点の件数は、点より上。**下に置くと、点の丸に隠れる
+      ...(weightKey === null
+        ? []
+        : [countLayer(`${sourceId}-point-count`, sourceId, ["all", single, ["has", weightKey]], count.label, textColor)]),
     ],
   };
+}
+
+/**
+ * まとまりに足し上げる件数の名前。**利用側の属性と重ならない名前にする**
+ * （`weight` のような属性を持つ点があると、ばらの点で取り違える）。
+ */
+export const WEIGHT_PROPERTY = "mmj_weight";
+
+/**
+ * **まとまりの数は、点の数ではなく件数の合計。**「駅 3 つ」ではなく「店 27 件」を出す。
+ * 数として読めない件数は 0 として足す（1 件の読み違いで、まとまり全体を消さない）。
+ * @param {string} weightKey
+ */
+function weightProperties(weightKey) {
+  return { [WEIGHT_PROPERTY]: ["+", ["to-number", ["get", weightKey], 0]] };
+}
+
+/**
+ * 丸に出す数と、大きさを決める数。
+ *
+ * まとまりは足し上げた合計、**ばらの点は自分の件数**（まとまりではないので合計が無い）。
+ * @param {string | null} weightKey
+ */
+function countOf(weightKey) {
+  if (weightKey === null) return { value: ["get", "point_count"], label: ["get", "point_count_abbreviated"] };
+  const value = [
+    "case",
+    ["has", "point_count"],
+    ["get", WEIGHT_PROPERTY],
+    ["to-number", ["get", weightKey], 0],
+  ];
+  return { value, label: ["to-string", value] };
+}
+
+/**
+ * 丸の上の数。**数が出ない丸は、ただの模様になる。**衝突しても必ず出す。
+ * @param {string} id @param {string} sourceId @param {any[]} filter @param {any} label @param {string} color
+ */
+function countLayer(id, sourceId, filter, label, color) {
+  return {
+    id,
+    type: "symbol",
+    source: sourceId,
+    filter,
+    layout: {
+      "text-field": label,
+      "text-font": [DEFAULTS.font],
+      "text-size": 12,
+      "text-allow-overlap": true,
+      "text-ignore-placement": true,
+    },
+    paint: { "text-color": color },
+  };
+}
+
+/** @param {unknown} value @returns {string | null} */
+function nonEmpty(value) {
+  return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
 /**
@@ -175,7 +266,7 @@ export function buildClusterSpec(input) {
  * 画面の下にあるものほど手前に描く）。試作の「南ほど手前」と同じになる。
  *
  * @param {Parameters<typeof buildClusterSpec>[0]} input
- * @param {{ sourceId: string, source: any, pointColor: string, textColor: string }} base
+ * @param {{ sourceId: string, source: any, pointColor: string, textColor: string, maxZoom: number }} base
  * @returns {ReturnType<typeof buildClusterSpec>}
  */
 function buildMachibariSpec(input, base) {
@@ -206,6 +297,8 @@ function buildMachibariSpec(input, base) {
     fallbackColor: pointColor,
     casing: textColor,
     idKey,
+    weightKey: null,
+    maxZoom: base.maxZoom,
     source: {
       ...base.source,
       // **種別ごとの件数は MapLibre が数える**（D-011）。対応が無ければ数えない

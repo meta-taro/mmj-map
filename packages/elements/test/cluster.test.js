@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULTS, buildClusterSpec, parseCount, parsePinStyle, pickFilters } from "../src/cluster.js";
+import { DEFAULTS, WEIGHT_PROPERTY, buildClusterSpec, parseCount, parsePinStyle, pickFilters } from "../src/cluster.js";
 import { ballOffset, needleOffset } from "../src/machibari.js";
 
 /**
@@ -209,5 +209,73 @@ describe("pickFilters", () => {
     const same = ["==", ["to-string", ["get", "id"]], "42"];
     expect(points).toEqual(["all", ["!", ["has", "point_count"]], ["!", same]]);
     expect(picked).toEqual(["all", ["!", ["has", "point_count"]], same]);
+  });
+});
+
+describe("buildClusterSpec — 件数で数える（weight-key）", () => {
+  const spec = buildClusterSpec({ id: "s", src: "/stations.geojson", weightKey: "shops" });
+
+  it("まとまりの数は、点の数ではなく件数の合計（MapLibre に足させる）", () => {
+    expect(spec.source.clusterProperties).toEqual({ [WEIGHT_PROPERTY]: ["+", ["to-number", ["get", "shops"], 0]] });
+    const count = spec.layers.find((l) => l.id === "s-count");
+    expect(JSON.stringify(count.layout["text-field"])).toContain(WEIGHT_PROPERTY);
+    expect(JSON.stringify(count.layout["text-field"])).not.toContain("point_count_abbreviated");
+  });
+
+  it("ばらの駅にも件数を出す（丸だけでは「何件か」が読めない）", () => {
+    const own = spec.layers.find((l) => l.id === "s-point-count");
+    expect(own.filter).toEqual(["all", ["!", ["has", "point_count"]], ["has", "shops"]]);
+    // 件数は丸より上
+    expect(spec.layers.indexOf(own)).toBe(spec.layers.length - 1);
+    expect(spec.layers.find((l) => l.id === "s-points").paint["circle-radius"]).toEqual(
+      spec.layers.find((l) => l.id === "s-clusters").paint["circle-radius"],
+    );
+  });
+
+  it("件数の属性名を、利用側の属性と重ならない名前で足し上げる", () => {
+    expect(WEIGHT_PROPERTY).toMatch(/^mmj_/);
+  });
+
+  it("指定が無ければ、いままでと同じ（点の数）", () => {
+    const plain = buildClusterSpec({ id: "p", src: "/p.geojson", weightKey: "  " });
+    expect(plain.source.clusterProperties).toBeUndefined();
+    expect(plain.layers.find((l) => l.id === "p-count").layout["text-field"]).toEqual(["get", "point_count_abbreviated"]);
+    expect(plain.layers.map((l) => l.id)).toEqual(["p-clusters", "p-count", "p-points"]);
+  });
+
+  it("まち針では件数で数えない（輪の割合は点の数で描くので、数と割合が食い違う）", () => {
+    const pins = buildClusterSpec({ id: "m", src: "/p.geojson", pin: "machibari", weightKey: "shops" });
+    expect(pins.weightKey).toBeNull();
+    expect(pins.source.clusterProperties).toBeUndefined();
+  });
+});
+
+describe("buildClusterSpec — 丸の形でも、選んだ点を描き分ける（id-key）", () => {
+  const spec = buildClusterSpec({ id: "c", src: "/p.geojson", idKey: "id" });
+
+  it("選んだ層を足し、最初は誰も選ばれていない", () => {
+    expect(spec.ids.picked).toBe("c-picked");
+    const picked = spec.layers.find((l) => l.id === "c-picked");
+    expect(picked.filter).toEqual(["boolean", false]);
+    // 色は足さない。縁を太く、一回り大きく
+    expect(picked.paint["circle-color"]).toBe(spec.layers.find((l) => l.id === "c-points").paint["circle-color"]);
+    expect(picked.paint["circle-stroke-width"]).toBeGreaterThan(1.5);
+    // 縁は地図の上の字の色（暗い地図で、地色の縁は見えない）
+    expect(picked.paint["circle-stroke-color"]).toBe(DEFAULTS.labelColor);
+  });
+
+  it("選んだ点を寄る先の目安に、まとまりが解ける zoom を返す", () => {
+    expect(spec.maxZoom).toBe(DEFAULTS.maxZoom);
+    expect(buildClusterSpec({ id: "z", src: "/p.geojson", maxZoom: 12 }).maxZoom).toBe(12);
+  });
+
+  it("読み込んだ GeoJSON をそのまま渡せる（一覧と繋ぐときは要素の側で読む）", () => {
+    const data = { type: "FeatureCollection", features: [] };
+    expect(buildClusterSpec({ id: "d", src: data }).source.data).toBe(data);
+  });
+
+  it("filter に古い書式と読まれる形を使わない", () => {
+    const weighted = buildClusterSpec({ id: "w", src: "/p.geojson", idKey: "id", weightKey: "shops" });
+    for (const layer of [...spec.layers, ...weighted.layers]) expect(legacyLike(layer.filter)).toBe(false);
   });
 });

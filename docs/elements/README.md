@@ -395,10 +395,13 @@ document.getElementById('map').toggleAttribute('3d');
 | `text-color` | 件数の文字色と、丸の縁の色。既定 `#111418` |
 | `point-color` | ばらの点の色 |
 | `layer-id` | source / layer の名前。既定は自動で振る（同じページに複数置ける） |
+| `id-key` | 点を言い当てる属性名。**付けると導入先の一覧と繋がります**（下の「一覧と繋ぐ」）。押した点を描き分けます |
+| `weight-key` | 件数を持つ属性名。**まとまりの数を、点の数ではなく件数の合計にします**（丸の形のときだけ） |
 
 - **まとまりを押すと、それが解ける倍率まで寄ります。**
 - **ばらの点を押すと `mmj-cluster-point` が飛びます**（`detail.properties` /
-  `detail.lngLat`）。ポップアップを出すかどうかは**使う側が決めます**。
+  `detail.lngLat`）。要素・`<mmj-map>`・`document` のどこで待っても 1 回届きます
+  （0.12.0 までは要素に直接付けた人にしか届きませんでした）。ポップアップを出すかどうかは**使う側が決めます**。
   ここで決めると厚くなるので、部品は中身を渡すところで止めています。
 - **件数は色ではなく大きさで表しています**。色の段階は配色を決める行為で、
   凡例が無いまま出すと読む人ごとに違う意味に読まれます（baseline §11 / D-011）。
@@ -429,6 +432,49 @@ document.getElementById('map').toggleAttribute('3d');
 - 輪とまち針の絵は、**描こうとしたぶんだけ**作ります（画面の外の点の絵は作りません）
 - 玉は直径 10px ですが、**押せる範囲は玉の周り 36px** です。重なったときは、押した所にいちばん近い玉を選びます
 - 寸法と角度は、人が作った試作の値をそのまま写しています（針 0.6px・灰色・30°）
+
+#### 一覧と繋ぐ（`mmj-visible`・`select`）
+
+店や施設の一覧を自分の UI で出している頁のための口です。**一覧の見た目は作りません。**
+`<mmj-cluster>` は `id-key`、`<mmj-poi>` は `card-id` があるときに働きます。
+
+```js
+const map = document.querySelector("mmj-map");
+
+// 地図 → 一覧: 動かし終えるたびに、見えている範囲の点の id が届く（最初に 1 回も届く）
+map.addEventListener("mmj-visible", (event) => {
+  const shown = new Set(event.detail.ids);
+  for (const row of list.children) row.hidden = !shown.has(row.dataset.id);
+});
+
+// 一覧 → 地図: その点まで寄って選ぶ（見つからなければ false で、地図は動かない）
+row.addEventListener("click", () => map.select(row.dataset.id));
+```
+
+- **`select` は `<mmj-map>` に対して呼びます**。中の部品は地図を作るときに DOM から外れるので、
+  あとから `document.getElementById` で部品を探しても見つかりません（要素への参照を先に取っておけば、部品の `select` も呼べます）
+- `mmj-visible` の `detail`: `ids`（範囲の中の点の id。データの順）・`total`（読んだ点の数）・`source`（`layer-id`）。
+  `<mmj-poi>` では `drawn`（いまの倍率で点が描かれているか）も付きます
+- **数えるのは、描かれた点ではなくデータです**。まとまりの丸の中の点も、範囲の中なら入ります
+- **前と同じ並びなら知らせません**（少し引きずるたびに一覧を組み直さない）
+- `select` は、**点がばらで見える倍率まで寄ります**（`<mmj-cluster>` は `max-zoom` より 1 つ上、
+  `<mmj-poi>` は `min-zoom`）。今より引きません。`<mmj-poi>` はカードも開きます
+- `<mmj-cluster>` で `id-key` を付けると、点を部品の側で読み（`fetch`）、それを地図へ渡します。
+  **別のサーバーに置くなら CORS が要ります**
+
+#### 駅ごとに「店 ◯ 件」を出す（`weight-key`）
+
+店に座標が無く、最寄り駅だけ分かっているとき。**点は駅 1 つにつき 1 つ**、件数を属性に入れて渡します
+（店と駅の対応は使う側が持っているので、**数えるのも使う側**です）。
+
+```html
+<mmj-cluster src="./stations.geojson" id-key="id" weight-key="shops"></mmj-cluster>
+```
+
+- まとまりの数は**件数の合計**です（MapLibre の `clusterProperties` が足します）。ばらの駅にも件数が出ます
+- 件数として読めない値は 0 として足します（`"2"` のような文字の数は読めます）
+- **`pin="machibari"` では効きません**。輪は種別の割合を点の数で描くので、件数を混ぜると数と割合が食い違います
+- 駅の丸を押すと `mmj-cluster-point` で駅の属性が届きます。一覧を絞るのは使う側です
 
 ### `<mmj-route>` — 経路と案内の吹き出し
 
@@ -851,6 +897,10 @@ formatWalk(walkSummary(geojson)); // "徒歩 5 分・400m"
    端まで行ったら反対側へ回ります（端でボタンを消すと**押す場所が動く**ため）
 2. **開いている点が URL に残ります**（`?shop=<id>`）。その URL を開くと、
    **その点まで地図が寄って、カードが開いた状態で始まります**
+
+導入先の一覧と繋ぐ口（`mmj-visible` と `select`）も、`card-id` があるときに働きます
+（`<mmj-cluster>` の「一覧と繋ぐ」と同じ使い方です）。
+一覧・URL・`select` で点へ寄るときは、**点が描かれる倍率（`min-zoom`）まで寄ります**。
 
 ```html
 <mmj-poi src="./data/shops.geojson" card-id="shop_id" card-title="shop_name" ...>

@@ -160,6 +160,13 @@ export class MmjMap extends HTMLElement {
    */
   missing = new Set();
 
+  /**
+   * 地図を作るときに引き取った子（`<mmj-poi>`・`<mmj-cluster>` など）。
+   * **引き取った子は DOM に居ない**ので、`document.getElementById` では見つからない。
+   * @type {Element[]}
+   */
+  adopted = [];
+
   connectedCallback() {
     this.#render().catch((error) => this.#fail(error));
   }
@@ -167,6 +174,22 @@ export class MmjMap extends HTMLElement {
   disconnectedCallback() {
     this.map?.remove();
     this.map = null;
+  }
+
+  /**
+   * **一覧から選ぶ口。**中の `<mmj-poi>`・`<mmj-cluster>` に id を渡し、
+   * 持っている部品がその点まで寄って選ぶ。
+   *
+   * 地図の側にも置く理由: **部品は地図を作るときに DOM から外れる**ので、
+   * あとから `getElementById` で部品を探しても見つからない（2026-11-19 に確かめ用の頁で踏んだ）。
+   * 地図はいつでも `document.querySelector("mmj-map")` で見つかる。
+   *
+   * @param {string | number} id 部品の `card-id` / `id-key` の値
+   * @returns {boolean} どれかの部品が選べたら `true`
+   */
+  select(id) {
+    const parts = this.adopted.length > 0 ? this.adopted : [...this.children];
+    return parts.some((part) => typeof (/** @type {any} */ (part).select) === "function" && /** @type {any} */ (part).select(id) === true);
   }
 
   /**
@@ -302,6 +325,7 @@ export class MmjMap extends HTMLElement {
     // **外す子に「地図が引き取った」と印を付ける。**子（目印など）は外されても、地図ができたら付く。
     // 印の無い子が外れていたら、それは置き手が外したもの（`mmj-marker.js` が付けない）
     for (const child of this.children) /** @type {any} */ (child).mmjAdopted = true;
+    this.adopted = [...this.children];
     this.replaceChildren(container);
 
     // `3d` を付けると建物を押し出す。**タイルは同じもの**で、足すデータも取得も無い

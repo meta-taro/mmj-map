@@ -204,10 +204,12 @@ HTML だけで地図を置くための部品です。**鍵も、閲覧ごとの�
 | `text-color` | 件数の文字色と、丸の縁の色。既定 `#111418` |
 | `point-color` | ばらの点の色 |
 | `layer-id` | source / layer の名前。既定は自動で振る（同じページに複数置ける） |
+| `id-key` | 点を言い当てる属性名。**付けると導入先の一覧と繋がります**（下の例）。押した点を描き分けます |
+| `weight-key` | 件数を持つ属性名。**まとまりの数を、点の数ではなく件数の合計にします**（丸の形のときだけ） |
 
 - **まとまりを押すと、それが解ける倍率まで寄ります。**
 - **ばらの点を押すと `mmj-cluster-point` が飛びます**（`detail.properties` /
-  `detail.lngLat`）。ポップアップを出すかどうかは**使う側が決めます**。
+  `detail.lngLat`）。要素・`<mmj-map>`・`document` のどこで待っても届きます。ポップアップを出すかどうかは**使う側が決めます**。
   ここで決めると厚くなるので、部品は中身を渡すところで止めています。
 - **件数は色ではなく大きさで表しています**。色の段階は配色を決める行為で、
   凡例が無いまま出すと読む人ごとに違う意味に読まれます（baseline §11 / D-011）。
@@ -238,6 +240,22 @@ HTML だけで地図を置くための部品です。**鍵も、閲覧ごとの�
 - 輪とまち針の絵は、**描こうとしたぶんだけ**作ります（画面の外の点の絵は作りません）
 - 玉は直径 10px ですが、**押せる範囲は玉の周り 36px** です。重なったときは、押した所にいちばん近い玉を選びます
 - 寸法と角度は、人が作った試作の値をそのまま写しています（針 0.6px・灰色・30°）
+
+#### 一覧と繋ぐ・駅ごとに「店 ◯ 件」
+
+一覧の見た目は作りません。地図を動かし終えるたびに `mmj-visible` で見えている点の id が届き、
+`<mmj-map>` の `select(id)` でその点まで寄って選びます（`<mmj-poi>` でも `card-id` があれば同じです）。
+
+```html
+<mmj-cluster src="./stations.geojson" id-key="id" weight-key="shops"></mmj-cluster>
+<script type="module">
+  const map = document.querySelector("mmj-map");
+  map.addEventListener("mmj-visible", (event) => showOnly(event.detail.ids));
+  row.addEventListener("click", () => map.select(row.dataset.id));
+</script>
+```
+
+`weight-key` は、店に座標が無く駅ごとの件数だけあるときに使います（数えるのは使う側です）。
 
 ### `<mmj-route>` — 経路と案内の吹き出し
 
