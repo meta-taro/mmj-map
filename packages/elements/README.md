@@ -88,6 +88,22 @@ npx @mmj-map/tiles extract osaka --bbox=135.4,34.6,135.6,34.8
 
 Every element is plain ESM. There is nothing to compile; copy `src/` if you prefer.
 
+## Coastlines and prefecture borders, without a map
+
+Drawing your own SVG figure (a typhoon track chart, say) and only need the coast and the prefecture lines underneath? Pull them out of the same Protomaps tiles. No new data and no server: PMTiles over HTTP Range, in the browser or in Node.
+
+```js
+import { PMTiles } from "pmtiles";
+import { extractOutline, svgHeight, toSvgPath } from "@mmj-map/elements/outline";
+
+const bbox = [128, 30, 146, 46]; // [west, south, east, north]
+const outline = await extractOutline({ source: new PMTiles(url), bbox, zoom: 5 });
+const height = svgHeight(bbox, 600);
+const coast = toSvgPath(outline.features.filter((f) => f.properties.kind === "coastline"), { bbox, width: 600, height });
+```
+
+Fill `land`, stroke `coastline` / `region` / `country` with `stroke-linecap="round"`, and show `outline.attribution` (© OpenStreetMap contributors) on the figure.
+
 ## The pin, without the elements
 
 Already drawing your own map with maplibre-gl? Borrow the slanted pin used by `<mmj-cluster pin="machibari">` without placing any element:

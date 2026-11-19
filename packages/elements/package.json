@@ -10,6 +10,7 @@
     "./area": "./src/area.js",
     "./attrs": "./src/attrs.js",
     "./machibari": "./src/machibari-image.js",
+    "./outline": "./src/outline.js",
     "./palette": "./src/palette.js",
     "./provenance": "./src/provenance.js",
     "./walk": "./src/walk.js"

@@ -1642,3 +1642,40 @@ MapLibre の `circle-radius` は**画面のピクセル**なので、倍率を�
 
 ここが出すのは**直線距離**だけです。「直線で 800 m」と「歩いて 800 m」は違う、
 と読む人に分かる形で使ってください。
+
+## 海岸線と県境だけを取り出す（`@mmj-map/elements/outline`）
+
+地図の部品を使わずに、**図の下地として海岸線と都道府県境だけ**がほしいとき
+（台風の進路予想図を SVG で自前で描いている頁など）。デモと同じ Protomaps のベースタイルから取り出します。
+**新しいデータは持たず、サーバーも立てません**（PMTiles を HTTP Range で読みます）。ブラウザでも Node でも同じに動きます。
+
+```js
+import { PMTiles } from "pmtiles";
+import { extractOutline, svgHeight, toSvgPath } from "@mmj-map/elements/outline";
+
+const bbox = [128, 30, 146, 46]; // [西, 南, 東, 北]
+const outline = await extractOutline({ source: new PMTiles("https://example.com/japan.pmtiles"), bbox, zoom: 5 });
+
+const width = 600;
+const height = svgHeight(bbox, width); // 縦横の比を崩さない高さ
+const path = (kind) =>
+  toSvgPath(outline.features.filter((f) => f.properties.kind === kind), { bbox, width, height });
+
+svg.innerHTML = `
+  <path d="${path("land")}" fill="#f2efe6"/>
+  <path d="${path("region")}" fill="none" stroke="#9a8f80" stroke-dasharray="2 2"/>
+  <path d="${path("coastline")}" fill="none" stroke="#2f4a5c" stroke-linecap="round" stroke-linejoin="round"/>
+  <text>${outline.attribution}</text>`;
+```
+
+- 返す `kind` は `land`（陸の面）・`coastline`（海岸線）・`country`（国境）・`region`（都道府県境）。
+  `boundaries: ["county"]` を渡すと市区町村境も返します
+- **陸は塗りだけ、輪郭は `coastline` で引いてください**。陸の面にはタイルの「のりしろ」が付いていて、
+  隣のタイルと重なるので継ぎ目に隙間が出ません。輪郭を陸の面の縁で引くと、タイルの縁が線として出ます
+- 線はタイルの縁で切れています。**`stroke-linecap="round"` で引くと切れ目は見えません**
+- 面は SVG の既定（`fill-rule="nonzero"`）で塗ってください。`evenodd` だと重なった所が抜けます
+- **粗さはズームで選びます**（独自に間引いていません）。日本全体なら z4〜5、九州なら z6〜7 が目安です
+- 1 回で読むタイルは 64 枚までです。超えると読まずにエラーを返します（ズームを下げてください）
+- 書庫に無いタイルは `missing` に数えて返します。黙って欠けた形を返しません
+- 投影は `projection: "mercator"`（既定）か `"equirectangular"`（正距円筒）
+- **`outline.attribution`（`© OpenStreetMap contributors`）を図のどこかに出してください**。元のデータは ODbL です

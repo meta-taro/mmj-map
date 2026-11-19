@@ -25,6 +25,12 @@
 
 - `<mmj-cluster>` に `weight-key` が増えました。まとまりの数が**点の数ではなく件数の合計**になり、ばらの点にも件数が出ます。`pin="machibari"` では効きません
 
+### 海岸線と県境だけを取り出せます
+
+- `@mmj-map/elements/outline` が増えました。`extractOutline({ source, bbox, zoom })` が、範囲の陸・海岸線・国境・都道府県境を GeoJSON で返します（`source` は `pmtiles` の `PMTiles`）。`toSvgPath` で SVG の `d` 文字列に、`svgHeight` で縦横の比を崩さない高さにできます
+- タイルの継ぎ目は見えません。陸は塗り、輪郭は `coastline` で引いてください（`stroke-linecap="round"`）
+- 図には `outline.attribution`（`© OpenStreetMap contributors`）を出してください
+
 ### 変わったこと
 
 - `<mmj-cluster>` の `mmj-cluster-point` が、`<mmj-map>` や `document` で待っても届くようになりました（これまでは要素に直接付けたときしか届きませんでした）
