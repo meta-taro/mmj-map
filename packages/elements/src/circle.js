@@ -224,8 +224,11 @@ function lineLayer(id, color) {
   };
 }
 
-/** @param {string} id */
-function labelLayer(id) {
+/**
+ * 名札の layer。**形で渡す範囲（`fill-blur.js`）でも同じものを使う**（字も縁取りも揃える）。
+ * @param {string} id
+ */
+export function labelLayer(id) {
   return {
     id: `${id}-label`,
     type: "symbol",

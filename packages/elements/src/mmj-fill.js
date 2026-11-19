@@ -34,12 +34,46 @@ function readNumber(value) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+/**
+ * ぼかした範囲の濃さ（`fill-blur.js` の `blurRaster`）を、色を付けた PNG にする。
+ *
+ * **色は置き手が渡したもの**を、ブラウザに読ませて RGB にする（`#hex` も `rgb()` も
+ * 色の名前も同じに扱える）。濃さは画素の透明度に入れ、全体の濃さは layer の
+ * `raster-opacity` で掛ける。
+ *
+ * @param {{ width: number, height: number, alpha: Uint8ClampedArray, color: string }} raster
+ */
+function paintRaster(raster) {
+  const canvas = document.createElement("canvas");
+  canvas.width = raster.width;
+  canvas.height = raster.height;
+  const context = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
+  context.fillStyle = raster.color;
+  context.fillRect(0, 0, 1, 1);
+  const [red, green, blue] = context.getImageData(0, 0, 1, 1).data;
+  const image = context.createImageData(raster.width, raster.height);
+  for (let i = 0; i < raster.alpha.length; i += 1) {
+    image.data[i * 4] = /** @type {number} */ (red);
+    image.data[i * 4 + 1] = /** @type {number} */ (green);
+    image.data[i * 4 + 2] = /** @type {number} */ (blue);
+    image.data[i * 4 + 3] = /** @type {number} */ (raster.alpha[i]);
+  }
+  context.putImageData(image, 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
 export class MmjFill extends HTMLElement {
   /** @type {any} */
   owner = null;
 
   /** @type {string | null} */
   sourceId = null;
+
+  /** 付けた layer の id（**付けた順**。外すときは逆から） @type {string[]} */
+  layerIds = [];
+
+  /** ぼかした範囲の画像の source（`blur` のときだけ） @type {string | null} */
+  rasterId = null;
 
   /** @type {HTMLElement | null} */
   legend = null;
@@ -61,12 +95,15 @@ export class MmjFill extends HTMLElement {
     if (map === undefined || map === null || this.sourceId === null) return;
     // **付けた順の逆で外す。**layer を残したまま source を消すと地図が落ちる
     try {
-      if (map.getLayer(`${this.sourceId}-fill`)) map.removeLayer(`${this.sourceId}-fill`);
+      for (const id of this.layerIds.toReversed()) if (map.getLayer(id)) map.removeLayer(id);
+      if (this.rasterId !== null && map.getSource(this.rasterId)) map.removeSource(this.rasterId);
       if (map.getSource(this.sourceId)) map.removeSource(this.sourceId);
     } catch (error) {
       console.error("[mmj-fill] 外せませんでした", error);
     }
     this.sourceId = null;
+    this.rasterId = null;
+    this.layerIds = [];
   }
 
   /**
@@ -80,17 +117,41 @@ export class MmjFill extends HTMLElement {
     else map.once("load", () => this.#add(map));
   }
 
-  /** @param {any} map */
-  #add(map) {
+  /**
+   * **ぼかしと名札には形そのものが要る。**`blur` か `label-key` があれば、
+   * `src` をこちらで取ってから組む（無ければこれまでどおり URL を MapLibre に渡す）。
+   * @param {any} map
+   */
+  async #add(map) {
+    const src = this.getAttribute("src") ?? "";
+    const needsShapes = this.hasAttribute("blur") || this.hasAttribute("label-key");
+    let data = /** @type {string | object} */ (src);
+    if (needsShapes && src !== "") {
+      try {
+        const response = await fetch(src);
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        data = await response.json();
+      } catch (error) {
+        // **推測した場所を描かない。**取れなければ何も描かず、理由を残す
+        return void console.error(`[mmj-fill] 形を取れませんでした: ${src}`, error);
+      }
+      // 取っている間に置き手が外したなら付けない。**地図が引き取った子（`mmjAdopted`）は外れていても付ける**
+      //（`mmj-map.js` は地図を作るときに子を DOM から外す。`mmj-marker.js` と同じ判断）
+      if (!this.isConnected && /** @type {any} */ (this).mmjAdopted !== true) return;
+    }
+
     const steps = parseSteps(this.getAttribute("steps"));
     let spec;
     try {
       spec = buildFillSpec({
         id: this.getAttribute("layer-id") || `mmj-fill-${++serial}`,
-        src: this.getAttribute("src") ?? "",
+        src: data,
         valueKey: this.getAttribute("value-key") ?? "",
         steps,
+        color: this.getAttribute("color") ?? undefined,
         opacity: readNumber(this.getAttribute("opacity")),
+        blur: readNumber(this.getAttribute("blur")),
+        labelKey: this.getAttribute("label-key") ?? undefined,
         // **出典と時点は、地図の中に出す。**持ち出された先では配布元の頁は付いて来ない
         attribution: this.getAttribute("attribution") ?? undefined,
       });
@@ -101,10 +162,23 @@ export class MmjFill extends HTMLElement {
 
     try {
       map.addSource(spec.sourceId, spec.source);
-      // **ラベルの下へ入れる。**上へ置くと地名も駅名も読めなくなる
-      const before = this.getAttribute("before") ?? firstSymbolLayerId(map.getStyle());
-      map.addLayer(spec.layers[0], before && map.getLayer(before) ? before : undefined);
       this.sourceId = spec.sourceId;
+      if (spec.raster !== undefined) {
+        map.addSource(spec.raster.sourceId, {
+          type: "image",
+          url: paintRaster(spec.raster),
+          coordinates: spec.raster.coordinates,
+        });
+        this.rasterId = spec.raster.sourceId;
+      }
+      // **塗りはラベルの下へ。**上へ置くと地名も駅名も読めなくなる。
+      // **名札だけは上へ。**下に置くと地図の地名に押し負けて出ない
+      const below = this.getAttribute("before") ?? firstSymbolLayerId(map.getStyle());
+      for (const layer of spec.layers) {
+        const before = layer.type !== "symbol" && below && map.getLayer(below) ? below : undefined;
+        map.addLayer(layer, before);
+        this.layerIds.push(layer.id);
+      }
     } catch (error) {
       return void console.error("[mmj-fill] 重ねられませんでした", error);
     }

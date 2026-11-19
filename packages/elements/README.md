@@ -84,7 +84,7 @@ npx @mmj-map/tiles extract osaka --bbox=135.4,34.6,135.6,34.8
 | `<mmj-route>` | A path with step-by-step callouts (it does **not** compute routes) |
 | `<mmj-circle>` | A radius in real metres from a point. `blur` and `label` show a rough area ("around the station") instead of an exact spot |
 | `<mmj-raster>` | A raster overlay — rainfall, hazard maps, aerial imagery |
-| `<mmj-fill>` | Polygons shaded by a value — flood depth, ground type, intensity |
+| `<mmj-fill>` | Polygons shaded by a value — flood depth, ground type, intensity — or named areas in one colour, with an edge that fades outward (`blur`, ground metres) and a name label (`label-key`) |
 
 Every element is plain ESM. There is nothing to compile; copy `src/` if you prefer.
 
