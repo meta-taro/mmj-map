@@ -18,9 +18,13 @@ export const RESIZE_EVENT = "mmj-re-resize";
 /**
  * 帯の中のボタンは MapLibre の既定（29px 角の絵のボタン）を外して、文字のボタンにする。
  * **押す目標は 36px 以上**（指で押すため）。
+ *
+ * **帯の幅は窓ではなく地図の幅で決める。**右上の拡大縮小のぶん（64px）を空ける。
+ * 窓の幅で決めていたので、390px で帯が拡大縮小のボタンに 2px かぶっていた（2026-11-25）。
  */
 const CSS = `
-.mmj-route-editor-panel { padding: 6px; display: flex; flex-direction: column; gap: 6px; max-width: min(320px, calc(100vw - 32px)); font-size: 13px; line-height: 1.5; }
+.maplibregl-map:has(.mmj-route-editor-panel) { container-type: inline-size; }
+.mmj-route-editor-panel { box-sizing: border-box; padding: 6px; display: flex; flex-direction: column; gap: 6px; max-width: min(320px, calc(100vw - 32px)); max-width: min(320px, calc(100cqw - 64px)); font-size: 13px; line-height: 1.5; }
 .mmj-route-editor-panel .mmj-re-row { display: flex; flex-wrap: wrap; gap: 4px; }
 .maplibregl-ctrl-group.mmj-route-editor-panel button { width: auto; height: auto; min-height: 36px; padding: 4px 10px; border: 1px solid currentColor; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; display: inline-flex; align-items: center; }
 .maplibregl-ctrl-group.mmj-route-editor-panel button + button { border-top: 1px solid currentColor; }

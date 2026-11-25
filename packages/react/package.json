@@ -1,0 +1,59 @@
+{
+  "name": "@mmj-map/react",
+  "version": "0.1.0",
+  "description": "React components for @mmj-map/elements: a self-hosted web map with no API key, no per-view billing and no tile server. A thin wrapper; the map itself stays a Web Component.",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src/",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "react",
+    "map",
+    "maplibre",
+    "pmtiles",
+    "web-components",
+    "self-hosted",
+    "offline-map",
+    "no-api-key",
+    "mmj"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meta-taro/mmj-map.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://meta-taro.github.io/mmj-map/",
+  "bugs": {
+    "url": "https://github.com/meta-taro/mmj-map/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@mmj-map/elements": "workspace:^"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "react": "^19.3.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}

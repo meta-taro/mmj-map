@@ -362,10 +362,10 @@ AI に経路と案内文を作らせて、この形で渡す使い方を想定�
 | `issues` | **地図に出ないもの**（線の点が 2 つ未満・ひとことが空の案内・使えない写真の URL）。保存の前に人へ見せてください |
 | `reason` | `load` `line` `step` `move` `words` `remove` `undo` `clear` `set` `names` |
 
-外から入れ直すときは、地図から部品を引いて `value` に入れます（中の部品は地図を作るときに DOM から外れるため）。
+外から入れ直すときは、部品の `value` に入れます。
 
 ```js
-const editor = document.querySelector("mmj-map").getPart("editor"); // <mmj-route-editor id="editor">
+const editor = document.getElementById("editor"); // <mmj-route-editor id="editor">
 editor.value = savedText; // 文字でも GeoJSON でも。「1 つ戻す」の履歴は消えます
 editor.undo();
 ```

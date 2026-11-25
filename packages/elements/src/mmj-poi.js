@@ -83,6 +83,9 @@ const GEOCODE_ZOOM = 15;
 let serial = 0;
 
 export class MmjPoi extends HTMLElement {
+  /** 地図ができるのを待っているあいだの、待ちを外す口 @type {(() => void) | null} */
+  stopWaiting = null;
+
   /** @type {any} */
   map = null;
   /** @type {ReturnType<typeof buildPoiSpec> | null} */
@@ -177,8 +180,8 @@ export class MmjPoi extends HTMLElement {
 
   /**
    * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
-   * 親は描画時に `replaceChildren` で子を DOM から外すので、
-   * **あとから `closest` を呼ぶと null になる**（配色を借り損ねていた）。
+   * 0.14.0 までは、親が描画時に子を DOM から外したので、
+   * **あとから `closest` を呼ぶと null になった**（配色を借り損ねていた）。
    * @type {any}
    */
   owner = null;
@@ -204,10 +207,15 @@ export class MmjPoi extends HTMLElement {
 
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
-    parent.addEventListener("mmj-ready", (/** @type {any} */ event) => this.#attach(event.detail.map), { once: true });
+    // **外されたら待つのをやめる。**待ちを残すと、外して戻したときに 2 回付く
+    const onReady = (/** @type {any} */ event) => this.#attach(event.detail.map);
+    parent.addEventListener("mmj-ready", onReady, { once: true });
+    this.stopWaiting = () => parent.removeEventListener("mmj-ready", onReady);
   }
 
   disconnectedCallback() {
+    this.stopWaiting?.();
+    this.stopWaiting = null;
     this.moveCleanup?.();
     this.moveCleanup = null;
     this.lastVisible = null;
@@ -600,22 +608,15 @@ export class MmjPoi extends HTMLElement {
   /**
    * 出来事を出す。**どこへも送らない**（何を数えるかは受けた側が決める）。
    *
-   * **2 か所へ出す。**親の <mmj-map> は描画時に子を DOM から外すので、
-   * この要素から出した出来事は**どこへも上がらない**。
-   * `document.addEventListener('mmj-card-open', ...)` で待っている人には
-   * **一生届かなかった**（実測・2026-09-29。要素に直接付けた人だけ受け取れていた）。
-   *
+   * 要素から出せば、地図と `document` まで上がる（0.15.0 から、地図は子を DOM から外さない）。
    * 要素に付けた人・地図に付けた人・document で待つ人、**どれも 1 回だけ**受け取る。
+   * **地図からもう 1 回出さない**——0.15.0 の書き換えで 1 か所だけ残り、地図と document で 2 回届いていた。
    *
    * @param {string} name
    * @param {any} detail
    */
   #announce(name, detail) {
     this.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
-    // 親は DOM に残っている。**こちらから出すと document まで上がる**
-    if (this.owner && this.owner !== this) {
-      this.owner.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
-    }
   }
 
   /** `card-*` で指定された属性名。**推測しない**（媒体ごとに名前が違う） */

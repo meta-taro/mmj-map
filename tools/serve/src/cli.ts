@@ -41,6 +41,8 @@ const mounts: Mount[] = withBasePath(
     { prefix: "/vendor/pmtiles", dir: resolve(repoRoot, "node_modules/pmtiles/dist") },
     // Web Components はビルドしない。**素の ESM をそのまま配る**（packages/elements/src）
     { prefix: "/elements", dir: resolve(repoRoot, "packages/elements/src") },
+    // React から使う形（`react.html`）。これもビルドしない
+    { prefix: "/react", dir: resolve(repoRoot, "packages/react/src") },
     { prefix: "/", dir: resolve(repoRoot, "apps/demo") },
   ],
   base,

@@ -733,3 +733,22 @@ mmj-map,
     min-height: 70dvh;
   }
 }
+
+/* `react.html` の操作の帯。**左上は道案内の線を引く帯が使う**ので、左下（縮尺の上）へ置く。
+ * 中のボタンと行は帯の流れに並べる（単独で置くときの絶対位置を外す） */
+.react-bar {
+  position: absolute;
+  left: 1rem;
+  bottom: 2.4rem;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: calc(100% - 2rem);
+}
+
+.react-bar .map-btn,
+.react-bar .picked {
+  position: static;
+}

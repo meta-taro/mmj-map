@@ -90,6 +90,7 @@ npx @mmj-map/tiles extract osaka --bbox=135.4,34.6,135.6,34.8
 | | |
 |---|---|
 | 部品 | [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements) |
+| React から使う | [`@mmj-map/react`](packages/react/README.md)（[見本](https://meta-taro.github.io/mmj-map/react.html)） |
 | 切り出し | [`@mmj-map/tiles`](https://www.npmjs.com/package/@mmj-map/tiles) |
 | 導入手順 | [日本語](docs/install/ja.md) · [English](docs/install/en.md) · [繁體中文](docs/install/zh-TW.md) · [简体中文](docs/install/zh-CN.md) · [Tiếng Việt](docs/install/vi.md) |
 | 属性の全文（1 回の取得で全部） | <https://meta-taro.github.io/mmj-map/llms-full.txt> |

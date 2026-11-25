@@ -60,6 +60,9 @@ const NOT_THE_MAP = ".maplibregl-marker, .maplibregl-popup, .maplibregl-ctrl";
 /** @typedef {import("./route-edit.js").EditRoute} EditRoute */
 
 export class MmjRouteEditor extends HTMLElement {
+  /** 地図ができるのを待っているあいだの、待ちを外す口 @type {(() => void) | null} */
+  stopWaiting = null;
+
   static observedAttributes = ["from", "to"];
 
   /** @type {any} */
@@ -106,18 +109,18 @@ export class MmjRouteEditor extends HTMLElement {
     this.owner = parent;
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
-    parent.addEventListener(
-      "mmj-ready",
-      (/** @type {any} */ event) => {
-        // **待っている間に外されたら付けない**（付けた層と帯を、誰も片付けなくなる）。
-        // 親が描くときに外した子は付ける（`mmj-marker.js` と同じ）
-        if (this.isConnected || /** @type {any} */ (this).mmjAdopted === true) this.#attach(event.detail.map);
-      },
-      { once: true },
-    );
+    // **外されたら待つのをやめる。**待ちを残すと、外して戻したときに 2 回付く
+    const onReady = (/** @type {any} */ event) => {
+        // **待っている間に外されたら付けない**（付けた層と帯を、誰も片付けなくなる）
+        if (this.isConnected) this.#attach(event.detail.map);
+      };
+    parent.addEventListener("mmj-ready", onReady, { once: true });
+    this.stopWaiting = () => parent.removeEventListener("mmj-ready", onReady);
   }
 
   disconnectedCallback() {
+    this.stopWaiting?.();
+    this.stopWaiting = null;
     for (const marker of this.markers) marker.remove();
     this.markers = [];
     const map = this.map;
@@ -422,8 +425,7 @@ export class MmjRouteEditor extends HTMLElement {
   }
 
   /**
-   * 変わったことを知らせる。**2 か所へ出す**——親の `<mmj-map>` は描画時に子を DOM から外すので、
-   * この要素から出した出来事は `document` まで上がらない（`mmj-marker.js` と同じ穴）。
+   * 変わったことを知らせる。要素から出せば、地図と `document` まで上がる。
    * @param {string} reason
    */
   #announce(reason) {
@@ -440,9 +442,6 @@ export class MmjRouteEditor extends HTMLElement {
       reason,
     };
     this.dispatchEvent(new CustomEvent("mmj-route-change", { bubbles: true, detail }));
-    if (this.owner && this.owner !== this && !this.owner.contains(this)) {
-      this.owner.dispatchEvent(new CustomEvent("mmj-route-change", { bubbles: true, detail }));
-    }
   }
 
   #stepKey() {

@@ -33,6 +33,12 @@ function readNumber(value) {
 }
 
 export class MmjTyphoon extends HTMLElement {
+  /** 地図ができるのを待っているあいだの、待ちを外す口 @type {(() => void) | null} */
+  stopWaiting = null;
+
+  /** 層を付けた地図（外すときに使う） @type {any} */
+  attachedMap = null;
+
   /** @type {any} */
   owner = null;
 
@@ -56,11 +62,18 @@ export class MmjTyphoon extends HTMLElement {
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
     // 親がまだ出来ていなければ待つ
-    parent.addEventListener("mmj-ready", (/** @type {any} */ event) => this.#attach(event.detail.map), { once: true });
+    // **外されたら待つのをやめる。**待ちを残すと、外して戻したときに 2 回付く
+    const onReady = (/** @type {any} */ event) => this.#attach(event.detail.map);
+    parent.addEventListener("mmj-ready", onReady, { once: true });
+    this.stopWaiting = () => parent.removeEventListener("mmj-ready", onReady);
   }
 
   disconnectedCallback() {
-    const map = /** @type {any} */ (this.owner)?.map;
+    this.stopWaiting?.();
+    this.stopWaiting = null;
+    // **付けた地図から外す。**親の地図は、外されると先に手を離す（`mmj-map.js` の disconnectedCallback）
+    const map = this.attachedMap ?? /** @type {any} */ (this.owner)?.map;
+    this.attachedMap = null;
     if (map === undefined || map === null) return;
     // 付けた順の逆で外す。layer を残したまま source を消すと地図が落ちる
     try {
@@ -78,6 +91,7 @@ export class MmjTyphoon extends HTMLElement {
    * @param {any} map
    */
   #attach(map) {
+    this.attachedMap = map;
     this.style.display = "none"; // 地図の上に出るもの。要素そのものは場所を取らない
     if (map.isStyleLoaded()) void this.#add(map);
     else map.once("load", () => void this.#add(map));

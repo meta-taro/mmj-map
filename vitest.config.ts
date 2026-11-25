@@ -21,6 +21,7 @@ const PACKAGES = [
   "infra/pmtiles-worker",
   "packages/elements",
   "packages/http-range",
+  "packages/react",
   "tools/agent-doc",
   "tools/asset-check",
   "tools/lint-gate",
@@ -56,6 +57,9 @@ export default defineConfig({
         // **要素は jsdom を入れずに、ブラウザで撮って確かめる**（attrs.js の頭に理由）。
         // 判断が要る部分は純粋関数へ出してあり、そちらは 90% を超えている
         "packages/elements/src/mmj-*.js",
+        // React の部品にする所。**React と DOM に受け渡すだけ**で、名前の書き換えと
+        // 入れ直すかの判断は props.js に出してテストしてある。受け渡しは react.html で触って確かめる
+        "packages/react/src/create.js",
         "packages/elements/src/popup-dom.js",
         // 拡張の窓と見本の頁の組み立て。**chrome.* と画面に触るだけ**で、
         // 判断は view.js / snippet.js に出してテストしてある。読み込んだ拡張で撮って確かめる

@@ -96,6 +96,7 @@ nothing to compile.
 | | |
 |---|---|
 | Components | [`@mmj-map/elements`](https://www.npmjs.com/package/@mmj-map/elements) |
+| From React | [`@mmj-map/react`](packages/react/README.md) ([demo](https://meta-taro.github.io/mmj-map/react.html)) |
 | Tile extractor | [`@mmj-map/tiles`](https://www.npmjs.com/package/@mmj-map/tiles) |
 | Full install guide | [English](docs/install/en.md) · [日本語](docs/install/ja.md) · [繁體中文](docs/install/zh-TW.md) · [简体中文](docs/install/zh-CN.md) · [Tiếng Việt](docs/install/vi.md) |
 | Every attribute, in one fetch | <https://meta-taro.github.io/mmj-map/llms-full.txt> |

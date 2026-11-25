@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, routeBounds, stepPinSpec } from "../src/route.js";
+import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, fitSides, routeBounds, stepPinSpec } from "../src/route.js";
 
 /**
  * ピンの中身を決める。**判断はここ（純粋関数）で、SVG の組み立ては要素側。**
@@ -293,5 +293,49 @@ describe("routeBounds", () => {
   it("座標が無ければ null（**[0,0] へ寄せない**。アフリカ沖に飛ぶ）", () => {
     expect(routeBounds({ type: "FeatureCollection", features: [] })).toBeNull();
     expect(routeBounds(null)).toBeNull();
+  });
+});
+
+describe("fitSides", () => {
+  const base = 48;
+  const edge = 8;
+  /** 名札の左右の端が、縁から edge 以上離れて地図の中に収まっているか（寄せたあとの位置で測る） */
+  const inside = (/** @type {any} */ input) => {
+    const { left, right } = fitSides(input);
+    const inner = input.width - left - right;
+    return input.tags.every((/** @type {any} */ tag) => {
+      const x = left + ((tag.lng - input.west) / (input.east - input.west)) * inner;
+      return x - tag.half >= edge - 0.5 && x + tag.half <= input.width - edge + 0.5;
+    });
+  };
+  const longWest = { width: 390, base, edge, west: 135.49, east: 135.5, tags: [{ lng: 135.49, half: 110 }, { lng: 135.5, half: 40 }] };
+
+  it("gives a tag at the end of the line only the edge gap plus its half width", () => {
+    // 0.14.0 は両側に 48 + 110 = 158 を空けていた
+    expect(fitSides(longWest)).toEqual({ left: 118, right: 48 });
+    expect(inside(longWest)).toBe(true);
+  });
+
+  it("adds nothing for a tag that sits well inside the line", () => {
+    const sides = fitSides({ width: 390, base, edge, west: 135.49, east: 135.51, tags: [{ lng: 135.5, half: 90 }, { lng: 135.5, half: 90 }] });
+    expect(sides).toEqual({ left: 48, right: 48 });
+  });
+
+  it("leaves more of the map for the line than the 0.14.0 padding did", () => {
+    const sides = fitSides(longWest);
+    expect(390 - sides.left - sides.right).toBeGreaterThan(390 - 2 * (48 + 110));
+  });
+
+  it("keeps tags near (not at) the edge inside after the line shrinks", () => {
+    const input = { width: 390, base, edge, west: 135.49, east: 135.5, tags: [{ lng: 135.4905, half: 120 }, { lng: 135.4995, half: 120 }] };
+    expect(inside(input)).toBe(true);
+  });
+
+  it("falls back to the widest tag on both sides when the map is narrower than the tags", () => {
+    expect(fitSides({ width: 100, base, edge, west: 0, east: 1, tags: [{ lng: 0, half: 80 }] })).toEqual({ left: 88, right: 88 });
+  });
+
+  it("treats a north-south line (no width) as centred", () => {
+    expect(fitSides({ width: 390, base, edge, west: 135.5, east: 135.5, tags: [{ lng: 135.5, half: 60 }] })).toEqual({ left: 48, right: 48 });
   });
 });

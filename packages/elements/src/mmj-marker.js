@@ -26,6 +26,9 @@ import { ensureCardContrast, ensurePopupContrast, popupColorsFrom, renderPopup }
 let serial = 0;
 
 export class MmjMarker extends HTMLElement {
+  /** 地図ができるのを待っているあいだの、待ちを外す口 @type {(() => void) | null} */
+  stopWaiting = null;
+
   /** @type {any} */
   marker = null;
 
@@ -35,8 +38,8 @@ export class MmjMarker extends HTMLElement {
 
   /**
    * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
-   * 親は描画時に `replaceChildren` で子を DOM から外すので、
-   * **あとから `closest` を呼ぶと null になる**（配色を借り損ねていた）。
+   * 0.14.0 までは、親が描画時に子を DOM から外したので、
+   * **あとから `closest` を呼ぶと null になった**（配色を借り損ねていた）。
    * @type {any}
    */
   owner = null;
@@ -59,15 +62,13 @@ export class MmjMarker extends HTMLElement {
     if (map) return void this.#attach(map);
     // **待っている間に置き手が外したら、付けない。**外したあとも待ちが残っていて、地図ができた瞬間に
     // 外したはずの目印の吹き出しまで開いた（地図ができる前に名前を 3 回打つと、吹き出しが 3 つ重なった・2026-11-04）。
-    // ただし**親が描くときに外した子は付ける**（`mmj-map.js` が `mmjAdopted` の印を付ける）。
-    // 「頁に付いているか」だけで決めると、HTML に書いた目印が 1 つも付かなくなった
-    parent.addEventListener(
-      "mmj-ready",
-      (/** @type {any} */ event) => {
-        if (this.isConnected || /** @type {any} */ (this).mmjAdopted === true) this.#attach(event.detail.map);
-      },
-      { once: true },
-    );
+    // （0.15.0 から、地図は描くときに子を DOM から外さない。だから「頁に付いているか」だけで決まる）
+    // **外されたら待つのをやめる。**待ちを残すと、外して戻したときに 2 回付く
+    const onReady = (/** @type {any} */ event) => {
+        if (this.isConnected) this.#attach(event.detail.map);
+      };
+    parent.addEventListener("mmj-ready", onReady, { once: true });
+    this.stopWaiting = () => parent.removeEventListener("mmj-ready", onReady);
   }
 
   /**
@@ -84,6 +85,8 @@ export class MmjMarker extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.stopWaiting?.();
+    this.stopWaiting = null;
     this.#removeRange();
     this.card?.destroy();
     this.card = null;
@@ -249,8 +252,7 @@ export class MmjMarker extends HTMLElement {
   }
 
   /**
-   * 直した位置を知らせる。**2 か所へ出す**——親の `<mmj-map>` は描画時に子を DOM から外すので、
-   * この要素から出した出来事は `document` まで上がらない（`mmj-poi.js` と同じ穴）。
+   * 直した位置を知らせる。要素から出せば、地図と `document` まで上がる（0.15.0 から、地図は子を DOM から外さない）。
    * @param {boolean} reset
    */
   #announceMove(reset) {
@@ -258,8 +260,5 @@ export class MmjMarker extends HTMLElement {
     const now = this.marker.getLngLat();
     const detail = { ...moveDetail(this.origin, [now.lng, now.lat]), origin: this.origin, reset, id: this.id || null };
     this.dispatchEvent(new CustomEvent("mmj-marker-move", { bubbles: true, detail }));
-    if (this.owner && this.owner !== this && !this.owner.contains(this)) {
-      this.owner.dispatchEvent(new CustomEvent("mmj-marker-move", { bubbles: true, detail }));
-    }
   }
 }

@@ -403,8 +403,8 @@ document.getElementById('map').toggleAttribute('3d');
 - `mmj-marker-move` は**動かし終えたとき**（指やマウスを離したとき・矢印キーを離したとき）に 1 回届きます。
   `detail`: `lng`・`lat`・`lngLat`（小数 7 桁）・`moved`（m）・`origin`・`reset`・`id`
 - `reset()` で元の位置へ戻します（戻したことも `reset: true` で届きます）
-- 中の部品は地図を作るときに DOM から外れるので、`document.getElementById` では見つかりません。
-  **`<mmj-map>` の `getPart(id)` で引きます**
+- 部品は `document.getElementById` でも、`<mmj-map>` の `getPart(id)` でも引けます。
+  0.14.0 までは地図を作るときに中の部品が DOM から外れたので、`getPart(id)` でしか引けませんでした
 
 ### `<mmj-cluster>`
 
@@ -482,8 +482,8 @@ map.addEventListener("mmj-visible", (event) => {
 row.addEventListener("click", () => map.select(row.dataset.id));
 ```
 
-- **`select` は `<mmj-map>` に対して呼びます**。中の部品は地図を作るときに DOM から外れるので、
-  あとから `document.getElementById` で部品を探しても見つかりません（要素への参照を先に取っておけば、部品の `select` も呼べます）
+- `select` は `<mmj-map>` に対しても、部品に対しても呼べます。`<mmj-map>` に呼ぶと、中の部品のうち
+  その id を持つものが選びます（どの部品が持っているかを気にしなくてよい）
 - `mmj-visible` の `detail`: `ids`（範囲の中の点の id。データの順）・`total`（読んだ点の数）・`source`（`layer-id`）。
   `<mmj-poi>` では `drawn`（いまの倍率で点が描かれているか）も付きます
 - **数えるのは、描かれた点ではなくデータです**。まとまりの丸の中の点も、範囲の中なら入ります
@@ -665,10 +665,10 @@ formatWalk(walkSummary(geojson)); // "徒歩 5 分・400m"
 | `issues` | **地図に出ないもの**（線の点が 2 つ未満・ひとことが空の案内・使えない写真の URL）。保存の前に人へ見せてください |
 | `reason` | `load` `line` `step` `move` `words` `remove` `undo` `clear` `set` `names` |
 
-外から入れ直すときは、地図から部品を引いて `value` に入れます（中の部品は地図を作るときに DOM から外れるため）。
+外から入れ直すときは、部品の `value` に入れます。
 
 ```js
-const editor = document.querySelector("mmj-map").getPart("editor"); // <mmj-route-editor id="editor">
+const editor = document.getElementById("editor"); // <mmj-route-editor id="editor">
 editor.value = savedText; // 文字でも GeoJSON でも。「1 つ戻す」の履歴は消えます
 editor.undo();
 ```
@@ -1199,7 +1199,7 @@ editor.undo();
 名前で当たらなかった問いだけが渡ります。**`[経度, 緯度]`**（または `{ lng, lat }`）を返してください。
 
 ```js
-// **部品を読み込む前に要素を取っておく**（描画のあと、<mmj-poi> は DOM から外れます）
+// 部品を読み込む前でも後でも、要素はそのまま取れます
 const poi = document.getElementById('shops');
 poi.geocode = async (query) => {
   const hit = await yourGeocoder(query); // 置く側が選んだ住所検索

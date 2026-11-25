@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>React から使う — MMJ</title>
+<meta name="description" content="@mmj-map/react で、React の state から目印を足し引きし、道案内の線を引いた結果を受け取ります。地図の本体は Web Components のままで、React 側は薄い受け渡しだけです。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="React から使う — MMJ">
+<meta property="og:description" content="@mmj-map/react で、React の state から目印を足し引きし、道案内の線を引いた結果を受け取ります。地図の本体は Web Components のままで、React 側は薄い受け渡しだけです。">
+<meta property="og:site_name" content="MMJ">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:url" content="https://meta-taro.github.io/mmj-map/react.html">
+<link rel="canonical" href="https://meta-taro.github.io/mmj-map/react.html">
+<link rel="icon" href="./favicon.svg">
+<link rel="stylesheet" href="./vendor/maplibre-gl/maplibre-gl.css">
+<link rel="stylesheet" href="./demo.css">
+<!-- **React はこの頁だけ CDN から読む**（React はビルド前提の CommonJS で配られていて、
+     素の ESM が無い）。版は固定する。地図の部品と MapLibre は今までどおり自前で配る -->
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://cdn.jsdelivr.net/npm/react@19.2.0/+esm",
+    "react-dom/client": "https://cdn.jsdelivr.net/npm/react-dom@19.2.0/client/+esm",
+    "@mmj-map/elements": "./elements/index.js",
+    "@mmj-map/react": "./react/index.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<a class="skip-link" href="#main">地図へ飛ぶ</a>
+
+<header class="site-header">
+  <h1>React から使う</h1>
+  <details class="site-note">
+    <summary>この頁でできること</summary>
+    <p>
+    <code>@mmj-map/react</code> の <code>&lt;MmjMap&gt;</code> と <code>&lt;MmjMarker&gt;</code> を、
+    <strong>React の state から描いています</strong>。「店を足す」「最後の店を消す」で目印が増え減りします。
+    「線を引く」を押すと <code>&lt;MmjRouteEditor&gt;</code> が出て、引いた結果を
+    <code>onMmjRouteChange</code> で受け取り、下の行に出します。
+    <strong>地図の本体は Web Components のまま</strong>で、React 側は名前の書き換えと受け渡しだけです。
+    </p>
+  </details>
+  <nav class="site-nav" aria-label="デモの一覧">
+    <a href="./index.html">はじめに</a>
+    <a href="./plain.html">素の地図</a>
+    <a href="./elements.html">HTML だけで置く</a>
+    <a href="./react.html" aria-current="page">React から使う</a>
+    <a href="./3d.html">建物を立てる</a>
+    <a href="./cluster.html">点をまとめる</a>
+    <a href="./poi.html">自前の POI</a>
+    <a href="./shops.html">お店を見て回る</a>
+    <a href="./route.html">経路と案内</a>
+    <a href="./walk.html">線だけで道案内</a>
+    <a href="./3d-route.html">3D で道案内</a>
+    <a href="./themes.html">配色を見くらべる</a>
+    <a href="./brand.html">サイトの色を当てる</a>
+    <a href="./regions.html">地域を切り替える</a>
+    <a href="./venue.html">会場の地図</a>
+    <a href="./circle.html">半径で囲む</a>
+    <a href="./raster.html">重ねる</a>
+    <a href="./rain.html">雨雲を動かす</a>
+    <a href="./flood.html">面で塗り分ける</a>
+    <a href="https://github.com/meta-taro/mmj-map">リポジトリ</a>
+  </nav>
+</header>
+
+<main id="main" class="map-area">
+  <div id="app" style="position:absolute;inset:0;"></div>
+
+  <div id="notice" class="notice" hidden>
+    <div class="box">
+      <p>まだタイルの配信元がありません。<code>apps/demo/config.js</code> に設定します。</p>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="./maplibre.js"></script>
+<script src="./vendor/pmtiles/pmtiles.js"></script>
+<script src="./config.js"></script>
+<script type="module">
+  import { createElement as h, useState } from "react";
+  import { createRoot } from "react-dom/client";
+  import { MmjMap, MmjMarker, MmjRouteEditor } from "@mmj-map/react";
+
+  const cfg = window.MMJ_CONFIG ?? {};
+
+  // 梅田の周りの見本の店（**実在の店ではない**。位置だけ実際の道に合わせてある）
+  const SHOPS = [
+    { id: 1, name: "見本の店 1", lnglat: [135.4983, 34.7025] },
+    { id: 2, name: "見本の店 2", lnglat: [135.5010, 34.7001] },
+    { id: 3, name: "見本の店 3", lnglat: [135.4962, 34.6992] },
+    { id: 4, name: "見本の店 4", lnglat: [135.5031, 34.7040] },
+    { id: 5, name: "見本の店 5", lnglat: [135.4945, 34.7031] },
+  ];
+
+  function App() {
+    const [count, setCount] = useState(2);
+    const [editing, setEditing] = useState(false);
+    const [summary, setSummary] = useState("");
+    const shops = SHOPS.slice(0, count);
+
+    const bar = h("div", { className: "react-bar" },
+      h("button", { type: "button", className: "map-btn", disabled: count >= SHOPS.length, onClick: () => setCount(count + 1) }, "店を足す"),
+      h("button", { type: "button", className: "map-btn", disabled: count === 0, onClick: () => setCount(count - 1) }, "最後の店を消す"),
+      h("button", { type: "button", className: "map-btn", "aria-pressed": editing, onClick: () => setEditing(!editing) }, editing ? "線を引くのをやめる" : "線を引く"),
+      h("p", { className: "picked", role: "status" }, `目印 ${shops.length} 件` + (summary ? `・${summary}` : "")),
+    );
+
+    const map = h(MmjMap, {
+      tiles: cfg.tilesUrl, styleUrl: cfg.styleUrl, center: [135.4985, 34.7015], zoom: 15, fullscreen: true,
+      style: { position: "absolute", inset: 0 },
+    },
+      shops.map((shop) => h(MmjMarker, { key: shop.id, lnglat: shop.lnglat, popup: shop.name })),
+      editing ? h(MmjRouteEditor, {
+        key: "editor", from: "梅田駅", to: "見本の店",
+        onMmjRouteChange: (event) => setSummary(`線の点 ${event.detail.points}・案内 ${event.detail.steps}・徒歩 ${event.detail.minutes} 分`),
+      }) : null,
+    );
+
+    return h("div", { style: { position: "absolute", inset: 0 } }, map, bar);
+  }
+
+  if (!cfg.tilesUrl || !cfg.styleUrl) {
+    document.getElementById("notice").hidden = false;
+  } else {
+    createRoot(document.getElementById("app")).render(h(App));
+  }
+</script>
+</body>
+</html>

@@ -40,6 +40,9 @@ let serial = 0;
 const IMAGE_CAP = 256;
 
 export class MmjCluster extends HTMLElement {
+  /** 地図ができるのを待っているあいだの、待ちを外す口 @type {(() => void) | null} */
+  stopWaiting = null;
+
   /** @type {any} */
   map = null;
   /** @type {ReturnType<typeof buildClusterSpec> | null} */
@@ -51,8 +54,8 @@ export class MmjCluster extends HTMLElement {
 
   /**
    * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
-   * 親は描画時に `replaceChildren` で子を DOM から外すので、
-   * **あとから `closest` を呼ぶと null になる**（配色を借り損ねていた）。
+   * 0.14.0 までは、親が描画時に子を DOM から外したので、
+   * **あとから `closest` を呼ぶと null になった**（配色を借り損ねていた）。
    * @type {any}
    */
   owner = null;
@@ -79,10 +82,15 @@ export class MmjCluster extends HTMLElement {
 
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
-    parent.addEventListener("mmj-ready", (/** @type {any} */ event) => this.#attach(event.detail.map), { once: true });
+    // **外されたら待つのをやめる。**待ちを残すと、外して戻したときに 2 回付く
+    const onReady = (/** @type {any} */ event) => this.#attach(event.detail.map);
+    parent.addEventListener("mmj-ready", onReady, { once: true });
+    this.stopWaiting = () => parent.removeEventListener("mmj-ready", onReady);
   }
 
   disconnectedCallback() {
+    this.stopWaiting?.();
+    this.stopWaiting = null;
     this.imageCleanup?.();
     this.imageCleanup = null;
     this.moveCleanup?.();
@@ -131,8 +139,8 @@ export class MmjCluster extends HTMLElement {
         // **推測した点を描かない。**読めなければ何も描かず、理由を残す
         return void console.error(`[mmj-cluster] 点を読めませんでした: ${src}`, error);
       }
-      // 読んでいる間に置き手が外したなら付けない。**地図が引き取った子（`mmjAdopted`）は外れていても付ける**
-      if (!this.isConnected && /** @type {any} */ (this).mmjAdopted !== true) return;
+      // 読んでいる間に置き手が外したなら付けない
+      if (!this.isConnected) return;
       if (this.map !== map) return;
       this.features = Array.isArray(/** @type {any} */ (data)?.features) ? /** @type {any} */ (data).features : [];
     }
@@ -255,16 +263,12 @@ export class MmjCluster extends HTMLElement {
   }
 
   /**
-   * 出来事を出す。**2 か所へ出す**——親の `<mmj-map>` は描画時に子を DOM から外すので、
-   * この要素から出した出来事は `document` まで上がらない（`mmj-poi.js` と同じ穴）。
+   * 出来事を出す。要素から出せば、地図と `document` まで上がる（0.15.0 から、地図は子を DOM から外さない）。
    * @param {string} name
    * @param {any} detail
    */
   #announce(name, detail) {
     this.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
-    if (this.owner && this.owner !== this && !this.owner.contains(this)) {
-      this.owner.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
-    }
   }
 
   /**

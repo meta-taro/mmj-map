@@ -209,6 +209,47 @@ export function extractSteps(data, key = ROUTE_DEFAULTS.stepKey) {
 }
 
 /**
+ * 寄せるときの左右の余白（px）。**名札がはみ出す側に、はみ出すぶんだけ**空ける。
+ *
+ * 名札は地点の真上に左右へ広がる。0.14.0 は「線の余白 + 長いほうの名札の半分」を**左右の両側に**
+ * 空けていて、狭い画面で 1 段ほど引いて見えた（導入先の報告・2026-11-25）。直したのは 2 つ。
+ *
+ * - **名札が要るのは縁との隙間（`edge`）だけ。**線の余白（`base`）に名札の幅を足さない
+ * - **名札が線の内側に収まる側は空けない**
+ *
+ * 余白を増やすと線の幅が縮み、地点どうしが近づく。**縮んだ幅で測り直す**（数回で落ち着く）。
+ * 高さで寄せ方が決まるときは線の幅がもっと狭く、名札の余裕は増えるので、ここで足りる。
+ *
+ * @param {{
+ *   width: number,
+ *   base: number,
+ *   edge: number,
+ *   west: number,
+ *   east: number,
+ *   tags: readonly { lng: number, half: number }[],
+ * }} input `width` は地図の幅、`base` は線の余白、`edge` は名札と縁の隙間、`half` は名札の幅の半分
+ * @returns {{ left: number, right: number }}
+ */
+export function fitSides({ width, base, edge, west, east, tags }) {
+  const span = east - west;
+  const placed = tags.map((tag) => ({ at: span > 0 ? (tag.lng - west) / span : 0.5, half: Math.max(0, tag.half) }));
+  let left = base;
+  let right = base;
+  for (let round = 0; round < 8; round += 1) {
+    const inner = width - left - right;
+    // 地図が名札より狭いときは、測り直しても収まらない。両側に一番広い名札のぶんを空けて終える
+    if (inner <= 0) {
+      const widest = Math.max(0, ...placed.map((tag) => tag.half));
+      const both = Math.ceil(Math.max(base, edge + widest));
+      return { left: both, right: both };
+    }
+    left = Math.max(base, ...placed.map((tag) => edge + tag.half - tag.at * inner));
+    right = Math.max(base, ...placed.map((tag) => edge + tag.half - (1 - tag.at) * inner));
+  }
+  return { left: Math.ceil(left), right: Math.ceil(right) };
+}
+
+/**
  * 経路ぜんぶが収まる範囲。**座標が無ければ `null`。**
  * `[0,0]` へ寄せない（アフリカ沖の海へ飛ばされると、間違いだと気づきにくい）。
  *

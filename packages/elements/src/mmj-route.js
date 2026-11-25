@@ -29,7 +29,7 @@ import { buildPopupContent } from "./popup.js";
 import { ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
 import { pinPath } from "./pin.js";
 import { keepPopupInside } from "./popup-fit.js";
-import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, routeBounds, stepPinSpec } from "./route.js";
+import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, fitSides, routeBounds, stepPinSpec } from "./route.js";
 import { formatWalk, routeEnds, turnSteps, walkSummary } from "./walk.js";
 
 /** 同じページに複数置ける。source 名が衝突すると後勝ちで消えるため、番号で分ける */
@@ -41,10 +41,16 @@ const FIT_PADDING = 48;
 /** 名札（出発・到着）が地点の上に立つ高さ（px）。札 1 段 ＋ 尖り ＋ 隅の部品 1 段ぶん */
 const END_TAG_ROOM = 48;
 
+/** 名札と地図の縁の隙間（px）。吹き出しを縁から離す幅（`popup-fit.js`）と同じ */
+const TAG_EDGE = 8;
+
 /** 目印のためにタイルの読み込みを待つ上限（ms）。過ぎたら、読めている店だけで案内を出す */
 const LANDMARK_WAIT_MS = 3000;
 
 export class MmjRoute extends HTMLElement {
+  /** 地図ができるのを待っているあいだの、待ちを外す口 @type {(() => void) | null} */
+  stopWaiting = null;
+
   /** @type {any} */
   map = null;
   /** @type {{ sourceId: string, source: any, layers: any[] } | null} */
@@ -56,8 +62,8 @@ export class MmjRoute extends HTMLElement {
 
   /**
    * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
-   * 親は描画時に `replaceChildren` で子を DOM から外すので、
-   * **あとから `closest` を呼ぶと null になる**。
+   * 0.14.0 までは、親が描画時に子を DOM から外したので、
+   * **あとから `closest` を呼ぶと null になった**。
    * @type {any}
    */
   owner = null;
@@ -69,14 +75,15 @@ export class MmjRoute extends HTMLElement {
 
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
-    parent.addEventListener(
-      "mmj-ready",
-      (/** @type {any} */ event) => this.#attach(event.detail.map),
-      { once: true },
-    );
+    // **外されたら待つのをやめる。**待ちを残すと、外して戻したときに 2 回付く
+    const onReady = (/** @type {any} */ event) => this.#attach(event.detail.map);
+    parent.addEventListener("mmj-ready", onReady, { once: true });
+    this.stopWaiting = () => parent.removeEventListener("mmj-ready", onReady);
   }
 
   disconnectedCallback() {
+    this.stopWaiting?.();
+    this.stopWaiting = null;
     for (const marker of this.markers) marker.remove();
     this.markers = [];
     if (this.map && this.summaryControl) this.map.removeControl(this.summaryControl);
@@ -131,7 +138,7 @@ export class MmjRoute extends HTMLElement {
       const key = this.getAttribute("step-key") ?? ROUTE_DEFAULTS.stepKey;
       this.#placeSteps(map, extractSteps(data, key), accent);
 
-      this.#fit(map, data, 0);
+      this.#fit(map, data, []);
 
       const walk = walkSummary(data, readWidth(this.getAttribute("walk-speed")));
       // **線が読めなければ出さない。**作った「徒歩 1 分・10m」を見せない
@@ -144,9 +151,13 @@ export class MmjRoute extends HTMLElement {
       if (this.hasAttribute("ends")) {
         const tags = this.#placeEnds(map, data, accent, walk);
         // **名札の幅が分かってから寄せ直す。**札は地点の真上に左右へ広がるので、
-        // 左右の余白が足りないと名札が地図の縁で切れた（導入先の報告・2026-11-25）
-        const widest = Math.max(0, ...tags.map((tag) => tag.getBoundingClientRect().width));
-        this.#fit(map, data, Math.ceil(widest / 2));
+        // 左右の余白が足りないと名札が地図の縁で切れた（導入先の報告・2026-11-25）。
+        // 空けるのは**はみ出す側だけ**（`fitSides` の頭に理由）
+        this.#fit(
+          map,
+          data,
+          tags.map((tag) => ({ lng: tag.lng, half: tag.element.getBoundingClientRect().width / 2 })),
+        );
       }
 
       this.style.display = "none"; // 経路は地図の上に出る。要素そのものは場所を取らない
@@ -158,11 +169,6 @@ export class MmjRoute extends HTMLElement {
         minutes: walk.minutes,
       };
       this.dispatchEvent(new CustomEvent("mmj-route-ready", { bubbles: true, detail }));
-      // **地図にも出す。**親の `<mmj-map>` は描画時に子を DOM から外すので、
-      // この要素から出した出来事は `document` まで上がらない（`mmj-marker.js` と同じ穴）
-      if (this.owner && this.owner !== this && !this.owner.contains(this)) {
-        this.owner.dispatchEvent(new CustomEvent("mmj-route-ready", { bubbles: true, detail }));
-      }
     } catch (error) {
       // 握り潰さない（§8）。ここで黙ると、経路が出ない理由が画面にもログにも残らない
       console.error("[mmj-route]", error);
@@ -201,7 +207,7 @@ export class MmjRoute extends HTMLElement {
    *
    * @param {any} map @param {any} data @param {string | null | undefined} accent
    * @param {{ meters: number, minutes: number }} walk
-   * @returns {HTMLElement[]} 置いた名札（幅を測って寄せ直すため）
+   * @returns {{ element: HTMLElement, lng: number }[]} 置いた名札と経度（幅を測って寄せ直すため）
    */
   #placeEnds(map, data, accent, walk) {
     const ends = routeEnds(data);
@@ -213,7 +219,7 @@ export class MmjRoute extends HTMLElement {
       { ...ends.start, role: "出発", detail: "" },
       { ...ends.end, role: "到着", detail: walk.meters > 0 ? formatWalk(walk) : "" },
     ];
-    /** @type {HTMLElement[]} */
+    /** @type {{ element: HTMLElement, lng: number }[]} */
     const tags = [];
     for (const place of places) {
       const tag = endTag(place.label, place.role, place.detail, colors, edge);
@@ -224,7 +230,7 @@ export class MmjRoute extends HTMLElement {
       const canvas = map.getCanvas();
       canvas.parentElement?.insertBefore(tag, canvas.nextSibling);
       this.markers.push(marker);
-      tags.push(tag);
+      tags.push({ element: tag, lng: place.lngLat[0] });
     }
     return tags;
   }
@@ -236,15 +242,16 @@ export class MmjRoute extends HTMLElement {
    * 同じ余白だと出発の札が地図の縁と隅の部品に潜る（2026-11-13・手元で撮って見つけた）。
    *
    * @param {any} map @param {any} data
-   * @param {number} side 名札が左右へはみ出す幅（px）。名札を置く前は 0
+   * @param {readonly { lng: number, half: number }[]} tags 名札の経度と幅の半分（px）。名札を置く前は空
    */
-  #fit(map, data, side) {
+  #fit(map, data, tags) {
     if (!this.hasAttribute("fit")) return;
     const bounds = routeBounds(data);
     if (bounds === null) return;
     const top = this.hasAttribute("ends") ? FIT_PADDING + END_TAG_ROOM : FIT_PADDING;
-    const across = FIT_PADDING + side;
-    map.fitBounds(bounds, { padding: { top, bottom: FIT_PADDING, left: across, right: across }, duration: 0 });
+    const [[west], [east]] = bounds;
+    const { left, right } = fitSides({ width: map.getContainer().clientWidth, base: FIT_PADDING, edge: TAG_EDGE, west, east, tags });
+    map.fitBounds(bounds, { padding: { top, bottom: FIT_PADDING, left, right }, duration: 0 });
   }
 
   /**

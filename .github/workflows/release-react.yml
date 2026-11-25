@@ -1,0 +1,111 @@
+name: Release @mmj-map/react
+
+# `release-elements.yml` と同じ形。**人がやるのはタグを打つことだけ**にする。
+#
+#     git tag react-v0.1.0 && git push origin react-v0.1.0
+#
+# トークンは置かない（npm の Trusted Publishing）。
+#
+# ## 先に人がやること（1 回だけ）
+#
+# npm の Trusted Publisher は、**パッケージが npm に有ってから**登録できる。
+# 0.1.0 だけは手元から出し（`pnpm publish`・2FA の往復があるので別の端末で）、
+# そのあと npmjs.com の `@mmj-map/react` の設定で、このリポジトリとこの workflow を登録する。
+#
+# ## `@mmj-map/elements` の版
+#
+# リポの中では `workspace:^` で同じリポの部品を読んでいる（公開前の版をテストするため）。
+# **`npm publish` はこの書き方を書き換えない**ので、そのまま出すと入れた人の手元で読めない。
+# 出す直前に、そのとき公開されている部品の版へ書き換える。
+
+on:
+  push:
+    tags:
+      - "react-v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: github.repository == 'meta-taro/mmj-map'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: タグと package.json の版が一致するか
+        run: |
+          TAG="${GITHUB_REF_NAME#react-v}"
+          PKG="$(node -p "require('./packages/react/package.json').version")"
+          echo "タグ: $TAG / package.json: $PKG"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::タグ($TAG)と package.json($PKG)の版が違います。どちらかを直してください"
+            exit 1
+          fi
+          echo "VERSION=$PKG" >> "$GITHUB_ENV"
+
+      # **頼る部品の版が npm に無いまま出さない。**先に `elements-v*` を出す
+      - name: 頼る @mmj-map/elements の版が公開されているか
+        run: |
+          NEED="$(node -p "require('./packages/elements/package.json').version")"
+          if ! npm view "@mmj-map/elements@$NEED" version >/dev/null 2>&1; then
+            echo "::error::@mmj-map/elements@$NEED が npm にありません。先に elements-v$NEED を出してください"
+            exit 1
+          fi
+          echo "ELEMENTS=$NEED" >> "$GITHUB_ENV"
+
+      - name: もう公開されていないか
+        run: |
+          LATEST="$(npm view @mmj-map/react version 2>/dev/null || true)"
+          if [ "$LATEST" = "$VERSION" ]; then
+            echo "::notice::$VERSION は既に公開されています。何もしません"
+            echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
+
+      - if: env.SKIP != '1'
+        run: pnpm gate
+
+      - name: workspace の書き方を、公開されている版へ書き換える
+        if: env.SKIP != '1'
+        working-directory: packages/react
+        run: |
+          node -e '
+            const fs = require("fs");
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            pkg.dependencies["@mmj-map/elements"] = "^" + process.env.ELEMENTS;
+            fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+          '
+          grep -n '"@mmj-map/elements"' package.json
+          if grep -q 'workspace:' package.json; then
+            echo "::error::workspace: が残っています"
+            exit 1
+          fi
+
+      - name: npm へ公開
+        if: env.SKIP != '1'
+        working-directory: packages/react
+        run: npm publish --access public --provenance
+
+      - name: レジストリに出たか確かめる
+        if: env.SKIP != '1'
+        run: |
+          for i in $(seq 1 20); do
+            LATEST="$(npm view @mmj-map/react version 2>/dev/null || true)"
+            if [ "$LATEST" = "$VERSION" ]; then
+              echo "反映されました: $LATEST（${i} 回目）"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::公開は成功したようですが、7 分待っても latest が $VERSION になりません（いま: ${LATEST:-不明}）"
+          exit 1

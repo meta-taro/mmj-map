@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // `@mmj-map/elements` と同じく、配るのは素の JS。型は JSDoc と index.d.ts で書き、ここで検査する
+    "allowJs": true,
+    "checkJs": true,
+    "lib": ["es2023", "dom"]
+  },
+  "include": ["src/**/*.js", "src/**/*.d.ts", "test/**/*.js"]
+}

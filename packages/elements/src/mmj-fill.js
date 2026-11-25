@@ -63,6 +63,12 @@ function paintRaster(raster) {
 }
 
 export class MmjFill extends HTMLElement {
+  /** 地図ができるのを待っているあいだの、待ちを外す口 @type {(() => void) | null} */
+  stopWaiting = null;
+
+  /** 層を付けた地図（外すときに使う） @type {any} */
+  attachedMap = null;
+
   /** @type {any} */
   owner = null;
 
@@ -85,11 +91,18 @@ export class MmjFill extends HTMLElement {
 
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
-    parent.addEventListener("mmj-ready", (/** @type {any} */ event) => this.#attach(event.detail.map), { once: true });
+    // **外されたら待つのをやめる。**待ちを残すと、外して戻したときに 2 回付く
+    const onReady = (/** @type {any} */ event) => this.#attach(event.detail.map);
+    parent.addEventListener("mmj-ready", onReady, { once: true });
+    this.stopWaiting = () => parent.removeEventListener("mmj-ready", onReady);
   }
 
   disconnectedCallback() {
-    const map = /** @type {any} */ (this.owner)?.map;
+    this.stopWaiting?.();
+    this.stopWaiting = null;
+    // **付けた地図から外す。**親の地図は、外されると先に手を離す（`mmj-map.js` の disconnectedCallback）
+    const map = this.attachedMap ?? /** @type {any} */ (this.owner)?.map;
+    this.attachedMap = null;
     this.legend?.remove();
     this.legend = null;
     if (map === undefined || map === null || this.sourceId === null) return;
@@ -112,6 +125,7 @@ export class MmjFill extends HTMLElement {
    * @param {any} map
    */
   #attach(map) {
+    this.attachedMap = map;
     this.style.display = "none"; // 地図の上に出るもの。要素そのものは場所を取らない
     if (map.isStyleLoaded()) this.#add(map);
     else map.once("load", () => this.#add(map));
@@ -135,9 +149,8 @@ export class MmjFill extends HTMLElement {
         // **推測した場所を描かない。**取れなければ何も描かず、理由を残す
         return void console.error(`[mmj-fill] 形を取れませんでした: ${src}`, error);
       }
-      // 取っている間に置き手が外したなら付けない。**地図が引き取った子（`mmjAdopted`）は外れていても付ける**
-      //（`mmj-map.js` は地図を作るときに子を DOM から外す。`mmj-marker.js` と同じ判断）
-      if (!this.isConnected && /** @type {any} */ (this).mmjAdopted !== true) return;
+      // 取っている間に置き手が外したなら付けない
+      if (!this.isConnected) return;
     }
 
     const steps = parseSteps(this.getAttribute("steps"));

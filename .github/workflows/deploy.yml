@@ -124,6 +124,10 @@ jobs:
           test -f packages/elements/src/index.js
           mkdir -p apps/demo/elements
           cp packages/elements/src/*.js apps/demo/elements/
+          # `react.html` が読む React の形。**同じく素の ESM のまま**
+          test -f packages/react/src/index.js
+          mkdir -p apps/demo/react
+          cp packages/react/src/*.js apps/demo/react/
 
       # 掴んだものの版を、配るたびに変える。
       #

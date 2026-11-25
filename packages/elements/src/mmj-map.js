@@ -72,6 +72,25 @@ const ASOF_TIMEOUT_MS = 3000;
 let protocolRegistered = false;
 
 /**
+ * 地図が自分で入れた子（地図の入れ物・知らせ）に付ける印。
+ *
+ * **置き手の子（目印・まとまり）は DOM から外さず、見えなくするだけにする。**
+ * 以前は地図を作るときに外していたが、React や Vue は自分が置いた子を自分で外す。
+ * 外されていた子を外そうとして落ち、外した部品の層も地図に残った（0.15.0 で直した）。
+ */
+const OWN = "data-mmj-own";
+const OWN_STYLE_ID = "mmj-map-style";
+
+function ensureOwnStyle() {
+  if (document.getElementById(OWN_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = OWN_STYLE_ID;
+  // 置き手の子は地図を描く材料で、画面には出さない（中身は部品が読む）
+  style.textContent = `mmj-map > :not([${OWN}]) { display: none !important; }`;
+  document.head.append(style);
+}
+
+/**
  * 書庫ごとの「取りに行って空だったタイル」（`"z/x/y"`）。
  *
  * **プロトコルの登録が 1 回きりなので、ここは module の持ち物になる。**
@@ -161,30 +180,45 @@ export class MmjMap extends HTMLElement {
   missing = new Set();
 
   /**
-   * 地図を作るときに引き取った子（`<mmj-poi>`・`<mmj-cluster>` など）。
-   * **引き取った子は DOM に居ない**ので、`document.getElementById` では見つからない。
-   * @type {Element[]}
+   * 置き手が入れた子（`<mmj-poi>`・`<mmj-cluster>` など）。地図が自分で入れたものは除く。
+   * **0.15.0 から子は DOM に残る**ので `getElementById` でも見つかる。前の版との互換のために残す。
+   * @returns {Element[]}
    */
-  adopted = [];
-
-  connectedCallback() {
-    this.#render().catch((error) => this.#fail(error));
-  }
-
-  disconnectedCallback() {
-    this.map?.remove();
-    this.map = null;
+  get adopted() {
+    return [...this.children].filter((child) => !child.hasAttribute(OWN));
   }
 
   /**
-   * 引き取った子を `id` で引く。**引き取った子は DOM に居ない**ので、`document.getElementById` では
-   * 見つからない（`<mmj-marker draggable id="shop">` の `reset()` を呼ぶときなど）。
+   * 何回目の描画か。**外されたり付け直されたりしたら、古い描画は途中でやめる。**
+   * 地図ができる前に外して戻すと、描画が 2 本走り、地図の入れ物が 2 つ並んで目印が付かなかった
+   * （React が並べ替えると起きる・2026-11-25 に確かめて見つけた）。
+   */
+  #generation = 0;
+
+  connectedCallback() {
+    ensureOwnStyle();
+    const generation = ++this.#generation;
+    this.#render(generation).catch((error) => {
+      if (generation === this.#generation) this.#fail(error);
+    });
+  }
+
+  disconnectedCallback() {
+    this.#generation += 1;
+    // **子が片付けてから地図を消す。**子の disconnectedCallback は親のあとに来る。
+    // 先に消すと、子は消えた地図から層を外そうとして落ちる（子を DOM に残すようになって起きる順番）
+    const map = this.map;
+    this.map = null;
+    if (map) queueMicrotask(() => map.remove());
+  }
+
+  /**
+   * 置き手が入れた子を `id` で引く（`<mmj-marker draggable id="shop">` の `reset()` を呼ぶときなど）。
    * @param {string} id
    * @returns {Element | null}
    */
   getPart(id) {
-    const parts = this.adopted.length > 0 ? this.adopted : [...this.children];
-    return parts.find((part) => part.id === id) ?? null;
+    return this.adopted.find((part) => part.id === id) ?? null;
   }
 
   /**
@@ -199,8 +233,7 @@ export class MmjMap extends HTMLElement {
    * @returns {boolean} どれかの部品が選べたら `true`
    */
   select(id) {
-    const parts = this.adopted.length > 0 ? this.adopted : [...this.children];
-    return parts.some((part) => typeof (/** @type {any} */ (part).select) === "function" && /** @type {any} */ (part).select(id) === true);
+    return this.adopted.some((part) => typeof (/** @type {any} */ (part).select) === "function" && /** @type {any} */ (part).select(id) === true);
   }
 
   /**
@@ -290,7 +323,9 @@ export class MmjMap extends HTMLElement {
     }
   }
 
-  async #render() {
+  /** @param {number} generation */
+  async #render(generation) {
+    const stale = () => generation !== this.#generation;
     const maplibregl = /** @type {any} */ (window).maplibregl;
     const pmtiles = /** @type {any} */ (window).pmtiles;
     if (!maplibregl || !pmtiles) {
@@ -324,20 +359,20 @@ export class MmjMap extends HTMLElement {
     if (!response.ok) throw new Error(`スタイルを取得できません: ${styleUrl} -> HTTP ${response.status}`);
 
     const applied = applyTilesUrl(await response.text(), tilesUrl);
+    if (stale()) return;
     if (applied.replaced === 0) {
       // 黙って進めると、配信先を指していない地図が白く出る
       throw new Error(`スタイルに __TILES_URL__ がありません: ${styleUrl}`);
     }
 
     const container = document.createElement("div");
+    container.setAttribute(OWN, "");
     container.style.cssText = "position:absolute;inset:0;";
     if (getComputedStyle(this).position === "static") this.style.position = "relative";
     this.style.display = "block";
-    // **外す子に「地図が引き取った」と印を付ける。**子（目印など）は外されても、地図ができたら付く。
-    // 印の無い子が外れていたら、それは置き手が外したもの（`mmj-marker.js` が付けない）
-    for (const child of this.children) /** @type {any} */ (child).mmjAdopted = true;
-    this.adopted = [...this.children];
-    this.replaceChildren(container);
+    // **置き手の子は外さない**（`OWN` の頭に理由）。前に描いた地図の入れ物と知らせだけを片付ける
+    for (const own of this.querySelectorAll(`:scope > [${OWN}]`)) own.remove();
+    this.prepend(container);
 
     // `3d` を付けると建物を押し出す。**タイルは同じもの**で、足すデータも取得も無い
     // （実測: 梅田 z16 で 17 リクエスト / 735,015 バイト。2D と 1 バイトも変わらない）。
@@ -368,6 +403,8 @@ export class MmjMap extends HTMLElement {
     // スプライトは使えない——MapLibre は `sprite` の相対 URL を認めず、
     // 絶対 URL を焼くと**自前配信なのにこちらのドメインに依存する**（D-001）。
     const stationStyle = await this.#withStationIcon(style);
+    // 待っている間に外された（または付け直された）。**入れ物ごと片付けて、新しい描画に任せる**
+    if (stale()) return void container.remove();
 
     this.map = new maplibregl.Map(
       buildMapOptions({
@@ -620,6 +657,7 @@ export class MmjMap extends HTMLElement {
       "font:13px/1.5 system-ui,-apple-system,'Segoe UI','Hiragino Sans','Noto Sans JP',sans-serif;" +
       "text-align:center;pointer-events:none;";
     box.textContent = coverageNotice();
+    box.setAttribute(OWN, "");
     this.append(box);
     return box;
   }
@@ -633,7 +671,10 @@ export class MmjMap extends HTMLElement {
     box.setAttribute("role", "alert");
     box.style.cssText = "padding:1rem;background:#2a1d1d;color:#f3d6d6;font:14px/1.7 system-ui;";
     box.textContent = `地図を出せません: ${message}`;
-    this.replaceChildren(box);
+    box.setAttribute(OWN, "");
+    // 置き手の子は外さない（React が自分で外しに来る）。前の地図と知らせだけ片付けて、理由を出す
+    for (const own of this.querySelectorAll(`:scope > [${OWN}]`)) own.remove();
+    this.prepend(box);
     this.dispatchEvent(new CustomEvent("mmj-error", { detail: { message } }));
   }
 }
