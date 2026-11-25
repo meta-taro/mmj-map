@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, fitSides, routeBounds, stepPinSpec } from "../src/route.js";
+import { ROUTE_DEFAULTS, buildRouteSpec, dodgeTag, extractSteps, fitSides, routeBounds, stepPinSpec } from "../src/route.js";
 
 /**
  * ピンの中身を決める。**判断はここ（純粋関数）で、SVG の組み立ては要素側。**
@@ -337,5 +337,80 @@ describe("fitSides", () => {
 
   it("treats a north-south line (no width) as centred", () => {
     expect(fitSides({ width: 390, base, edge, west: 135.5, east: 135.5, tags: [{ lng: 135.5, half: 60 }] })).toEqual({ left: 48, right: 48 });
+  });
+});
+
+const box = (/** @type {number} */ left, /** @type {number} */ top, /** @type {number} */ right, /** @type {number} */ bottom) => ({ left, top, right, bottom });
+
+// 地点の下へ返したときの箱（尖りの高さ 8 を上下に挟む）
+const flipped = (/** @type {any} */ t) => ({ left: t.left, right: t.right, top: t.bottom + 16, bottom: t.bottom + 16 + (t.bottom - t.top) });
+
+describe("dodgeTag", () => {
+  // 390px の地図。名札は幅 160・高さ 24、尖りの先（地点）は x=200
+  const tag = box(120, 300, 280, 324);
+  const base = { tag, width: 390, height: 600, edge: 8, gap: 4, tailInset: 16, tail: 8 };
+  const hits = (/** @type {any} */ shift, /** @type {any[]} */ pins) =>
+    pins.some((pin) => {
+      // 下へ返したときは、尖り 2 つぶんと名札の高さだけ下がる
+      const dy = shift.below ? 16 + (tag.bottom - tag.top) + shift.stem : -shift.stem;
+      return tag.left + shift.dx < pin.right && pin.left < tag.right + shift.dx && tag.top + dy < pin.bottom && pin.top < tag.bottom + dy;
+    });
+
+  it("leaves a tag alone when no pin covers it", () => {
+    expect(dodgeTag({ ...base, pins: [box(300, 290, 327, 331)] })).toEqual({ dx: 0, stem: 0, below: false });
+  });
+
+  it("slides the tag sideways off a pin, the shortest way, keeping the tail on the spot", () => {
+    // ピンは地点の右、名札の右端に掛かる → 左へずらすのが近い
+    const pins = [box(250, 290, 277, 331)];
+    const shift = dodgeTag({ ...base, pins });
+    expect(shift).toEqual({ dx: -34, stem: 0, below: false });
+    expect(hits(shift, pins)).toBe(false);
+    expect(Math.abs(shift.dx)).toBeLessThanOrEqual(80 - 16); // 尖りは名札の中に残る
+  });
+
+  it("turns the tag below the spot when it cannot slide (the pin stands above the spot, so below is free)", () => {
+    // 名札が地図いっぱいに近く、横へ逃げる場所が無い
+    const wide = { ...base, tag: box(12, 300, 372, 324) };
+    const shift = dodgeTag({ ...wide, pins: [box(170, 291, 197, 332)] });
+    expect(shift).toEqual({ dx: 0, stem: 0, below: true });
+  });
+
+  it("sinks a little further below when the pin's foot reaches just past the spot (the 1100px case)", () => {
+    const wide = { ...base, tag: box(12, 300, 372, 324) };
+    // ピンの絵は尖りの先より数 px 下まである（影）。隙間 4 を足すと、下へ返した札の上端に 1px 掛かる
+    const pins = [box(170, 291, 197, 337)];
+    const shift = dodgeTag({ ...wide, pins });
+    expect(shift.below).toBe(true);
+    expect(shift.stem).toBe(337 + 4 - (324 + 16));
+    expect(hits(shift, pins)).toBe(false);
+  });
+
+  it("lifts the tag above the pin when below is taken too (the 390px report: a photo pin under the spot)", () => {
+    const wide = { ...base, tag: box(12, 300, 372, 324) };
+    const pins = [box(170, 284, 197, 325), box(250, 345, 290, 390)];
+    const shift = dodgeTag({ ...wide, pins });
+    expect(shift).toEqual({ dx: 0, stem: 324 - 284 + 4, below: false });
+  });
+
+  it("does not turn the tag below the bottom edge of the map", () => {
+    const low = { ...base, height: 360, tag: box(12, 300, 372, 324) };
+    const shift = dodgeTag({ ...low, pins: [box(170, 291, 197, 332)] });
+    expect(shift.below).toBe(false);
+    expect(shift.stem).toBeGreaterThan(0);
+    expect(flipped(low.tag).bottom).toBeGreaterThan(360 - 8); // 下へ返すと縁を越える
+  });
+
+  it("lifts above every pin it would land on, not just the first", () => {
+    const wide = { ...base, tag: box(12, 300, 372, 324) };
+    const pins = [box(170, 290, 197, 331), box(200, 250, 227, 291), box(100, 335, 140, 380)];
+    const shift = dodgeTag({ ...wide, pins });
+    expect(shift.stem).toBe(324 - 250 + 4);
+  });
+
+  it("does not slide into a second pin", () => {
+    const pins = [box(250, 290, 277, 331), box(60, 290, 110, 331)];
+    const shift = dodgeTag({ ...base, pins });
+    expect(hits(shift, pins)).toBe(false);
   });
 });

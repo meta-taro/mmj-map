@@ -249,6 +249,76 @@ export function fitSides({ width, base, edge, west, east, tags }) {
   return { left: Math.ceil(left), right: Math.ceil(right) };
 }
 
+/** 下へ返した名札を、ピンの足元を避けるために沈めてよい長さ（px）。これより深いなら持ち上げる */
+const MAX_SINK = 32;
+
+/**
+ * 名札（出発・到着）が、案内のピンに隠れない置き方。**返すのは、ずらす量だけ**（px）。
+ *
+ * 名札はピンより奥に置いている（写真のピンを隠さないため）。そのため、地点のそばにピンがあると
+ * **ピンが名札の字を隠した**（390px で「見本の■場所」・導入先の報告・2026-11-25）。
+ *
+ * 1. **横へずらす。**近いほうへ。ただし尖り（地点を指す所）が名札の中に残る範囲で、
+ *    地図の縁から `edge` 以上離れたまま、ほかのピンにも重ならないこと
+ * 2. それができなければ、**地点の下へ返す**（尖りは上を向く）。ピンは地点の上に立つので、
+ *    下はたいてい空いている。持ち上げると上の隅の部品（「徒歩 12 分」など）に潜った（手元で撮って見つけた）
+ * 3. 下も塞がっていれば（写真のピンが下にある・地図の下の縁を越える）、**ピンの上まで持ち上げる**
+ *    （尖りは細い線で地点まで伸ばす）
+ *
+ * 避けるものには、ピンのほか地図の隅の部品（拡大の釦・帰属表示）も入れてよい。
+ *
+ * @param {{
+ *   tag: { left: number, top: number, right: number, bottom: number },
+ *   pins: readonly { left: number, top: number, right: number, bottom: number }[],
+ *   width: number,
+ *   height: number,
+ *   edge: number,
+ *   gap: number,
+ *   tailInset: number,
+ *   tail: number,
+ * }} input `tag` はずらす前の名札の箱、`pins` は避けるものの箱（どちらも地図の左上からの px）。
+ *   `width` `height` は地図の大きさ、`gap` はピンとの隙間、`tailInset` は尖りと名札の端との最小の距離、
+ *   `tail` は名札の下端から尖りの先（地点）までの高さ
+ * @returns {{ dx: number, stem: number, below: boolean }} `dx` は右へずらす量、`below` は地点の下へ返すか、
+ *   `stem` は尖りを伸ばす長さ（上なら持ち上げた量、下へ返したなら、さらに沈めた量）
+ */
+export function dodgeTag({ tag, pins, width, height, edge, gap, tailInset, tail }) {
+  const grown = pins.map((pin) => ({ left: pin.left - gap, top: pin.top - gap, right: pin.right + gap, bottom: pin.bottom + gap }));
+  const covered = (/** @type {number} */ dx, /** @type {number} */ lift) =>
+    grown.filter((pin) => tag.left + dx < pin.right && pin.left < tag.right + dx && tag.top - lift < pin.bottom && pin.top < tag.bottom - lift);
+  if (covered(0, 0).length === 0) return { dx: 0, stem: 0, below: false };
+
+  const reach = Math.max(0, (tag.right - tag.left) / 2 - tailInset);
+  const sideways = grown
+    .flatMap((pin) => [pin.right - tag.left, pin.left - tag.right])
+    .filter((dx) => Math.abs(dx) <= reach && tag.left + dx >= edge && tag.right + dx <= width - edge)
+    .filter((dx) => covered(dx, 0).length === 0)
+    .sort((a, b) => Math.abs(a) - Math.abs(b));
+  const nearest = sideways[0];
+  if (nearest !== undefined) return { dx: Math.round(nearest), stem: 0, below: false };
+
+  // 下へ返した箱：地点（名札の下端 + tail）から、さらに tail だけ下に上端が来る。
+  // ピンの絵は尖りの先より少し下まである（影）ので、掛かるなら少しだけ沈める（尖りの線を伸ばす）
+  const drop = 2 * tail + (tag.bottom - tag.top);
+  let sink = 0;
+  for (let round = 0; round <= grown.length; round += 1) {
+    const hit = covered(0, -(drop + sink));
+    if (hit.length === 0) break;
+    sink = Math.max(sink, ...hit.map((pin) => pin.bottom - (tag.top + drop)));
+  }
+  const clear = covered(0, -(drop + sink)).length === 0;
+  if (clear && sink <= MAX_SINK && tag.bottom + drop + sink <= height - edge) return { dx: 0, stem: Math.ceil(sink), below: true };
+
+  // 持ち上げた先で別のピンに当たれば、その上へ。ピンの数より多くは回らない
+  let lift = 0;
+  for (let round = 0; round <= grown.length; round += 1) {
+    const hit = covered(0, lift);
+    if (hit.length === 0) break;
+    lift = Math.max(lift, ...hit.map((pin) => tag.bottom - pin.top));
+  }
+  return { dx: 0, stem: Math.ceil(lift), below: false };
+}
+
 /**
  * 経路ぜんぶが収まる範囲。**座標が無ければ `null`。**
  * `[0,0]` へ寄せない（アフリカ沖の海へ飛ばされると、間違いだと気づきにくい）。

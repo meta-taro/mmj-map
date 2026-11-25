@@ -29,8 +29,13 @@ import { buildPopupContent } from "./popup.js";
 import { ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
 import { pinPath } from "./pin.js";
 import { keepPopupInside } from "./popup-fit.js";
-import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, fitSides, routeBounds, stepPinSpec } from "./route.js";
+import { ROUTE_DEFAULTS, buildRouteSpec, dodgeTag, extractSteps, fitSides, routeBounds, stepPinSpec } from "./route.js";
 import { formatWalk, routeEnds, turnSteps, walkSummary } from "./walk.js";
+
+/**
+ * 出発・到着の名札と、いまのずらし方。
+ * @typedef {{ marker: any, element: HTMLElement, tail: HTMLElement, stemLine: HTMLElement, tip: HTMLElement, edge: string, dx: number, stem: number, below: boolean }} EndTag
+ */
 
 /** 同じページに複数置ける。source 名が衝突すると後勝ちで消えるため、番号で分ける */
 let serial = 0;
@@ -43,6 +48,18 @@ const END_TAG_ROOM = 48;
 
 /** 名札と地図の縁の隙間（px）。吹き出しを縁から離す幅（`popup-fit.js`）と同じ */
 const TAG_EDGE = 8;
+
+/** 名札とピンの隙間（px） */
+const TAG_PIN_GAP = 4;
+
+/** 横へずらしても、尖りを名札の角丸の中へ入れない（px） */
+const TAG_TAIL_INSET = 16;
+
+/** 描画が来ない（裏のタブ）ときに、名札のよけを走らせるまでの時間（ms） */
+const DODGE_FALLBACK_MS = 100;
+
+/** 名札の箱の下端から、尖りの先までの高さ（px）。隙間 1 ＋ 尖り 7。**この高さだけ名札を浮かせて、尖りの先を地点に合わせる** */
+const TAG_TAIL = 8;
 
 /** 目印のためにタイルの読み込みを待つ上限（ms）。過ぎたら、読めている店だけで案内を出す */
 const LANDMARK_WAIT_MS = 3000;
@@ -59,6 +76,10 @@ export class MmjRoute extends HTMLElement {
   markers = [];
   /** @type {any} 「徒歩 5 分・400m」の札（地図の隅の部品） */
   summaryControl = null;
+  /** @type {EndTag[]} 出発・到着の名札 */
+  endTags = [];
+  /** @type {(() => void) | null} 地図が止まるたびに名札をピンからよける（外すときに外す） */
+  dodgeEnds = null;
 
   /**
    * 親の `<mmj-map>`。**connectedCallback で捕まえておく。**
@@ -84,6 +105,9 @@ export class MmjRoute extends HTMLElement {
   disconnectedCallback() {
     this.stopWaiting?.();
     this.stopWaiting = null;
+    if (this.map && this.dodgeEnds) this.map.off("moveend", this.dodgeEnds);
+    this.dodgeEnds = null;
+    this.endTags = [];
     for (const marker of this.markers) marker.remove();
     this.markers = [];
     if (this.map && this.summaryControl) this.map.removeControl(this.summaryControl);
@@ -158,6 +182,21 @@ export class MmjRoute extends HTMLElement {
           data,
           tags.map((tag) => ({ lng: tag.lng, half: tag.element.getBoundingClientRect().width / 2 })),
         );
+        // **寄せたあとで、ピンに隠れていないかを見る。**拡大・縮小でピンとの距離が変わるので、地図が止まるたびに見直す
+        // ピンの箱は画面から読むので、MapLibre がピンを動かし終えた次の描画で読む。
+        // 裏のタブでは描画が来ないので、時間でも 1 回だけ走らせる
+        this.dodgeEnds = () => {
+          let done = false;
+          const run = () => {
+            if (done) return;
+            done = true;
+            this.#dodgeEnds(map);
+          };
+          requestAnimationFrame(run);
+          setTimeout(run, DODGE_FALLBACK_MS);
+        };
+        this.dodgeEnds();
+        map.on("moveend", this.dodgeEnds);
       }
 
       this.style.display = "none"; // 経路は地図の上に出る。要素そのものは場所を取らない
@@ -222,17 +261,67 @@ export class MmjRoute extends HTMLElement {
     /** @type {{ element: HTMLElement, lng: number }[]} */
     const tags = [];
     for (const place of places) {
-      const tag = endTag(place.label, place.role, place.detail, colors, edge);
-      const marker = new maplibregl.Marker({ element: tag, anchor: "bottom" }).setLngLat(place.lngLat).addTo(map);
+      const { tag, tail, stemLine, tip } = endTag(place.label, place.role, place.detail, colors, edge);
+      const marker = new maplibregl.Marker({ element: tag, anchor: "bottom", offset: [0, -TAG_TAIL] }).setLngLat(place.lngLat).addTo(map);
       // **名札は案内のピンより奥に置く。**狭い画面で到着の札が写真のピンに被り、写真が隠れた（2026-11-25）。
       // 重なりは DOM の順で決まるので、地図の絵（canvas）のすぐ後ろへ差し込む。
       // `z-index` で上げ下げしない——ピンを上げると、開いた吹き出しまでピンの下に潜った
       const canvas = map.getCanvas();
       canvas.parentElement?.insertBefore(tag, canvas.nextSibling);
       this.markers.push(marker);
+      this.endTags.push({ marker, element: tag, tail, stemLine, tip, edge, dx: 0, stem: 0, below: false });
       tags.push({ element: tag, lng: place.lngLat[0] });
     }
     return tags;
+  }
+
+  /**
+   * 名札をピンからよける（判断は `dodgeTag`）。**ピンは、この経路のものに限らず地図の上の全部**
+   * （導入先が置いた店のピンも、名札の字を隠す）。
+   *
+   * @param {any} map
+   */
+  #dodgeEnds(map) {
+    if (this.map !== map) return;
+    const container = map.getContainer();
+    const origin = container.getBoundingClientRect();
+    const local = (/** @type {DOMRect} */ rect) => ({
+      left: rect.left - origin.left,
+      top: rect.top - origin.top,
+      right: rect.right - origin.left,
+      bottom: rect.bottom - origin.top,
+    });
+    // 避けるのはピンと、地図の隅の部品（「徒歩 12 分」・拡大の釦・帰属表示）
+    const pins = [...container.querySelectorAll(".maplibregl-marker:not(.mmj-route-end), .maplibregl-ctrl")]
+      .map((pin) => pin.getBoundingClientRect())
+      .filter((rect) => rect.width > 0 && rect.height > 0)
+      .map(local);
+    for (const end of this.endTags) {
+      // **ずらす前の箱は、地点から求める**（画面の箱を読むと、前回ずらしたぶんを戻す計算が要り、
+      // MapLibre がまだ動かし終えていない位置を読んだときに狂う）
+      const point = map.project(end.marker.getLngLat());
+      const half = end.element.offsetWidth / 2;
+      const height = end.element.offsetHeight;
+      const bottom = point.y - TAG_TAIL;
+      const tag = { left: point.x - half, right: point.x + half, top: bottom - height, bottom };
+      const { dx, stem, below } = dodgeTag({
+        tag,
+        pins,
+        width: container.clientWidth,
+        height: container.clientHeight,
+        edge: TAG_EDGE,
+        gap: TAG_PIN_GAP,
+        tailInset: TAG_TAIL_INSET,
+        tail: TAG_TAIL,
+      });
+      if (dx === end.dx && stem === end.stem && below === end.below) continue;
+      end.dx = dx;
+      end.stem = stem;
+      end.below = below;
+      // 印は下端を地点に合わせて置いている（`anchor: "bottom"`）。下へ返すときは、名札の高さと尖りのぶん下げる
+      end.marker.setOffset([dx, below ? TAG_TAIL + height + stem : -TAG_TAIL - stem]);
+      pointTail(end, dx, stem, below);
+    }
   }
 
   /**
@@ -426,6 +515,7 @@ function basemapLandmarks(map, sourceName) {
  * @param {string} detail 到着の札に添える「徒歩 5 分・400m」（無ければ空）
  * @param {{ background: string, text: string, border: string }} colors 吹き出しと同じ配色
  * @param {string} edge 縁の色（経路の線と同じ）
+ * @returns {{ tag: HTMLElement, tail: HTMLElement, stemLine: HTMLElement, tip: HTMLElement }}
  */
 function endTag(label, role, detail, colors, edge) {
   const tag = document.createElement("div");
@@ -442,8 +532,12 @@ function endTag(label, role, detail, colors, edge) {
     fontWeight: "700",
     lineHeight: "1.5",
     boxShadow: "0 1px 3px rgba(0,0,0,.35)",
-    position: "relative",
-    marginBottom: "8px",
+    // **inline で position を書き換えない。**MapLibre の印は `position: absolute` で地点へ置かれる。
+    // ここを `relative` にしていたので、名札が地図の中で縦に積まれ、**後から入れた側の札が、
+    // 先の札の高さぶん下にずれた**（出発の尖りが地点より 34px 下を指していた・0.15.0 まで）
+    position: "absolute",
+    top: "0",
+    left: "0",
     // **幅を中身に合わせる。**指定しないと、札が地図の端まで伸びて帯になる
     // （2026-11-13・手元で撮って見つけた）
     width: "max-content",
@@ -459,19 +553,55 @@ function endTag(label, role, detail, colors, edge) {
   });
   text.textContent = label;
   tag.append(text);
-  // 下の尖り。**名札が指している地点を、丸 1 つぶんぼかさない**
+  // 下の尖り。**名札が指している地点を、丸 1 つぶんぼかさない**。
+  // ピンをよけて名札を持ち上げたときは、細い線（stemLine）を伸ばして地点まで届かせる
   const tail = document.createElement("span");
   Object.assign(tail.style, {
     position: "absolute",
     left: "50%",
-    bottom: "-8px",
+    top: "calc(100% + 1px)",
     transform: "translateX(-50%)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    pointerEvents: "none",
+  });
+  const stemLine = document.createElement("span");
+  Object.assign(stemLine.style, { display: "block", width: "2px", height: "0px", background: edge });
+  const tip = document.createElement("span");
+  Object.assign(tip.style, {
+    display: "block",
+    width: "0",
+    height: "0",
     borderLeft: "6px solid transparent",
     borderRight: "6px solid transparent",
     borderTop: `7px solid ${edge}`,
   });
+  tail.append(stemLine, tip);
   tag.append(tail);
-  return tag;
+  return { tag, tail, stemLine, tip };
+}
+
+/**
+ * 名札の尖りを、ずらしたあとも地点へ向ける。
+ * - 横へ dx ずらしたら、尖りは名札の中で左へ dx（地点の真上に残る）
+ * - 持ち上げた・沈めたぶんだけ、細い線を伸ばす
+ * - 下へ返したら、尖りを名札の上に付け、上を向ける
+ *
+ * @param {EndTag} end @param {number} dx @param {number} stem @param {boolean} below
+ */
+function pointTail(end, dx, stem, below) {
+  Object.assign(end.tail.style, {
+    left: `calc(50% - ${dx}px)`,
+    top: below ? "auto" : "calc(100% + 1px)",
+    bottom: below ? "calc(100% + 1px)" : "auto",
+    flexDirection: below ? "column-reverse" : "column",
+  });
+  end.stemLine.style.height = `${stem}px`;
+  Object.assign(end.tip.style, {
+    borderTop: below ? "0" : `7px solid ${end.edge}`,
+    borderBottom: below ? `7px solid ${end.edge}` : "0",
+  });
 }
 
 /** @param {number} center @param {number} radius */
