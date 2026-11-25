@@ -82,6 +82,7 @@ npx @mmj-map/tiles extract osaka --bbox=135.4,34.6,135.6,34.8
 | `<mmj-poi>` | Your own GeoJSON points, with optional rich cards and a linked list |
 | `<mmj-cluster>` | Many points, grouped as you zoom out. `weight-key` sums counts (e.g. shops per station); `mmj-visible` and `select(id)` keep your own list in step with the map |
 | `<mmj-route>` | A path with step-by-step callouts (it does **not** compute routes) |
+| `<mmj-route-editor>` | Draw that path by clicking the map, in your admin page: corner notes and a photo URL per point. Emits the GeoJSON `<mmj-route>` reads (`mmj-route-change`) |
 | `<mmj-circle>` | A radius in real metres from a point. `blur` and `label` show a rough area ("around the station") instead of an exact spot |
 | `<mmj-raster>` | A raster overlay — rainfall, hazard maps, aerial imagery |
 | `<mmj-fill>` | Polygons shaded by a value — flood depth, ground type, intensity — or named areas in one colour, with an edge that fades outward (`blur`, ground metres) and a name label (`label-key`) |

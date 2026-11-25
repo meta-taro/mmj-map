@@ -89,8 +89,8 @@ Done: ./tiles/osaka.20260924.pmtiles
 
 `center` is `longitude,latitude` — the same order as GeoJSON, not the order you say out loud.
 
-**Eight elements** ship in the package: `mmj-map`, `mmj-marker`, `mmj-poi`, `mmj-cluster`,
-`mmj-route`, `mmj-circle`, `mmj-raster`, `mmj-fill`. All of them are plain ESM; there is
+**Nine elements** ship in the package: `mmj-map`, `mmj-marker`, `mmj-poi`, `mmj-cluster`,
+`mmj-route`, `mmj-route-editor`, `mmj-circle`, `mmj-raster`, `mmj-fill`. All of them are plain ESM; there is
 nothing to compile.
 
 | | |

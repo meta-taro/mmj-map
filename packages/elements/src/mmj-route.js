@@ -28,6 +28,7 @@ import { buildPopupOptions } from "./attrs.js";
 import { buildPopupContent } from "./popup.js";
 import { ensurePopupContrast, popupColorsFrom, renderPopup } from "./popup-dom.js";
 import { pinPath } from "./pin.js";
+import { keepPopupInside } from "./popup-fit.js";
 import { ROUTE_DEFAULTS, buildRouteSpec, extractSteps, routeBounds, stepPinSpec } from "./route.js";
 import { formatWalk, routeEnds, turnSteps, walkSummary } from "./walk.js";
 
@@ -130,19 +131,7 @@ export class MmjRoute extends HTMLElement {
       const key = this.getAttribute("step-key") ?? ROUTE_DEFAULTS.stepKey;
       this.#placeSteps(map, extractSteps(data, key), accent);
 
-      if (this.hasAttribute("fit")) {
-        const bounds = routeBounds(data);
-        // **範囲が読めないときは動かさない。**[0,0] へ寄せるとアフリカ沖へ飛ぶ
-        // **名札を出すなら、上を札の高さぶん空ける。**札は地点の上に立つので、
-        // 同じ余白だと出発の札が地図の縁と隅の部品に潜る（2026-11-13・手元で撮って見つけた）
-        const top = this.hasAttribute("ends") ? FIT_PADDING + END_TAG_ROOM : FIT_PADDING;
-        if (bounds !== null) {
-          map.fitBounds(bounds, {
-            padding: { top, bottom: FIT_PADDING, left: FIT_PADDING, right: FIT_PADDING },
-            duration: 0,
-          });
-        }
-      }
+      this.#fit(map, data, 0);
 
       const walk = walkSummary(data, readWidth(this.getAttribute("walk-speed")));
       // **線が読めなければ出さない。**作った「徒歩 1 分・10m」を見せない
@@ -152,21 +141,28 @@ export class MmjRoute extends HTMLElement {
       this.#placeSteps(map, autoSteps, accent);
       // **案内の数は、両端の札を置く前に数える。**札まで数えると「案内 3 件」に化ける
       const steps = this.markers.length;
-      if (this.hasAttribute("ends")) this.#placeEnds(map, data, accent, walk);
+      if (this.hasAttribute("ends")) {
+        const tags = this.#placeEnds(map, data, accent, walk);
+        // **名札の幅が分かってから寄せ直す。**札は地点の真上に左右へ広がるので、
+        // 左右の余白が足りないと名札が地図の縁で切れた（導入先の報告・2026-11-25）
+        const widest = Math.max(0, ...tags.map((tag) => tag.getBoundingClientRect().width));
+        this.#fit(map, data, Math.ceil(widest / 2));
+      }
 
       this.style.display = "none"; // 経路は地図の上に出る。要素そのものは場所を取らない
-      this.dispatchEvent(
-        new CustomEvent("mmj-route-ready", {
-          bubbles: true,
-          // **目印の数も返す。**0 件でも案内は出るので、数を見ないと効いていないことに気づけない
-          detail: {
-            steps,
-            landmarks: autoSteps.filter((step) => step.landmark !== null).length,
-            meters: walk.meters,
-            minutes: walk.minutes,
-          },
-        }),
-      );
+      // **目印の数も返す。**0 件でも案内は出るので、数を見ないと効いていないことに気づけない
+      const detail = {
+        steps,
+        landmarks: autoSteps.filter((step) => step.landmark !== null).length,
+        meters: walk.meters,
+        minutes: walk.minutes,
+      };
+      this.dispatchEvent(new CustomEvent("mmj-route-ready", { bubbles: true, detail }));
+      // **地図にも出す。**親の `<mmj-map>` は描画時に子を DOM から外すので、
+      // この要素から出した出来事は `document` まで上がらない（`mmj-marker.js` と同じ穴）
+      if (this.owner && this.owner !== this && !this.owner.contains(this)) {
+        this.owner.dispatchEvent(new CustomEvent("mmj-route-ready", { bubbles: true, detail }));
+      }
     } catch (error) {
       // 握り潰さない（§8）。ここで黙ると、経路が出ない理由が画面にもログにも残らない
       console.error("[mmj-route]", error);
@@ -205,10 +201,11 @@ export class MmjRoute extends HTMLElement {
    *
    * @param {any} map @param {any} data @param {string | null | undefined} accent
    * @param {{ meters: number, minutes: number }} walk
+   * @returns {HTMLElement[]} 置いた名札（幅を測って寄せ直すため）
    */
   #placeEnds(map, data, accent, walk) {
     const ends = routeEnds(data);
-    if (ends === null) return;
+    if (ends === null) return [];
     const maplibregl = /** @type {any} */ (window).maplibregl;
     const colors = popupColorsFrom(this.owner);
     const edge = this.getAttribute("color") ?? accent ?? ROUTE_DEFAULTS.color;
@@ -216,11 +213,38 @@ export class MmjRoute extends HTMLElement {
       { ...ends.start, role: "出発", detail: "" },
       { ...ends.end, role: "到着", detail: walk.meters > 0 ? formatWalk(walk) : "" },
     ];
+    /** @type {HTMLElement[]} */
+    const tags = [];
     for (const place of places) {
       const tag = endTag(place.label, place.role, place.detail, colors, edge);
       const marker = new maplibregl.Marker({ element: tag, anchor: "bottom" }).setLngLat(place.lngLat).addTo(map);
+      // **名札は案内のピンより奥に置く。**狭い画面で到着の札が写真のピンに被り、写真が隠れた（2026-11-25）。
+      // 重なりは DOM の順で決まるので、地図の絵（canvas）のすぐ後ろへ差し込む。
+      // `z-index` で上げ下げしない——ピンを上げると、開いた吹き出しまでピンの下に潜った
+      const canvas = map.getCanvas();
+      canvas.parentElement?.insertBefore(tag, canvas.nextSibling);
       this.markers.push(marker);
+      tags.push(tag);
     }
+    return tags;
+  }
+
+  /**
+   * 経路ぜんぶが入るところまで寄せる（`fit` のときだけ）。
+   * **範囲が読めないときは動かさない。**[0,0] へ寄せるとアフリカ沖へ飛ぶ。
+   * **名札を出すなら、上を札の高さぶん空ける。**札は地点の上に立つので、
+   * 同じ余白だと出発の札が地図の縁と隅の部品に潜る（2026-11-13・手元で撮って見つけた）。
+   *
+   * @param {any} map @param {any} data
+   * @param {number} side 名札が左右へはみ出す幅（px）。名札を置く前は 0
+   */
+  #fit(map, data, side) {
+    if (!this.hasAttribute("fit")) return;
+    const bounds = routeBounds(data);
+    if (bounds === null) return;
+    const top = this.hasAttribute("ends") ? FIT_PADDING + END_TAG_ROOM : FIT_PADDING;
+    const across = FIT_PADDING + side;
+    map.fitBounds(bounds, { padding: { top, bottom: FIT_PADDING, left: across, right: across }, duration: 0 });
   }
 
   /**
@@ -261,9 +285,17 @@ export class MmjRoute extends HTMLElement {
       const marker = new maplibregl.Marker(options).setLngLat(step.lngLat);
       // **写真も文字も DOM で組む。**`setHTML` は使わない（popup.js の頭に理由）
       const content = buildPopupContent({ text: step.text, image: step.image });
-      marker.setPopup(
-        new maplibregl.Popup(buildPopupOptions(className)).setDOMContent(renderPopup(content)),
-      );
+      const body = renderPopup(content);
+      const popup = new maplibregl.Popup(buildPopupOptions(className)).setDOMContent(body);
+      // **開いたら、地図の見えている所へ収める。**写真はあとから読まれて箱が伸びるので、
+      // 読み終えたときにもう一度収める。携帯で下のほうのピンを押すと、吹き出しが下の縁で切れた（2026-11-25）
+      popup.on("open", () => keepPopupInside(map, popup));
+      for (const image of body.querySelectorAll("img")) {
+        image.addEventListener("load", () => {
+          if (popup.isOpen()) keepPopupInside(map, popup);
+        });
+      }
+      marker.setPopup(popup);
       marker.addTo(map);
       this.markers.push(marker);
     }

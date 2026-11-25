@@ -84,7 +84,7 @@ npx @mmj-map/tiles extract osaka --bbox=135.4,34.6,135.6,34.8
 
 `center` は `経度,緯度` です。**GeoJSON と同じ並び**で、口で言う順番とは逆です。
 
-部品は **8 つ**あります（`mmj-map` `mmj-marker` `mmj-poi` `mmj-cluster` `mmj-route`
+部品は **9 つ**あります（`mmj-map` `mmj-marker` `mmj-poi` `mmj-cluster` `mmj-route` `mmj-route-editor`
 `mmj-circle` `mmj-raster` `mmj-fill`）。どれも素の ESM で、**ビルド工程はありません**。
 
 | | |

@@ -306,7 +306,7 @@ HTML だけで地図を置くための部品です。**鍵も、閲覧ごとの�
 **後から足せます**。案内の点だけ増やした GeoJSON を渡せば、そのぶんだけ吹き出しが増えます。
 AI に経路と案内文を作らせて、この形で渡す使い方を想定しています。
 
-置き終わると `mmj-route-ready` が飛びます（`detail.steps` が案内の件数）。
+置き終わると `mmj-route-ready` が要素と `<mmj-map>` の両方へ飛びます（`detail.steps` が案内の件数）。
 **0 件でも気づけるように**、件数を画面へ出すことを勧めます。
 
 #### **経路は計算しません**
@@ -314,6 +314,66 @@ AI に経路と案内文を作らせて、この形で渡す使い方を想定�
 計算には道路グラフとルーティングエンジンが要り、それは D-003（地図サーバーを立てない）の
 外側です。**作るのは外**（ルーティング API でも、AI でも）で、ここは描くだけです。
 「データを持たない。表現を持つ」の形そのものです。
+
+### `<mmj-route-editor>` — 管理画面で道案内の線を引く（0.14.0）
+
+`<mmj-route>` に渡す GeoJSON を、**地図を押して作る**部品です。店の管理画面に置き、
+駅の出口から店までの線と、案内の点（ひとこと・写真）を人が置きます。
+
+```html
+<mmj-map tiles="..." style-url="..." center="135.4991,34.6980" zoom="16">
+  <mmj-route-editor from="A2 出口" to="ホテル月" fit></mmj-route-editor>
+</mmj-map>
+<input type="hidden" name="route" id="route">
+
+<script type="module">
+  document.querySelector("mmj-map").addEventListener("mmj-route-change", (event) => {
+    document.getElementById("route").value = event.detail.text; // 保存する GeoJSON
+  });
+</script>
+```
+
+| 属性 | 意味 |
+| --- | --- |
+| `value` | 保存してある GeoJSON（文字）。ここから編集を始める |
+| `src` | 保存してある GeoJSON の URL（`value` が無いとき） |
+| `from` / `to` | 出発・到着の名札（`<mmj-route ends>` が出す名前） |
+| `fit` | 付けると、読んだ経路が入るところまで寄せる |
+| `color` | 線と点の色。既定は `<mmj-map accent>` |
+| `step-key` | ひとことを書く属性名。既定 `instruction`（`<mmj-route step-key>` と揃える） |
+| `walk-speed` | 「徒歩 ◯ 分」の 1 分の距離（m）。既定 80 |
+| `controls` | 操作の帯を置く隅。既定 `top-left` |
+
+**操作**（指・マウス・キーボードの 3 つとも）
+
+- **線を引く**: 地図を押すと、線の終わりに点が足されます。点は掴んで動かせます。点を押すと「この点を消す」
+- **案内を置く**: 地図を押すと点が立ち、**ひとこと**と**写真の URL** を打つ欄が開きます。線の点のすぐそばを押すと、その点の上に置きます
+- **キーボード**: 地図を矢印キーで送って「真ん中に置く」。点に焦点を置いて矢印キーで動かし（Shift で大きく）、Delete で消します
+- 「1 つ戻す」「全部消す」（全部消しても戻せます）
+
+**受け取るもの**: 変わるたびに `mmj-route-change` が要素と `<mmj-map>` の両方へ飛びます
+（最初に読み終えたときも `reason: "load"` で 1 回）。
+
+| `detail` | 中身 |
+| --- | --- |
+| `geojson` / `text` | 保存する GeoJSON（オブジェクト / 文字） |
+| `meters` / `minutes` | 線の長さ（10m 単位）と徒歩の分数 |
+| `points` / `steps` | 線の点の数・案内の数 |
+| `issues` | **地図に出ないもの**（線の点が 2 つ未満・ひとことが空の案内・使えない写真の URL）。保存の前に人へ見せてください |
+| `reason` | `load` `line` `step` `move` `words` `remove` `undo` `clear` `set` `names` |
+
+外から入れ直すときは、地図から部品を引いて `value` に入れます（中の部品は地図を作るときに DOM から外れるため）。
+
+```js
+const editor = document.querySelector("mmj-map").getPart("editor"); // <mmj-route-editor id="editor">
+editor.value = savedText; // 文字でも GeoJSON でも。「1 つ戻す」の履歴は消えます
+editor.undo();
+```
+
+- **経路は計算しません**。道に沿わせるのは人の目です（地図の道の上を押していきます）
+- 写真は URL を打つだけです。**上げる仕組みは置く側の管理画面のもの**を使ってください
+- 線は 1 本だけです。読んだ GeoJSON に線が 2 本あれば、1 本目を編集します
+- 判断は `route-edit.js`（純粋関数）にあり、`toGeoJSON` などを直接は公開していません（`<mmj-route>` が読む形で出すことだけを約束します）
 
 ### 吹き出しに写真を載せる
 

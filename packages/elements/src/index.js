@@ -18,6 +18,7 @@ import { MmjPoi } from "./mmj-poi.js";
 import { MmjRaster } from "./mmj-raster.js";
 import { MmjTyphoon } from "./mmj-typhoon.js";
 import { MmjRoute } from "./mmj-route.js";
+import { MmjRouteEditor } from "./mmj-route-editor.js";
 
 /**
  * @param {string} name
@@ -36,5 +37,6 @@ define("mmj-fill", MmjFill);
 define("mmj-poi", MmjPoi);
 define("mmj-raster", MmjRaster);
 define("mmj-route", MmjRoute);
+define("mmj-route-editor", MmjRouteEditor);
 
-export { MmjCircle, MmjCluster, MmjFill, MmjMap, MmjMarker, MmjPoi, MmjRaster, MmjRoute };
+export { MmjCircle, MmjCluster, MmjFill, MmjMap, MmjMarker, MmjPoi, MmjRaster, MmjRoute, MmjRouteEditor };
