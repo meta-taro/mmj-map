@@ -23,6 +23,7 @@
  */
 import { DEFAULTS, buildClusterSpec, parseCount, parsePinStyle, pickFilters } from "./cluster.js";
 import { addImageResolver } from "./image-resolver.js";
+import { listen } from "./listen.js";
 import { ballOffset, drawNeedle, drawRing, needleGeometry, needleImageParts, ringImageParts, ringSize } from "./machibari.js";
 import { paintImage } from "./machibari-image.js";
 import { parsePinColors } from "./pin.js";
@@ -65,10 +66,16 @@ export class MmjCluster extends HTMLElement {
   /** @type {(() => void) | null} */
   moveCleanup = null;
 
+  /** 地図に付けた click / mouseenter / mouseleave を外す（Issue #11） @type {(() => void) | null} */
+  handlerCleanup = null;
+
   connectedCallback() {
     const parent = this.closest("mmj-map");
     if (!parent) return void console.error("[mmj-cluster] <mmj-map> の中に置いてください");
     this.owner = parent;
+    // **もう付いているなら、付け直さない。**地図が引き取った子を頁へ戻すと、外さないまま
+    // ここへ来る。付け直すと層と受け口が 2 組になり、前の組は誰も外せなくなる（Issue #11 の確かめで見つけた）
+    if (this.map !== null) return;
 
     const map = /** @type {any} */ (parent).map;
     if (map) return void this.#attach(map);
@@ -80,6 +87,9 @@ export class MmjCluster extends HTMLElement {
     this.imageCleanup = null;
     this.moveCleanup?.();
     this.moveCleanup = null;
+    this.handlerCleanup?.();
+    this.handlerCleanup = null;
+    if (this.map) this.map.getCanvas().style.cursor = "";
     if (this.map && this.spec) {
       for (const layer of this.spec.layers) if (this.map.getLayer(layer.id)) this.map.removeLayer(layer.id);
       if (this.map.getSource(this.spec.sourceId)) this.map.removeSource(this.spec.sourceId);
@@ -167,17 +177,25 @@ export class MmjCluster extends HTMLElement {
     const { clusters, hit, points, picked } = this.spec.ids;
     /** @type {string[]} 押せる点の層。**1 本の受け口に束ねる**（層ごとに繋ぐと 1 回の押下で 2 度飛ぶ） */
     const pointLayers = [hit, points, picked].filter((id) => id !== null);
-    map.on("click", clusters, (/** @type {any} */ event) => this.#zoomIntoCluster(map, clusters, event));
-    map.on("click", (/** @type {any} */ event) => {
-      const found = map.queryRenderedFeatures(event.point, { layers: pointLayers });
-      if (found.length > 0) return void this.#emitPoint(map, event.point, found);
-      // **何も無いところを押したら、選んだ針を寝かせる**（選びっぱなしにしない）
-      this.#pick(map, null);
-    });
-    for (const id of [clusters, ...pointLayers]) {
-      map.on("mouseenter", id, () => (map.getCanvas().style.cursor = "pointer"));
-      map.on("mouseleave", id, () => (map.getCanvas().style.cursor = ""));
-    }
+    const pointer = () => (map.getCanvas().style.cursor = "pointer");
+    const plain = () => (map.getCanvas().style.cursor = "");
+    // **付けた受け口は、外すときに全部外す**（`listen.js`・Issue #11）
+    this.handlerCleanup = listen(map, [
+      ["click", clusters, (/** @type {any} */ event) => this.#zoomIntoCluster(map, clusters, event)],
+      [
+        "click",
+        (/** @type {any} */ event) => {
+          const found = map.queryRenderedFeatures(event.point, { layers: pointLayers });
+          if (found.length > 0) return void this.#emitPoint(map, event.point, found);
+          // **何も無いところを押したら、選んだ針を寝かせる**（選びっぱなしにしない）
+          this.#pick(map, null);
+        },
+      ],
+      ...[clusters, ...pointLayers].flatMap((id) => /** @type {import("./listen.js").Handler[]} */ ([
+        ["mouseenter", id, pointer],
+        ["mouseleave", id, plain],
+      ])),
+    ]);
 
     this.style.display = "none"; // 点は地図の上に出る。要素そのものは場所を取らない
 
